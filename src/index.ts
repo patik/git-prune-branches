@@ -55,7 +55,7 @@ const hasInvalidParams: boolean = Object.keys(argv).some((name) => options.index
                 exit(1)
             }
         })
-        await obj.run()
+        const options = await obj.getDeleteCommands()
     } catch (err: unknown) {
         if (typeof err === 'object' && err) {
             if ('code' in err && typeof err.code === 'number' && err.code === 128) {
