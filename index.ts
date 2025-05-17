@@ -1,10 +1,11 @@
-import FindStale from './lib/find-stale.js'
-import utils from './lib/utils.js'
+#!/usr/bin/env -S node
+
 import fs from 'fs'
-import path from 'path'
-import { exit } from 'node:process'
 import minimist from 'minimist'
 import { exec } from 'node:child_process'
+import { exit } from 'node:process'
+import path from 'path'
+import FindStale from './lib/find-stale.js'
 
 let version: string = '0.0.0'
 
