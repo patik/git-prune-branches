@@ -1,6 +1,11 @@
 import split from './split.js'
 import { stdout } from './stdout.js'
 
+// type Result = {
+//     branchName: string
+//     command: string
+// }
+
 export default class FindStale {
     remote: string
     force: boolean
@@ -22,7 +27,7 @@ export default class FindStale {
         this.noConnection = false
     }
 
-    async run() {
+    async preprocess(verbose = false) {
         // cached branches from the remote
         this.remoteBranches = []
 
@@ -39,12 +44,10 @@ export default class FindStale {
         // this will become true
         this.noConnection = false
 
-        await this.findLiveBranches()
+        await this.findLiveBranches(verbose)
         await this.findLocalBranches()
         await this.findRemoteBranches()
         await this.analyzeLiveAndCache()
-        await this.findStaleBranches()
-        await this.deleteBranches()
     }
 
     async findLocalBranches() {
@@ -79,7 +82,7 @@ export default class FindStale {
     // to find branches which are still available on the remote
     // and store them in liveBranches state
     //
-    async findLiveBranches() {
+    async findLiveBranches(verbose = false) {
         if (this.remote === '') {
             const e = new Error('Remote is empty. Please specify remote with -r parameter')
             // @ts-expect-error - this is a custom error code
@@ -89,7 +92,6 @@ export default class FindStale {
 
         const remotesStr = await stdout('git remote -v')
         const hasRemote = split(remotesStr).some((line) => {
-            console.log('line ', line.toString())
             const re = new RegExp(`^${this.remote}\\s`)
             if (re.test(line)) {
                 return true
@@ -97,11 +99,13 @@ export default class FindStale {
         })
 
         if (!hasRemote) {
-            console.log(
-                `WARNING: Unable to find remote "${
-                    this.remote
-                }".\r\n\r\nAvailable remotes are:\r\n${remotesStr?.toString()}`,
-            )
+            if (verbose) {
+                console.log(
+                    `WARNING: Unable to find remote "${
+                        this.remote
+                    }".\r\n\r\nAvailable remotes are:\r\n${remotesStr?.toString()}`,
+                )
+            }
             this.noConnection = true
             return
         }
@@ -146,6 +150,7 @@ export default class FindStale {
         const re = new RegExp('^%s\\/([^\\s]*)'.replace('%s', this.remote))
         branches?.forEach((branchName) => {
             const group = branchName.match(re)
+
             if (group) {
                 this.remoteBranches.push(group[1] || '')
             }
@@ -190,29 +195,34 @@ export default class FindStale {
     }
 
     async findStaleBranches() {
+        await this.preprocess()
         this.localBranches.forEach(({ localBranch, remoteBranch }) => {
             if (this.remoteBranches.indexOf(remoteBranch) === -1) {
                 this.staleBranches.push(localBranch)
             }
         })
+
+        return this.staleBranches
     }
 
-    async deleteBranches() {
-        if (!this.staleBranches.length) {
+    async deleteBranches(branchesToDelete: Array<string>, verbose = false) {
+        if (!branchesToDelete.length) {
             console.info('No remotely removed branches found')
             return
         }
 
-        if (!this.remove) {
+        if (!this.remove && verbose) {
             console.log('Found remotely removed branches:')
         }
 
         const broken: Array<string> = []
 
-        for (const branchName of this.staleBranches) {
+        for (const branchName of branchesToDelete) {
             if (this.remove) {
-                console.info('')
-                console.info(`Removing "${branchName}"`)
+                if (verbose) {
+                    console.info('')
+                    console.info(`Removing "${branchName}"`)
+                }
 
                 const dFlag = this.force ? '-D' : '-d'
                 try {
@@ -224,8 +234,14 @@ export default class FindStale {
                     broken.push(branchName)
                 }
             } else {
-                console.info(`  - ${branchName}`)
+                if (verbose) {
+                    console.info(`  - ${branchName}`)
+                }
             }
+        }
+
+        if (!verbose) {
+            return []
         }
 
         console.info('')

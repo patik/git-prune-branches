@@ -6,6 +6,16 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { exit } from 'node:process'
 import FindStale from './lib/find-stale.js'
+import { checkbox, confirm } from '@inquirer/prompts'
+
+process.on('uncaughtException', (error) => {
+    if (error instanceof Error && error.name === 'ExitPromptError') {
+        console.log('👋 until next time!')
+    } else {
+        // Rethrow unknown errors
+        throw error
+    }
+})
 
 let version: string = '0.0.0'
 
@@ -55,7 +65,32 @@ const hasInvalidParams: boolean = Object.keys(argv).some((name) => options.index
                 exit(1)
             }
         })
-        await obj.run()
+        const options = await obj.findStaleBranches()
+
+        if (options.length === 0) {
+            console.info('No stale branches were found')
+            exit(0)
+        }
+
+        const answer = await checkbox({
+            message: 'Select branches to delete',
+            pageSize: 40,
+            choices: options.map((value) => ({ value })),
+        })
+
+        const confirmAnswer = await confirm({
+            message: `Are you sure you want to delete all ${answer.length} branche${answer.length !== 1 ? 's' : ''}?`,
+            default: false,
+        })
+
+        if (confirmAnswer) {
+            console.info(`Deleting ${answer.length} branches...`)
+            await obj.deleteBranches(answer)
+        } else {
+            console.info('No branches were deleted')
+        }
+
+        exit(0)
     } catch (err: unknown) {
         if (typeof err === 'object' && err) {
             if ('code' in err && typeof err.code === 'number' && err.code === 128) {
