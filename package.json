@@ -33,6 +33,7 @@
         "minimist": "^1.2.8"
     },
     "devDependencies": {
+        "@eslint/js": "^9.27.0",
         "@types/minimist": "^1.2.5",
         "@types/node": "^22.15.18",
         "eslint": "^9.27.0",
