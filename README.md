@@ -5,7 +5,7 @@ Addresses questions, like:
 - [Remove tracking branches no longer on remote](https://stackoverflow.com/questions/7726949/remove-tracking-branches-no-longer-on-remote)
 - [How to prune local tracking branches that do not exist on remote anymore?](https://stackoverflow.com/questions/13064613/how-to-prune-local-tracking-branches-that-do-not-exist-on-remote-anymore/30494276#30494276)
 
-![](https://github.com/nemisj/git-removed-branches/blob/master/usage.gif)
+![](https://github.com/patik/git-removed-branches/blob/master/usage.gif)
 
 ## Why?
 
@@ -92,10 +92,14 @@ git removed-branches --version
 
 ## Troubleshooting:
 
-If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too much branches, more then 3382. ( see [discussion](https://github.com/nemisj/git-removed-branches/issues/11) )
+If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too much branches, more then 3382. ( see [discussion](https://github.com/patik/git-removed-branches/issues/11) )
 
 You can fix this, by specifying NODE_MAX_BUFFER environment variable, like:
 
 ```
 NODE_MAX_BUFFER=1048576 git removed-branches
 ```
+
+## Credit
+
+Forked from [git-removed-branches](https://github.com/nemisj/git-removed-branches) by [Maks Nemisj](https://github.com/nemisj) @nemisj

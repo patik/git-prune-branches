@@ -1,5 +1,5 @@
 import assert from 'assert'
-import child_process from 'child_process'
+import child_process, { execFileSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -79,7 +79,9 @@ const setup = () => {
 }
 
 const test_nothing = () => {
-    const output = child_process.execFileSync('node', [bin], {
+    // console.log('workingDir: ', workingDir, '\n\n')
+    // console.log('bin: ', bin, '\n\n')
+    const output = execFileSync('node', [bin, '--prune-all', '--dry-run'], {
         cwd: workingDir,
         encoding: 'utf8',
     })
@@ -88,15 +90,15 @@ const test_nothing = () => {
 ${output}
 -------------------`)
 
-    assert.equal(output.indexOf('- chore/local-name-persistent'), -1)
-    assert.notEqual(output.indexOf('- chore/local-name-deleted'), -1)
-    assert.notEqual(output.indexOf('- #333-work'), -1)
-    assert.notEqual(output.indexOf('- feature/fast-forwarded'), -1)
-    assert.notEqual(output.indexOf('- no-ff'), -1)
+    assert.equal(output.indexOf(' chore/local-name-persistent'), -1)
+    assert.notEqual(output.indexOf(' chore/local-name-deleted'), -1)
+    assert.notEqual(output.indexOf(' #333-work'), -1)
+    assert.notEqual(output.indexOf(' feature/fast-forwarded'), -1)
+    assert.notEqual(output.indexOf(' no-ff'), -1)
 }
 
 const testing_prune = () => {
-    const output = child_process.execFileSync('node', [bin, '--prune'], {
+    const output = child_process.execFileSync('node', [bin, '--prune-all'], {
         cwd: workingDir,
         encoding: 'utf8',
     })
@@ -107,12 +109,12 @@ ${output}
 
     assert.notEqual(output.indexOf('Deleted branch #333-work'), -1)
     assert.notEqual(output.indexOf('Deleted branch feature/fast-forwarded'), -1)
-    assert.notEqual(output.indexOf('Not all branches are removed:'), -1)
-    assert.notEqual(output.indexOf('- no-ff'), -1)
+    assert.notEqual(output.indexOf('Not all branches were removed:'), -1)
+    assert.notEqual(output.indexOf(' no-ff'), -1)
 }
 
 const testing_force = () => {
-    const output = child_process.execFileSync('node', [bin, '--force', '--prune'], {
+    const output = child_process.execFileSync('node', [bin, '--prune-all', '--force'], {
         cwd: workingDir,
         encoding: 'utf8',
     })
