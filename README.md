@@ -1,11 +1,16 @@
 List or remove local tracked branches, which are deleted from the remote.
 
+It's a fork of [git-removed-branches](https://github.com/nemisj/git-removed-branches) with an interactive prompt
+
+https://github.com/user-attachments/assets/c5f2f40a-b155-4c15-ba98-59728cf5249f
+
 Addresses questions, like:
 
 - [Remove tracking branches no longer on remote](https://stackoverflow.com/questions/7726949/remove-tracking-branches-no-longer-on-remote)
 - [How to prune local tracking branches that do not exist on remote anymore?](https://stackoverflow.com/questions/13064613/how-to-prune-local-tracking-branches-that-do-not-exist-on-remote-anymore/30494276#30494276)
 
 ![](https://github.com/patik/git-removed-branches/blob/master/usage.gif)
+
 
 ## Why?
 
