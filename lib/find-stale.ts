@@ -60,7 +60,7 @@ export default class FindStale {
             const upstream = line.slice(startIndex + 2, -1).trim()
 
             const upParts = upstream.match(/refs\/remotes\/[^/]+\/(.+)/)
-            const [_, remoteBranch] = upParts || []
+            const [, remoteBranch] = upParts || []
 
             this.localBranches.push({
                 localBranch,
@@ -77,7 +77,7 @@ export default class FindStale {
     async findLiveBranches() {
         if (this.remote === '') {
             const e = new Error('Remote is empty. Please specify remote with -r parameter')
-            // @ts-ignore
+            // @ts-expect-error - this is a custom error code
             e.code = 1984
             throw e
         }

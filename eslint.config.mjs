@@ -3,7 +3,7 @@ import tseslint from 'typescript-eslint'
 import eslintPluginPrettier from 'eslint-plugin-prettier/recommended'
 
 export default [
-    { files: ['src/**/*.{js,mjs,cjs,ts}'] },
+    { files: ['src/**/*.{ts}'] },
     { ignores: ['node_modules/**', 'dist/**'] },
     pluginJs.configs.recommended,
     ...tseslint.configs.recommended,

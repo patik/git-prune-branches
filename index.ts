@@ -49,20 +49,22 @@ const hasInvalidParams: boolean = Object.keys(argv).some((name) => options.index
 
     // check for git repository
     try {
-        exec('git rev-parse --show-toplevel', (err, stdout, stderr) => {
+        exec('git rev-parse --show-toplevel', (err) => {
             if (err) {
                 process.stderr.write(err.message + '\r\n')
                 exit(1)
             }
         })
         await obj.run()
-    } catch (err: any) {
-        if (err.code === 128) {
-            process.stderr.write('ERROR: Not a git repository\r\n')
-        } else if (err.code === 1984) {
-            process.stderr.write(`ERROR: ${err.message} \r\n`)
-        } else {
-            process.stderr.write((err.stack || err) + '\r\n')
+    } catch (err: unknown) {
+        if (typeof err === 'object' && err) {
+            if ('code' in err && typeof err.code === 'number' && err.code === 128) {
+                process.stderr.write('ERROR: Not a git repository\r\n')
+            } else if ('code' in err && typeof err.code === 'number' && 'message' in err && err.code === 1984) {
+                process.stderr.write(`ERROR: ${err.message} \r\n`)
+            } else if ('stack' in err) {
+                process.stderr.write((err.stack || err) + '\r\n')
+            }
         }
         exit(1)
     }

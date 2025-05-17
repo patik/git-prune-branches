@@ -1,10 +1,9 @@
 List or remove local tracked branches, which are deleted from the remote.
 
-
 Addresses questions, like:
 
-* [Remove tracking branches no longer on remote](https://stackoverflow.com/questions/7726949/remove-tracking-branches-no-longer-on-remote)
-* [How to prune local tracking branches that do not exist on remote anymore?](https://stackoverflow.com/questions/13064613/how-to-prune-local-tracking-branches-that-do-not-exist-on-remote-anymore/30494276#30494276)
+- [Remove tracking branches no longer on remote](https://stackoverflow.com/questions/7726949/remove-tracking-branches-no-longer-on-remote)
+- [How to prune local tracking branches that do not exist on remote anymore?](https://stackoverflow.com/questions/13064613/how-to-prune-local-tracking-branches-that-do-not-exist-on-remote-anymore/30494276#30494276)
 
 ![](https://github.com/nemisj/git-removed-branches/blob/master/usage.gif)
 
@@ -17,7 +16,6 @@ Because I'm tired of doing every time `git fetch -p`, `git branch -r`, `git bran
 This command will compare your local branches with remote and show you branches that are no longer available on remote but are still presented in your local repository. You can use it to view and delete all (remotely) removed branches in one go using `--prune` flag.
 
 This command works without the need to run `git fetch -p`, but a working network connection to your remote is required. If no connection can be established with the remote repository, then local information about your remote will be used instead. If your local repository is not in sync with the remote repository, it will warn you about it.
-
 
 ## Installation
 
@@ -51,7 +49,6 @@ This command will look through the branches that are no longer available on the 
 In case you haven't run `git fetch -p`, it will warn you to do so.
 
 This command is safe to run and it will not alter your repository.
-
 
 ### Removing
 
@@ -94,7 +91,6 @@ git removed-branches --version
 ```
 
 ## Troubleshooting:
-
 
 If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too much branches, more then 3382. ( see [discussion](https://github.com/nemisj/git-removed-branches/issues/11) )
 
