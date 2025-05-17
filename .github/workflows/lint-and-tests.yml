@@ -36,4 +36,4 @@ jobs:
             - name: Build
               run: pnpm build
             - name: Test
-              run: pnpm test --tempdir="${RUNNER_TEMP}"
+              run: pnpm test --ci=true --tempdir="${RUNNER_TEMP}"

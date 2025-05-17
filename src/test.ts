@@ -13,9 +13,11 @@ const __dirname = path.dirname(__filename)
 
 const bin = path.join(__dirname, '../dist/index.js')
 
-// console.log(`Args: ${process.argv[2]?.split('=')[1]}`)
+const isCI = process.argv[3]?.split('=')[1] === 'true'
 
-let tempdir: string = process.argv[2]?.split('=')[1] || ''
+console.log(`isCI: ${isCI}`)
+
+let tempdir: string = process.argv[3]?.split('=')[1] || ''
 let bareDir: string
 let workingDir: string
 
@@ -24,6 +26,12 @@ const setup = () => {
         const tmp = os.tmpdir()
         tempdir = mkdtempSync(tmp + path.sep + 'git-removed-branches-')
     }
+
+    if (isCI) {
+        child_process.execSync('git config --global user.email "you@example.com"', { cwd: tempdir })
+        child_process.execSync('git config --global user.name "Your Name"', { cwd: tempdir })
+    }
+
     bareDir = tempdir + path.sep + 'bare'
     workingDir = tempdir + path.sep + 'working'
 
