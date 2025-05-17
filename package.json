@@ -2,16 +2,22 @@
     "name": "git-removed-branches",
     "version": "2.3.1",
     "engines": {
-        "node": ">=7.10.1"
+        "node": ">=18"
     },
     "description": "Git: Remove local branches which are no longer available on the remote",
     "main": "index.js",
+    "type": "module",
     "preferGlobal": true,
     "bin": {
-        "git-removed-branches": "bin/git-removed-branches"
+        "git-removed-branches": "dis/index.js"
     },
     "scripts": {
-        "test": "node test.js"
+        "test": "tsx ./src/test.ts",
+        "start": "tsx ./src/index.ts",
+        "build": "tsc",
+        "format": "prettier --write --list-different .",
+        "check-format": "prettier --check --list-different .",
+        "lint": "eslint . && tsc --noEmit && pnpm run format"
     },
     "repository": {
         "type": "git",
@@ -27,9 +33,15 @@
         "minimist": "^1.2.8"
     },
     "devDependencies": {
+        "@eslint/js": "^9.27.0",
         "@types/minimist": "^1.2.5",
         "@types/node": "^22.15.18",
+        "eslint": "^9.27.0",
+        "eslint-config-prettier": "^10.1.5",
+        "eslint-plugin-prettier": "^5.4.0",
+        "prettier": "^3.5.3",
         "tsx": "^4.19.4",
-        "typescript": "^5.8.3"
+        "typescript": "^5.8.3",
+        "typescript-eslint": "^8.32.1"
     }
 }
