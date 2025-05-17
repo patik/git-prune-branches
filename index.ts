@@ -4,6 +4,7 @@ import fs from 'fs'
 import path from 'path'
 import { exit } from 'node:process'
 import minimist from 'minimist'
+import { exec } from 'node:child_process'
 
 let version: string = '0.0.0'
 
@@ -47,7 +48,12 @@ const hasInvalidParams: boolean = Object.keys(argv).some((name) => options.index
 
     // check for git repository
     try {
-        await utils.exec(['git', 'rev-parse', '--show-toplevel'])
+        exec('git rev-parse --show-toplevel', (err, stdout, stderr) => {
+            if (err) {
+                process.stderr.write(err.message + '\r\n')
+                exit(1)
+            }
+        })
         await obj.run()
     } catch (err: any) {
         if (err.code === 128) {

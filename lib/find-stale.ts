@@ -1,4 +1,5 @@
 import utils from './utils.js'
+import { stdout } from './stdout.js'
 
 export default class FindStale {
     remote: string
@@ -15,6 +16,7 @@ export default class FindStale {
         this.force = !!ops.force
         this.remove = !!ops.remove
     }
+
     async run() {
         // cached branches from the remote
         this.remoteBranches = []
@@ -44,10 +46,10 @@ export default class FindStale {
         // list all the branches
         // by using format
         // git branch --format="%(refname:short)@{%(upstream)}"
-        const { stdout } = await utils.exec(['git', 'branch', '--format="%(refname:short)@{%(upstream)}"'])
-        const lines = utils.split(stdout)
+        const out = await stdout('git branch --format="%(refname:short)@{%(upstream)}"')
+        const lines = utils.split(out)
 
-        lines.forEach((line) => {
+        lines?.forEach((line) => {
             // upstream has format: "@{refs/remotes/origin/#333-work}"
             const startIndex = line.indexOf(`@{refs/remotes/${this.remote}`)
             if (startIndex === -1) {
@@ -58,7 +60,7 @@ export default class FindStale {
             const upstream = line.slice(startIndex + 2, -1).trim()
 
             const upParts = upstream.match(/refs\/remotes\/[^/]+\/(.+)/)
-            const [_, remoteBranch] = upParts
+            const [_, remoteBranch] = upParts || []
 
             this.localBranches.push({
                 localBranch,
@@ -80,9 +82,9 @@ export default class FindStale {
             throw e
         }
 
-        const { stdout: remotesStr } = await utils.exec(['git', 'remote', '-v'])
-
+        const remotesStr = await stdout('git remote -v')
         const hasRemote = utils.split(remotesStr).some((line) => {
+            console.log('line ', line.toString())
             const re = new RegExp(`^${this.remote}\\s`)
             if (re.test(line)) {
                 return true
@@ -91,7 +93,9 @@ export default class FindStale {
 
         if (!hasRemote) {
             console.log(
-                `WARNING: Unable to find remote "${this.remote}".\r\n\r\nAvailable remotes are:\r\n${remotesStr}`,
+                `WARNING: Unable to find remote "${
+                    this.remote
+                }".\r\n\r\nAvailable remotes are:\r\n${remotesStr?.toString()}`,
             )
             this.noConnection = true
             return
@@ -99,11 +103,11 @@ export default class FindStale {
 
         try {
             // get list of remote branches from remote host
-            const { stdout } = await utils.exec(['git', 'ls-remote', '-h', this.remote])
-            const lines = utils.split(stdout)
+            const out = await stdout(`git ls-remote -h ${this.remote}`)
+            const lines = utils.split(out)
 
             // take out sha and refs/heads
-            lines.forEach((line) => {
+            lines?.forEach((line) => {
                 const group = line.match(/refs\/heads\/([^\s]*)/)
                 if (group) {
                     this.liveBranches.push(group[1])
@@ -127,14 +131,14 @@ export default class FindStale {
         this.remoteBranches = []
 
         // get list of remote branches
-        const { stdout } = await utils.exec(['git', 'branch', '-r'])
+        const out = await stdout('git branch -r')
 
         //split lines
-        const branches = utils.split(stdout)
+        const branches = utils.split(out)
 
         // filter out non origin branches
         const re = new RegExp('^%s\\/([^\\s]*)'.replace('%s', this.remote))
-        branches.forEach((branchName) => {
+        branches?.forEach((branchName) => {
             const group = branchName.match(re)
             if (group) {
                 this.remoteBranches.push(group[1])
@@ -158,7 +162,6 @@ export default class FindStale {
             '         Following branches are not pruned yet locally:',
             '',
         ]
-        const toRemove = []
         let show = false
 
         // compare absent remotes
@@ -207,8 +210,8 @@ export default class FindStale {
 
                 const dFlag = this.force ? '-D' : '-d'
                 try {
-                    const { stdout } = await utils.exec(['git', 'branch', dFlag, `"${branchName}"`])
-                    console.info(stdout)
+                    const out = await stdout(`git branch ${dFlag} "${branchName}"`)
+                    console.info(out)
                 } catch (err) {
                     console.error(`ERROR: Unable to remove: ${err.message}`)
                     broken.push(branchName)
