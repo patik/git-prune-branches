@@ -1,6 +1,6 @@
 List or remove local tracked branches, which are deleted from the remote.
 
-It's a fork of [git-removed-branches](https://github.com/nemisj/git-removed-branches) with an interactive prompt
+It's a fork of [git-branch-cleanup](https://github.com/nemisj/git-branch-cleanup) with an interactive prompt
 
 https://github.com/user-attachments/assets/e4502861-bd7d-47b7-aee7-e39154bc769c
 
@@ -9,8 +9,7 @@ Addresses questions, like:
 - [Remove tracking branches no longer on remote](https://stackoverflow.com/questions/7726949/remove-tracking-branches-no-longer-on-remote)
 - [How to prune local tracking branches that do not exist on remote anymore?](https://stackoverflow.com/questions/13064613/how-to-prune-local-tracking-branches-that-do-not-exist-on-remote-anymore/30494276#30494276)
 
-![](https://github.com/patik/git-removed-branches/blob/master/usage.gif)
-
+![](https://github.com/patik/git-branch-cleanup/blob/master/usage.gif)
 
 ## Why?
 
@@ -27,7 +26,7 @@ This command works without the need to run `git fetch -p`, but a working network
 ### NPM
 
 ```bash
-$ npm install -g git-removed-branches
+$ npm install -g git-branch-cleanup
 ```
 
 Please install a package globally with -g flag so that you can use it directly as a sub command of git, like this:
@@ -41,7 +40,7 @@ $ git removed-branches
 It's also possible to use package through npx directly. Execute inside any git folder:
 
 ```bash
-$ npx git-removed-branches
+$ npx git-branch-cleanup
 ```
 
 ## Usage
@@ -97,7 +96,7 @@ git removed-branches --version
 
 ## Troubleshooting:
 
-If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too much branches, more then 3382. ( see [discussion](https://github.com/patik/git-removed-branches/issues/11) )
+If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too much branches, more then 3382. ( see [discussion](https://github.com/patik/git-branch-cleanup/issues/11) )
 
 You can fix this, by specifying NODE_MAX_BUFFER environment variable, like:
 

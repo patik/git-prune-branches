@@ -1,11 +1,6 @@
 import split from './split.js'
 import { stdout } from './stdout.js'
 
-// type Result = {
-//     branchName: string
-//     command: string
-// }
-
 export default class FindStale {
     remote: string
     force: boolean
