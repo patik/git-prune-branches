@@ -72,7 +72,6 @@ const hasInvalidParams: boolean = Object.keys(argv).some((name) => options.index
             exit(0)
         }
 
-        console.log(options)
         const answer = await checkbox({
             message: 'Select branches to delete',
             pageSize: 40,
@@ -85,8 +84,8 @@ const hasInvalidParams: boolean = Object.keys(argv).some((name) => options.index
         })
 
         if (confirmAnswer) {
-            console.log(answer)
-            // await obj.deleteBranches(answer)
+            console.info(`Deleting ${answer.length} branches...`)
+            await obj.deleteBranches(answer)
         } else {
             console.info('No branches were deleted')
         }
