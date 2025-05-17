@@ -13,13 +13,17 @@ const __dirname = path.dirname(__filename)
 
 const bin = path.join(__dirname, '../dist/index.js')
 
-let tempdir: string
+// console.log(`Args: ${process.argv[2]?.split('=')[1]}`)
+
+let tempdir: string = process.argv[2]?.split('=')[1] || ''
 let bareDir: string
 let workingDir: string
 
 const setup = () => {
-    const tmp = os.tmpdir()
-    tempdir = mkdtempSync(tmp + path.sep + 'git-removed-branches-')
+    if (!tempdir) {
+        const tmp = os.tmpdir()
+        tempdir = mkdtempSync(tmp + path.sep + 'git-removed-branches-')
+    }
     bareDir = tempdir + path.sep + 'bare'
     workingDir = tempdir + path.sep + 'working'
 
@@ -30,7 +34,7 @@ const setup = () => {
     console.log(`Using "${tempdir}" dir`)
 
     // create bare repository
-    child_process.execSync('git init --bare --initial-branch=master', { cwd: bareDir })
+    child_process.execSync('git init --bare --initial-branch=main', { cwd: bareDir })
 
     // clone repository
     child_process.execSync('git clone bare working', { cwd: tempdir })
@@ -59,7 +63,7 @@ const setup = () => {
     child_process.execSync('git commit -a -m "second commit"', { cwd: workingDir })
 
     // push all the branches to the remote and update config
-    child_process.execSync('git push origin -u master', { cwd: workingDir })
+    child_process.execSync('git push origin -u main', { cwd: workingDir })
     child_process.execSync('git push origin -u feature/fast-forwarded', { cwd: workingDir })
     child_process.execSync('git push origin -u "#333-work"', { cwd: workingDir })
     child_process.execSync('git push origin -u chore/local-name-deleted:chore/remote-name-deleted', { cwd: workingDir })
@@ -74,13 +78,11 @@ const setup = () => {
     child_process.execSync('git push origin :"#333-work"', { cwd: workingDir })
     child_process.execSync('git push origin :chore/remote-name-deleted', { cwd: workingDir })
 
-    // checkout master branch
-    child_process.execSync('git checkout master', { cwd: workingDir })
+    // checkout main branch
+    child_process.execSync('git checkout main', { cwd: workingDir })
 }
 
 const test_nothing = () => {
-    // console.log('workingDir: ', workingDir, '\n\n')
-    // console.log('bin: ', bin, '\n\n')
     const output = execFileSync('node', [bin, '--prune-all', '--dry-run'], {
         cwd: workingDir,
         encoding: 'utf8',
@@ -90,7 +92,7 @@ const test_nothing = () => {
 ${output}
 -------------------`)
 
-    assert.equal(output.indexOf(' chore/local-name-persistent'), -1)
+    assert.equal(output.indexOf('chore/local-name-persistent'), -1)
     assert.notEqual(output.indexOf(' chore/local-name-deleted'), -1)
     assert.notEqual(output.indexOf(' #333-work'), -1)
     assert.notEqual(output.indexOf(' feature/fast-forwarded'), -1)

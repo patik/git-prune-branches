@@ -74,14 +74,16 @@ const program = async () => {
             exit(0)
         }
 
-        const userSelectedBranches = argv['prune-all']
+        const pruneAll = argv['prune-all']
+
+        const userSelectedBranches = pruneAll
             ? allStaleBranches
             : await checkbox({
                   message: 'Select branches to remove',
                   pageSize: 40,
                   choices: allStaleBranches.map((value) => ({ value })),
               })
-        const confirmAnswer = argv['prune-all']
+        const confirmAnswer = pruneAll
             ? true
             : await confirm({
                   message: `Are you sure you want to remove all ${userSelectedBranches.length} branche${userSelectedBranches.length !== 1 ? 's' : ''}?`,
@@ -108,7 +110,7 @@ const program = async () => {
                 process.stderr.write((err.stack || err) + '\r\n')
             }
         }
-        // exit(1)
+        exit(1)
     }
 }
 
