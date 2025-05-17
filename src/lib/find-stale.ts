@@ -1,10 +1,10 @@
 import split from './split.js'
 import { stdout } from './stdout.js'
 
-type Result = {
-    branchName: string
-    command: string
-}
+// type Result = {
+//     branchName: string
+//     command: string
+// }
 
 export default class FindStale {
     remote: string
@@ -27,7 +27,7 @@ export default class FindStale {
         this.noConnection = false
     }
 
-    async process(verbose = false) {
+    async preprocess(verbose = false) {
         // cached branches from the remote
         this.remoteBranches = []
 
@@ -48,13 +48,6 @@ export default class FindStale {
         await this.findLocalBranches()
         await this.findRemoteBranches()
         await this.analyzeLiveAndCache()
-        await this.findStaleBranches()
-    }
-
-    async run() {
-        // cached branches from the remote
-        await this.process()
-        await this.deleteBranches()
     }
 
     async findLocalBranches() {
@@ -202,32 +195,18 @@ export default class FindStale {
     }
 
     async findStaleBranches() {
+        await this.preprocess()
         this.localBranches.forEach(({ localBranch, remoteBranch }) => {
             if (this.remoteBranches.indexOf(remoteBranch) === -1) {
                 this.staleBranches.push(localBranch)
             }
         })
+
+        return this.staleBranches
     }
 
-    async getDeleteCommands(): Promise<Array<Result>> {
-        await this.process()
-
-        if (!this.staleBranches.length) {
-            return []
-        }
-
-        const commands: Array<Result> = []
-
-        for (const branchName of this.staleBranches) {
-            const dFlag = this.force ? '-D' : '-d'
-            commands.push({ branchName, command: `git branch ${dFlag} "${branchName}"` })
-        }
-
-        return commands
-    }
-
-    async deleteBranches(verbose = false) {
-        if (!this.staleBranches.length) {
+    async deleteBranches(branchesToDelete: Array<string>, verbose = false) {
+        if (!branchesToDelete.length) {
             console.info('No remotely removed branches found')
             return
         }
@@ -238,7 +217,7 @@ export default class FindStale {
 
         const broken: Array<string> = []
 
-        for (const branchName of this.staleBranches) {
+        for (const branchName of branchesToDelete) {
             if (this.remove) {
                 if (verbose) {
                     console.info('')
