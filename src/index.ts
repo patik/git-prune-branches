@@ -1,12 +1,12 @@
 #!/usr/bin/env -S node
 
+import { checkbox, confirm } from '@inquirer/prompts'
 import minimist from 'minimist'
 import { exec } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { exit } from 'node:process'
 import FindStale from './lib/find-stale.js'
-import { checkbox, confirm } from '@inquirer/prompts'
 
 process.on('uncaughtException', (error) => {
     if (error instanceof Error && error.name === 'ExitPromptError') {
@@ -29,20 +29,22 @@ try {
 
 const argv = minimist(process.argv, {
     string: 'remote',
-    boolean: ['prune', 'force', 'version'],
-    alias: { p: 'prune', f: 'force', r: 'remote' },
+    boolean: ['dry-run', 'prune-all', 'force', 'version'],
+    alias: { d: 'dry-run', p: 'prune-all', f: 'force', r: 'remote' },
     default: {
         remote: 'origin',
         force: false,
     },
 })
 
-const options = ['version', 'prune', 'p', 'force', 'f', 'remote', 'r', '_']
+const options = ['version', 'dry-run', 'd', 'prune-all', 'p', 'force', 'f', 'remote', 'r', '_']
 const hasInvalidParams: boolean = Object.keys(argv).some((name) => options.indexOf(name) == -1)
 
-;(async () => {
+const program = async () => {
     if (hasInvalidParams) {
-        console.info('Usage: git removed-branches [-p|--prune] [-f|--force] [-r|--remote <remote>] [--version]')
+        console.info(
+            'Usage: git removed-branches [-d|--dry-run] [-p|--prune-all] [-f|--force] [-r|--remote <remote>] [--version]',
+        )
         return
     }
 
@@ -52,7 +54,7 @@ const hasInvalidParams: boolean = Object.keys(argv).some((name) => options.index
     }
 
     const obj = new FindStale({
-        remove: argv.prune,
+        remove: !argv['dry-run'],
         force: argv.force,
         remote: argv.remote,
     })
@@ -65,29 +67,36 @@ const hasInvalidParams: boolean = Object.keys(argv).some((name) => options.index
                 exit(1)
             }
         })
-        const options = await obj.findStaleBranches()
+        const allStaleBranches = await obj.findStaleBranches()
 
-        if (options.length === 0) {
+        if (allStaleBranches.length === 0) {
             console.info('No stale branches were found')
             exit(0)
         }
 
-        const answer = await checkbox({
-            message: 'Select branches to delete',
-            pageSize: 40,
-            choices: options.map((value) => ({ value })),
-        })
+        const pruneAll = argv['prune-all']
 
-        const confirmAnswer = await confirm({
-            message: `Are you sure you want to delete all ${answer.length} branche${answer.length !== 1 ? 's' : ''}?`,
-            default: false,
-        })
+        const userSelectedBranches = pruneAll
+            ? allStaleBranches
+            : await checkbox({
+                  message: 'Select branches to remove',
+                  pageSize: 40,
+                  choices: allStaleBranches.map((value) => ({ value })),
+              })
+        const confirmAnswer = pruneAll
+            ? true
+            : await confirm({
+                  message: `Are you sure you want to remove all ${userSelectedBranches.length} branche${userSelectedBranches.length !== 1 ? 's' : ''}?`,
+                  default: false,
+              })
 
         if (confirmAnswer) {
-            console.info(`Deleting ${answer.length} branches...`)
-            await obj.deleteBranches(answer)
+            console.info(
+                `Removing ${userSelectedBranches.length} branch${userSelectedBranches.length !== 1 ? 'es' : ''}...`,
+            )
+            await obj.deleteBranches(userSelectedBranches)
         } else {
-            console.info('No branches were deleted')
+            console.info('No branches were removed.')
         }
 
         exit(0)
@@ -103,4 +112,6 @@ const hasInvalidParams: boolean = Object.keys(argv).some((name) => options.index
         }
         exit(1)
     }
-})()
+}
+
+program()

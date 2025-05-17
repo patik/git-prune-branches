@@ -35,5 +35,5 @@ jobs:
               run: pnpm lint
             - name: Build
               run: pnpm build
-            # - name: Test
-              # run: pnpm test
+            - name: Test
+              run: pnpm test --ci=true --tempdir="${RUNNER_TEMP}"

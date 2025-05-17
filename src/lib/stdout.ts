@@ -1,7 +1,7 @@
 import { exec } from 'node:child_process'
 
 /**
- * Returns stdout as a string from the given shell command
+ * Executes a command and returns stdout as a string
  */
 export async function stdout(command: string): Promise<string> {
     return new Promise((resolve, reject) => {

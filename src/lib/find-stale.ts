@@ -27,7 +27,7 @@ export default class FindStale {
         this.noConnection = false
     }
 
-    async preprocess(verbose = false) {
+    async preprocess() {
         // cached branches from the remote
         this.remoteBranches = []
 
@@ -44,7 +44,7 @@ export default class FindStale {
         // this will become true
         this.noConnection = false
 
-        await this.findLiveBranches(verbose)
+        await this.findLiveBranches()
         await this.findLocalBranches()
         await this.findRemoteBranches()
         await this.analyzeLiveAndCache()
@@ -82,7 +82,7 @@ export default class FindStale {
     // to find branches which are still available on the remote
     // and store them in liveBranches state
     //
-    async findLiveBranches(verbose = false) {
+    async findLiveBranches() {
         if (this.remote === '') {
             const e = new Error('Remote is empty. Please specify remote with -r parameter')
             // @ts-expect-error - this is a custom error code
@@ -99,13 +99,11 @@ export default class FindStale {
         })
 
         if (!hasRemote) {
-            if (verbose) {
-                console.log(
-                    `WARNING: Unable to find remote "${
-                        this.remote
-                    }".\r\n\r\nAvailable remotes are:\r\n${remotesStr?.toString()}`,
-                )
-            }
+            console.log(
+                `WARNING: Unable to find remote "${
+                    this.remote
+                }".\r\n\r\nAvailable remotes are:\r\n${remotesStr?.toString()}`,
+            )
             this.noConnection = true
             return
         }
@@ -205,13 +203,13 @@ export default class FindStale {
         return this.staleBranches
     }
 
-    async deleteBranches(branchesToDelete: Array<string>, verbose = false) {
+    async deleteBranches(branchesToDelete: Array<string>) {
         if (!branchesToDelete.length) {
             console.info('No remotely removed branches found')
             return
         }
 
-        if (!this.remove && verbose) {
+        if (!this.remove) {
             console.log('Found remotely removed branches:')
         }
 
@@ -219,13 +217,11 @@ export default class FindStale {
 
         for (const branchName of branchesToDelete) {
             if (this.remove) {
-                if (verbose) {
-                    console.info('')
-                    console.info(`Removing "${branchName}"`)
-                }
+                console.info('')
+                console.info(`Removing "${branchName}"`)
 
-                const dFlag = this.force ? '-D' : '-d'
                 try {
+                    const dFlag = this.force ? '-D' : '-d'
                     const out = await stdout(`git branch ${dFlag} "${branchName}"`)
                     console.info(out)
                 } catch (err) {
@@ -234,30 +230,24 @@ export default class FindStale {
                     broken.push(branchName)
                 }
             } else {
-                if (verbose) {
-                    console.info(`  - ${branchName}`)
-                }
+                console.info(`  - ${branchName}`)
             }
-        }
-
-        if (!verbose) {
-            return []
         }
 
         console.info('')
 
-        if (broken.length) {
+        if (broken.length > 0) {
             // unable to remove branch
-            console.info('Not all branches are removed:')
+            console.info('Not all branches were removed:')
             broken.forEach((name) => {
                 console.info('  - ' + name)
             })
             console.info('')
             console.info('INFO: To force removal use --force flag')
         } else if (this.remove) {
-            console.info('INFO: All branches are removed')
+            console.info('INFO: Branches were removed')
         } else {
-            console.info('INFO: To remove all founded branches use --prune flag')
+            console.info('INFO: To remove branches, don’t include the --dry-run flag')
         }
     }
 }

@@ -5,30 +5,30 @@
         "node": ">=18"
     },
     "description": "Git: Remove local branches which are no longer available on the remote",
-    "main": "index.js",
+    "main": "dist/index.js",
     "type": "module",
     "preferGlobal": true,
     "bin": {
         "git-removed-branches": "dis/index.js"
     },
     "scripts": {
-        "test": "tsx ./src/test.ts",
-        "start": "tsx ./src/index.ts",
         "build": "tsc",
+        "start": "tsx ./src/index.ts",
+        "test": "pnpm run build && tsx ./src/test.ts",
+        "lint": "tsc --noEmit && pnpm run format && eslint .",
         "format": "prettier --write --list-different .",
-        "check-format": "prettier --check --list-different .",
-        "lint": "eslint . && tsc --noEmit && pnpm run format"
+        "check-format": "prettier --check --list-different ."
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/nemisj/git-removed-branches.git"
+        "url": "https://github.com/patik/git-removed-branches.git"
     },
-    "author": "Maks Nemisj",
+    "author": "Craig Patik",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/nemisj/git-removed-branches/issues"
+        "url": "https://github.com/patik/git-removed-branches/issues"
     },
-    "homepage": "https://github.com/nemisj/git-removed-branches",
+    "homepage": "https://github.com/patik/git-removed-branches",
     "dependencies": {
         "minimist": "^1.2.8"
     },
