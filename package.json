@@ -1,29 +1,32 @@
 {
-  "name": "git-removed-branches",
-  "version": "2.3.1",
-  "engines": {
-    "node": ">=7.10.1"
-  },
-  "description": "Git: Remove local branches which are no longer available on the remote",
-  "main": "index.js",
-  "preferGlobal": true,
-  "bin": {
-    "git-removed-branches": "bin/git-removed-branches"
-  },
-  "scripts": {
-    "test": "node test.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/nemisj/git-removed-branches.git"
-  },
-  "author": "Maks Nemisj",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/nemisj/git-removed-branches/issues"
-  },
-  "homepage": "https://github.com/nemisj/git-removed-branches",
-  "dependencies": {
-    "minimist": "^1.2.8"
-  }
+    "name": "git-removed-branches",
+    "version": "2.3.1",
+    "engines": {
+        "node": ">=7.10.1"
+    },
+    "description": "Git: Remove local branches which are no longer available on the remote",
+    "main": "index.js",
+    "preferGlobal": true,
+    "bin": {
+        "git-removed-branches": "bin/git-removed-branches"
+    },
+    "scripts": {
+        "test": "node test.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/nemisj/git-removed-branches.git"
+    },
+    "author": "Maks Nemisj",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/nemisj/git-removed-branches/issues"
+    },
+    "homepage": "https://github.com/nemisj/git-removed-branches",
+    "dependencies": {
+        "minimist": "^1.2.8"
+    },
+    "devDependencies": {
+        "typescript": "^5.8.3"
+    }
 }

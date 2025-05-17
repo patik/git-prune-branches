@@ -15,7 +15,7 @@ try {
 const argv = require('minimist')(process.argv, {
   string: 'remote',
   boolean: ['prune', 'force', 'version'],
-  alias: {p: "prune", f: "force", r: "remote"},
+  alias: { p: "prune", f: "force", r: "remote" },
   'default': {
     'remote': 'origin',
     'force': false
