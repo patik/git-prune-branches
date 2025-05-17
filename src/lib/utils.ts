@@ -1,6 +1,3 @@
-import { exec } from 'node:child_process'
-import Stream from 'node:stream'
-
 // Split the stdout output
 // and will take out all the empty lines
 const split = (stdout: string) => {

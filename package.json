@@ -12,8 +12,8 @@
         "git-removed-branches": "bin/git-removed-branches"
     },
     "scripts": {
-        "test": "node test.js",
-        "start": "tsx ./index.ts",
+        "test": "tsx ./src/test.ts",
+        "start": "tsx ./src/index.ts",
         "format": "prettier --write --list-different .",
         "check-format": "prettier --check --list-different .",
         "lint": "eslint . && tsc --noEmit && pnpm run format"

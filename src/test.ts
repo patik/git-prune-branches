@@ -1,18 +1,21 @@
-const child_process = require('child_process')
-const os = require('os')
-const fs = require('fs')
-const path = require('path')
-const assert = require('assert')
+import { argv } from 'node:process'
+import { fileURLToPath } from 'node:url'
+import child_process from 'child_process'
+import os from 'os'
+import fs from 'fs'
+import path from 'path'
+import assert from 'assert'
 
-const FindStale = require('./lib/find-stale.js')
+const onlyPrepare = argv.find((one) => one === '--prepare')
 
-const onlyPrepare = process.argv.find((one) => one === '--prepare')
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const bin = `${__dirname}${path.sep}index.js`
 
-let tempdir
-let bareDir
-let workingDir
+let tempdir: string
+let bareDir: string
+let workingDir: string
 
 const setup = () => {
     const tmp = os.tmpdir()
@@ -27,7 +30,7 @@ const setup = () => {
     console.log(`Using "${tempdir}" dir`)
 
     // create bare repository
-    child_process.execSync('git init --bare --initial-branch=master', { cwd: bareDir, stderr: 'stdio' })
+    child_process.execSync('git init --bare --initial-branch=master', { cwd: bareDir })
 
     // clone repository
     child_process.execSync('git clone bare working', { cwd: tempdir })

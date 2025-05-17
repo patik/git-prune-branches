@@ -15,6 +15,11 @@ export default class FindStale {
         this.remote = ops.remote
         this.force = !!ops.force
         this.remove = !!ops.remove
+        this.remoteBranches = []
+        this.localBranches = []
+        this.staleBranches = []
+        this.liveBranches = []
+        this.noConnection = false
     }
 
     async run() {
@@ -64,7 +69,7 @@ export default class FindStale {
 
             this.localBranches.push({
                 localBranch,
-                remoteBranch,
+                remoteBranch: remoteBranch || '',
             })
         })
     }
@@ -110,12 +115,13 @@ export default class FindStale {
             lines?.forEach((line) => {
                 const group = line.match(/refs\/heads\/([^\s]*)/)
                 if (group) {
-                    this.liveBranches.push(group[1])
+                    this.liveBranches.push(group[1] || '')
                 }
             })
         } catch (err) {
             // reset branches
             this.liveBranches = []
+            // @ts-expect-error - this is a custom error code
             if (err.code && err.code === '128') {
                 // error 128 means there is no connection currently to the remote
                 // skip this step then
@@ -141,7 +147,7 @@ export default class FindStale {
         branches?.forEach((branchName) => {
             const group = branchName.match(re)
             if (group) {
-                this.remoteBranches.push(group[1])
+                this.remoteBranches.push(group[1] || '')
             }
         })
     }
@@ -213,6 +219,7 @@ export default class FindStale {
                     const out = await stdout(`git branch ${dFlag} "${branchName}"`)
                     console.info(out)
                 } catch (err) {
+                    // @ts-expect-error - this is a custom error code
                     console.error(`ERROR: Unable to remove: ${err.message}`)
                     broken.push(branchName)
                 }
