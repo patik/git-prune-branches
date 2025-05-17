@@ -1,16 +1,16 @@
 #!/usr/bin/env -S node
 
-import fs from 'fs'
 import minimist from 'minimist'
 import { exec } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { exit } from 'node:process'
-import path from 'path'
 import FindStale from './lib/find-stale.js'
 
 let version: string = '0.0.0'
 
 try {
-    const packageContent = fs.readFileSync(path.join(__dirname, 'package.json'), 'utf-8')
+    const packageContent = readFileSync(path.join(__dirname, 'package.json'), 'utf-8')
     const info = JSON.parse(packageContent)
     version = info.version
 } catch (e) {

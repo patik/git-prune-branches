@@ -1,18 +1,17 @@
 import assert from 'assert'
 import child_process from 'child_process'
-import fs from 'fs'
-import { join } from 'node:path'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { argv } from 'node:process'
 import { fileURLToPath } from 'node:url'
-import os from 'os'
-import path from 'path'
 
 const onlyPrepare = argv.find((one) => one === '--prepare')
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const bin = join(__dirname, '../dist/index.js')
+const bin = path.join(__dirname, '../dist/index.js')
 
 let tempdir: string
 let bareDir: string
@@ -20,13 +19,13 @@ let workingDir: string
 
 const setup = () => {
     const tmp = os.tmpdir()
-    tempdir = fs.mkdtempSync(tmp + path.sep + 'git-removed-branches-')
+    tempdir = mkdtempSync(tmp + path.sep + 'git-removed-branches-')
     bareDir = tempdir + path.sep + 'bare'
     workingDir = tempdir + path.sep + 'working'
 
     const file = `${workingDir}${path.sep}lolipop`
 
-    fs.mkdirSync(bareDir)
+    mkdirSync(bareDir)
 
     console.log(`Using "${tempdir}" dir`)
 
@@ -37,7 +36,7 @@ const setup = () => {
     child_process.execSync('git clone bare working', { cwd: tempdir })
 
     // create initial commit
-    fs.writeFileSync(file, 'lolipop content')
+    writeFileSync(file, 'lolipop content')
     child_process.execSync('git add lolipop', { cwd: workingDir })
     child_process.execSync('git commit -m "inital commit"', { cwd: workingDir })
 
@@ -56,7 +55,7 @@ const setup = () => {
     child_process.execSync('git checkout no-ff', { cwd: workingDir })
 
     // update file content
-    fs.writeFileSync(file, 'lolipop content changed')
+    writeFileSync(file, 'lolipop content changed')
     child_process.execSync('git commit -a -m "second commit"', { cwd: workingDir })
 
     // push all the branches to the remote and update config

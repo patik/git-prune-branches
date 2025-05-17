@@ -1,4 +1,4 @@
-import utils from './utils.js'
+import split from './split.js'
 import { stdout } from './stdout.js'
 
 export default class FindStale {
@@ -52,7 +52,7 @@ export default class FindStale {
         // by using format
         // git branch --format="%(refname:short)@{%(upstream)}"
         const out = await stdout('git branch --format="%(refname:short)@{%(upstream)}"')
-        const lines = utils.split(out)
+        const lines = split(out)
 
         lines?.forEach((line) => {
             // upstream has format: "@{refs/remotes/origin/#333-work}"
@@ -88,7 +88,7 @@ export default class FindStale {
         }
 
         const remotesStr = await stdout('git remote -v')
-        const hasRemote = utils.split(remotesStr).some((line) => {
+        const hasRemote = split(remotesStr).some((line) => {
             console.log('line ', line.toString())
             const re = new RegExp(`^${this.remote}\\s`)
             if (re.test(line)) {
@@ -109,7 +109,7 @@ export default class FindStale {
         try {
             // get list of remote branches from remote host
             const out = await stdout(`git ls-remote -h ${this.remote}`)
-            const lines = utils.split(out)
+            const lines = split(out)
 
             // take out sha and refs/heads
             lines?.forEach((line) => {
@@ -140,7 +140,7 @@ export default class FindStale {
         const out = await stdout('git branch -r')
 
         //split lines
-        const branches = utils.split(out)
+        const branches = split(out)
 
         // filter out non origin branches
         const re = new RegExp('^%s\\/([^\\s]*)'.replace('%s', this.remote))

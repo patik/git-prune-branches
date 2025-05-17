@@ -11,6 +11,4 @@ const split = (stdout: string) => {
     )
 }
 
-export default {
-    split,
-}
+export default split
