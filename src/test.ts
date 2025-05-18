@@ -29,7 +29,7 @@ const setup = () => {
 
     if (!tempdir) {
         const tmp = os.tmpdir()
-        tempdir = mkdtempSync(tmp + path.sep + 'git-branch-cleanup-')
+        tempdir = mkdtempSync(tmp + path.sep + 'git-prune-branches-')
     }
 
     bareDir = tempdir + path.sep + 'bare'

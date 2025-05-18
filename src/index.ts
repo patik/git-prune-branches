@@ -32,7 +32,7 @@ const hasInvalidParams: boolean = Object.keys(argv).some((name) => options.index
 const program = async () => {
     if (hasInvalidParams) {
         console.info(
-            'Usage: git branch-cleanup [-d|--dry-run] [-p|--prune-all] [-f|--force] [-r|--remote <remote>] [--version]',
+            'Usage: git prune-branches [-d|--dry-run] [-p|--prune-all] [-f|--force] [-r|--remote <remote>] [--version]',
         )
         return
     }

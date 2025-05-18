@@ -9,7 +9,7 @@ Addresses questions, like:
 - [Remove tracking branches no longer on remote](https://stackoverflow.com/questions/7726949/remove-tracking-branches-no-longer-on-remote)
 - [How to prune local tracking branches that do not exist on remote anymore?](https://stackoverflow.com/questions/13064613/how-to-prune-local-tracking-branches-that-do-not-exist-on-remote-anymore/30494276#30494276)
 
-![](https://github.com/patik/git-branch-cleanup/blob/master/usage.gif)
+![](https://github.com/patik/git-prune-branches/blob/master/usage.gif)
 
 ## Why?
 
@@ -26,13 +26,13 @@ This command works without the need to run `git fetch -p`, but a working network
 ### NPM
 
 ```bash
-npm install -g git-branch-cleanup
+npm install -g git-prune-branches
 ```
 
 Please install a package globally with -g flag so that you can use it directly as a sub command of git, like this:
 
 ```bash
-git branch-cleanup
+git prune-branches
 ```
 
 ### NPX
@@ -40,13 +40,13 @@ git branch-cleanup
 It's also possible to use package through `npx` without installing:
 
 ```bash
-npx git-branch-cleanup
+npx git-prune-branches
 ```
 
 ## Usage
 
 ```bash
-git branch-cleanup
+git prune-branches
 ```
 
 This command will look through the branches that are no longer available on the remote and display them.
@@ -61,7 +61,7 @@ In case you haven't run `git fetch -p`, it will warn you to do so.
 To delete all local branches without choosing which ones, and without confirmation, use `--prune-all` or `-p` flag
 
 ```bash
-git branch-cleanup --prune-all
+git prune-branches --prune-all
 ```
 
 This command will compare your local branches to the remote ones and remove, those which do not exist anymore on the remote side.
@@ -71,7 +71,7 @@ This command will compare your local branches to the remote ones and remove, tho
 If you have configured remote alias to something different than **'origin'**, you can use `--remote` or `-r` flag to specify the name of the remote. e.g., to specify remote to be `upstream`, you can use:
 
 ```bash
-git branch-cleanup --remote upstream
+git prune-branches --remote upstream
 ```
 
 ## Forcing removal
@@ -85,7 +85,7 @@ The branch {branch_name} is not fully merged.
 you can force deletion by using `--force` flag or use `-f` alias
 
 ```bash
-git branch-cleanup --prune-all --force
+git prune-branches --prune-all --force
 ```
 
 ## Version
@@ -93,17 +93,17 @@ git branch-cleanup --prune-all --force
 To print the version:
 
 ```bash
-git branch-cleanup --version
+git prune-branches --version
 ```
 
 ## Troubleshooting:
 
-If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too many branches (more then 3382—see [discussion](https://github.com/patik/git-branch-cleanup/issues/11)).
+If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too many branches (more then 3382—see [discussion](https://github.com/patik/git-prune-branches/issues/11)).
 
 You can fix this by specifying NODE_MAX_BUFFER environment variable. For example:
 
 ```bash
-NODE_MAX_BUFFER=1048576 git branch-cleanup
+NODE_MAX_BUFFER=1048576 git prune-branches
 ```
 
 ## Credit
