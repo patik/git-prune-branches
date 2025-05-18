@@ -22,8 +22,8 @@ export default class FindStale {
         this.noConnection = false
     }
 
-    setRemove(remove: boolean) {
-        this.remove = remove
+    setForce(force: boolean) {
+        this.force = force
     }
 
     async preprocess() {
