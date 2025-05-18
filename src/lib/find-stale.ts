@@ -220,8 +220,7 @@ export default class FindStale {
                     const out = await stdout(`git branch ${dFlag} "${branchName}"`)
                     console.info(out)
                 } catch (err) {
-                    // @ts-expect-error - this is a custom error code
-                    console.error(`ERROR: Unable to remove: ${err.message}`)
+                    console.error(`ERROR: Unable to remove branch "${branchName}": `, err)
                     broken.push(branchName)
                 }
             } else {
