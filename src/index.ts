@@ -32,12 +32,12 @@ const hasInvalidParams: boolean = Object.keys(argv).some((name) => options.index
 
 const obj = new FindStale({
     remove: !argv['dry-run'],
+    pruneAll: argv['prune-all'],
     force: argv.force,
     remote: argv.remote,
 })
-const pruneAll = argv['prune-all']
 
-const retry = async ({ obj, failed, pruneAll }: { obj: FindStale; failed: string[]; pruneAll: boolean }) => {
+const retry = async ({ obj, failed }: { obj: FindStale; failed: string[] }) => {
     console.info(
         `
 ⚠️ Not all branches could be removed. You may try again using ${bold('--force')}, or press Ctrl+C to cancel
@@ -55,7 +55,7 @@ const retry = async ({ obj, failed, pruneAll }: { obj: FindStale; failed: string
         exit(0)
     }
 
-    const confirmRetry = pruneAll
+    const confirmRetry = obj.pruneAll
         ? true
         : await confirm({
               message: `Are you sure you want to forcefully remove ${branchesToRetry.length} branch${branchesToRetry.length !== 1 ? 'es' : ''}?`,
@@ -73,7 +73,7 @@ const retry = async ({ obj, failed, pruneAll }: { obj: FindStale; failed: string
     await obj.deleteBranches(branchesToRetry)
 }
 
-const firstAttempt = async ({ obj, pruneAll }: { obj: FindStale; pruneAll: boolean }): Promise<Array<string>> => {
+const firstAttempt = async ({ obj }: { obj: FindStale }): Promise<Array<string>> => {
     const allStaleBranches = await obj.findStaleBranches()
 
     if (allStaleBranches.length === 0) {
@@ -81,14 +81,14 @@ const firstAttempt = async ({ obj, pruneAll }: { obj: FindStale; pruneAll: boole
         exit(0)
     }
 
-    const userSelectedBranches = pruneAll
+    const userSelectedBranches = obj.pruneAll
         ? allStaleBranches
         : await checkbox({
               message: 'Select branches to remove',
               pageSize: 40,
               choices: allStaleBranches.map((value) => ({ value })),
           })
-    const confirmAnswer = pruneAll
+    const confirmAnswer = obj.pruneAll
         ? true
         : await confirm({
               message: `Are you sure you want to remove ${userSelectedBranches.length} branch${userSelectedBranches.length !== 1 ? 'es' : ''}?`,
@@ -129,10 +129,10 @@ const program = async () => {
     })
 
     try {
-        const failed = await firstAttempt({ obj, pruneAll })
+        const failed = await firstAttempt({ obj })
 
         if (failed.length > 0) {
-            await retry({ obj, failed, pruneAll })
+            await retry({ obj, failed })
         }
     } catch (err: unknown) {
         if (typeof err === 'object' && err) {

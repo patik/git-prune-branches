@@ -5,16 +5,18 @@ export default class FindStale {
     remote: string
     force: boolean
     remove: boolean
+    pruneAll: boolean
     remoteBranches: Array<string>
     localBranches: Array<{ localBranch: string; remoteBranch: string }>
     staleBranches: string[]
     liveBranches: string[]
     noConnection: boolean
 
-    constructor(ops: { remote: string; force: boolean; remove: boolean }) {
+    constructor(ops: { remote: string; force: boolean; remove: boolean; pruneAll: boolean }) {
         this.remote = ops.remote
         this.force = !!ops.force
         this.remove = !!ops.remove
+        this.pruneAll = !!ops.pruneAll
         this.remoteBranches = []
         this.localBranches = []
         this.staleBranches = []
