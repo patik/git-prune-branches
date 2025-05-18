@@ -1,6 +1,6 @@
 List or remove local tracked branches, which are deleted from the remote.
 
-It's a fork of [git-branch-cleanup](https://github.com/nemisj/git-branch-cleanup) with an interactive prompt
+It's a fork of [git-removed-branches](https://github.com/nemisj/git-removed-branches) with an interactive prompt
 
 https://github.com/user-attachments/assets/e4502861-bd7d-47b7-aee7-e39154bc769c
 
@@ -108,4 +108,4 @@ NODE_MAX_BUFFER=1048576 git branch-cleanup
 
 ## Credit
 
-Forked from [git-branch-cleanup](https://github.com/nemisj/git-branch-cleanup) by [Maks Nemisj](https://github.com/nemisj) @nemisj
+Forked from [git-removed-branches](https://github.com/nemisj/git-removed-branches) by [Maks Nemisj](https://github.com/nemisj) @nemisj
