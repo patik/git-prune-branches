@@ -58,19 +58,19 @@ async function retryFailedDeletions() {
 }
 
 async function firstAttempt(): Promise<void> {
-    const allStaleBranches = await worker.findStaleBranches()
+    await worker.findStaleBranches()
 
-    if (allStaleBranches.length === 0) {
+    if (worker.staleBranches.length === 0) {
         console.info('✅ No stale branches were found')
         exit(0)
     }
 
     const userSelectedBranches = worker.pruneAll
-        ? allStaleBranches
+        ? worker.staleBranches
         : await checkbox({
               message: 'Select branches to remove',
               pageSize: 40,
-              choices: allStaleBranches.map((value) => ({ value })),
+              choices: worker.staleBranches.map((value) => ({ value })),
           })
     const confirmAnswer = worker.pruneAll
         ? true
