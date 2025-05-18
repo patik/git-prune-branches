@@ -11,6 +11,7 @@ import './side-effects/check-for-git-repo.js'
 import './side-effects/handle-control-c.js'
 
 const argv = establishArgs()
+const skipConfirmation = argv.yes || argv['prune-all']
 
 const worker = new FindStale({
     dryRun: argv['dry-run'],
@@ -39,7 +40,7 @@ async function retryFailedDeletions() {
         exit(0)
     }
 
-    const confirmRetry = worker.pruneAll
+    const confirmRetry = skipConfirmation
         ? true
         : await confirm({
               message: `Are you sure you want to forcefully remove ${branchesToRetry.length} branch${branchesToRetry.length !== 1 ? 'es' : ''}?`,
@@ -72,7 +73,7 @@ async function firstAttempt(): Promise<void> {
               pageSize: 40,
               choices: worker.staleBranches.map((value) => ({ value })),
           })
-    const confirmAnswer = worker.pruneAll
+    const confirmAnswer = skipConfirmation
         ? true
         : await confirm({
               message: `Are you sure you want to remove ${userSelectedBranches.length} branch${userSelectedBranches.length !== 1 ? 'es' : ''}?`,
