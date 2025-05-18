@@ -32,7 +32,7 @@ $ npm install -g git-branch-cleanup
 Please install a package globally with -g flag so that you can use it directly as a sub command of git, like this:
 
 ```bash
-$ git removed-branches
+$ git branch-cleanup
 ```
 
 ### NPX
@@ -46,7 +46,7 @@ $ npx git-branch-cleanup
 ## Usage
 
 ```bash
-$ git removed-branches
+$ git branch-cleanup
 ```
 
 This command will look through the branches that are no longer available on the remote and display them.
@@ -59,7 +59,7 @@ This command is safe to run and it will not alter your repository.
 To delete local branches use `--prune` or `-p` flag
 
 ```bash
-$ git removed-branches --prune
+$ git branch-cleanup --prune
 ```
 
 This command will compare your local branches to the remote ones and remove, those which do not exist anymore on the remote side.
@@ -69,7 +69,7 @@ This command will compare your local branches to the remote ones and remove, tho
 If you have configured remote alias to something different than **'origin'**, you can use `--remote` or `-r` flag to specify the name of the remote. e.g., to specify remote to be `upstream`, you can use:
 
 ```bash
-$ git removed-branches --remote upstream
+$ git branch-cleanup --remote upstream
 ```
 
 ## Forcing removal
@@ -83,7 +83,7 @@ The branch {branch_name} is not fully merged.
 you can force deletion by using `--force` flag or use `-f` alias
 
 ```bash
-$ git removed-branches --prune --force
+$ git branch-cleanup --prune --force
 ```
 
 ## Version
@@ -91,7 +91,7 @@ $ git removed-branches --prune --force
 To find out, which version you use ( since 2.3.0 )
 
 ```
-git removed-branches --version
+git branch-cleanup --version
 ```
 
 ## Troubleshooting:
@@ -101,9 +101,9 @@ If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that y
 You can fix this, by specifying NODE_MAX_BUFFER environment variable, like:
 
 ```
-NODE_MAX_BUFFER=1048576 git removed-branches
+NODE_MAX_BUFFER=1048576 git branch-cleanup
 ```
 
 ## Credit
 
-Forked from [git-removed-branches](https://github.com/nemisj/git-removed-branches) by [Maks Nemisj](https://github.com/nemisj) @nemisj
+Forked from [git-branch-cleanup](https://github.com/nemisj/git-branch-cleanup) by [Maks Nemisj](https://github.com/nemisj) @nemisj
