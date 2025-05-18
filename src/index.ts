@@ -1,7 +1,7 @@
 #!/usr/bin/env -S node
 
 import { checkbox, confirm } from '@inquirer/prompts'
-import minimist from 'minimist'
+import minimist, { ParsedArgs } from 'minimist'
 import { exec } from 'node:child_process'
 import { exit } from 'node:process'
 import { bold, red, yellowBright } from 'yoctocolors'
@@ -17,18 +17,36 @@ process.on('uncaughtException', (error) => {
     }
 })
 
-const argv = minimist(process.argv, {
-    string: 'remote',
-    boolean: ['dry-run', 'prune-all', 'force', 'version'],
-    alias: { d: 'dry-run', p: 'prune-all', f: 'force', r: 'remote' },
-    default: {
-        remote: 'origin',
-        force: false,
-    },
-})
+function establishArgs(): ParsedArgs {
+    const argv = minimist(process.argv, {
+        string: 'remote',
+        boolean: ['dry-run', 'prune-all', 'force', 'version'],
+        alias: { d: 'dry-run', p: 'prune-all', f: 'force', r: 'remote' },
+        default: {
+            remote: 'origin',
+            force: false,
+        },
+    })
 
-const options = ['version', 'dry-run', 'd', 'prune-all', 'p', 'force', 'f', 'remote', 'r', '_']
-const hasInvalidParams = Object.keys(argv).some((name) => options.indexOf(name) === -1)
+    const options = ['version', 'dry-run', 'd', 'prune-all', 'p', 'force', 'f', 'remote', 'r', '_']
+    const hasInvalidParams = Object.keys(argv).some((name) => options.indexOf(name) === -1)
+
+    if (hasInvalidParams) {
+        console.info(
+            'Usage: git prune-branches [-d|--dry-run] [-p|--prune-all] [-f|--force] [-r|--remote <remote>] [--version]',
+        )
+        exit(1)
+    }
+
+    if (argv.version) {
+        console.log(pkg.version)
+        exit(0)
+    }
+
+    return argv
+}
+
+const argv = establishArgs()
 
 const worker = new FindStale({
     dryRun: argv['dry-run'],
@@ -37,7 +55,7 @@ const worker = new FindStale({
     remote: argv.remote,
 })
 
-const retry = async () => {
+async function retry() {
     console.info(
         yellowBright(
             `
@@ -75,7 +93,7 @@ const retry = async () => {
     await worker.deleteBranches(branchesToRetry)
 }
 
-const firstAttempt = async (): Promise<void> => {
+async function firstAttempt(): Promise<void> {
     const allStaleBranches = await worker.findStaleBranches()
 
     if (allStaleBranches.length === 0) {
@@ -106,18 +124,6 @@ const firstAttempt = async (): Promise<void> => {
 }
 
 const program = async () => {
-    if (hasInvalidParams) {
-        console.info(
-            'Usage: git prune-branches [-d|--dry-run] [-p|--prune-all] [-f|--force] [-r|--remote <remote>] [--version]',
-        )
-        return
-    }
-
-    if (argv.version) {
-        console.log(pkg.version)
-        exit(0)
-    }
-
     // check for git repository
     exec('git rev-parse --show-toplevel', (err) => {
         if (err) {
