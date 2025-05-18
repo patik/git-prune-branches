@@ -5,6 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { argv } from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { green } from 'yoctocolors'
 
 const onlyPrepare = argv.find((one) => one === '--prepare')
 
@@ -144,5 +145,5 @@ if (onlyPrepare) {
     test_nothing()
     testing_prune()
     testing_force()
-    console.log('We are good to go!')
+    console.log(green('All tests passed!'))
 }
