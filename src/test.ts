@@ -114,7 +114,6 @@ ${output}
 
     assert.notEqual(output.indexOf('Deleted branch #333-work'), -1)
     assert.notEqual(output.indexOf('Deleted branch feature/fast-forwarded'), -1)
-    assert.notEqual(output.indexOf('Not all branches were removed:'), -1)
     assert.notEqual(output.indexOf(' no-ff'), -1)
 }
 

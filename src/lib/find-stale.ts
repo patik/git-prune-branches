@@ -8,7 +8,8 @@ export default class FindStale {
     pruneAll: boolean
     remoteBranches: Array<string>
     localBranches: Array<{ localBranch: string; remoteBranch: string }>
-    staleBranches: string[]
+    staleBranches: Array<string>
+    failedToDelete: Array<string>
     liveBranches: string[]
     noConnection: boolean
 
@@ -20,6 +21,7 @@ export default class FindStale {
         this.remoteBranches = []
         this.localBranches = []
         this.staleBranches = []
+        this.failedToDelete = []
         this.liveBranches = []
         this.noConnection = false
     }
@@ -204,30 +206,29 @@ export default class FindStale {
         return this.staleBranches
     }
 
-    async deleteBranches(branchesToDelete: Array<string>): Promise<Array<string>> {
+    async deleteBranches(branchesToDelete: Array<string>) {
         if (!branchesToDelete.length) {
             console.info('No remotely removed branches found')
-            return []
+            return
         }
 
         if (this.dryRun) {
             console.log('Found remotely removed branches:')
         }
 
-        const broken: Array<string> = []
+        const failures: Array<string> = []
 
         for (const branchName of branchesToDelete) {
             if (!this.dryRun) {
                 console.info()
-                console.info(`Removing "${branchName}"`)
+                console.info(`Removing "${branchName}"...`)
 
                 try {
                     const dFlag = this.force ? '-D' : '-d'
                     const out = await stdout(`git branch ${dFlag} "${branchName}"`)
                     console.info(out)
                 } catch (err) {
-                    // console.error(`ERROR: Unable to remove branch "${branchName}": `, err)
-                    broken.push(branchName)
+                    failures.push(branchName)
                 }
             } else {
                 console.info(`  - ${branchName}`)
@@ -236,19 +237,13 @@ export default class FindStale {
 
         console.info()
 
-        if (broken.length > 0) {
-            // unable to remove branch
-            console.info('Not all branches were removed:')
-            broken.forEach((name) => {
-                console.info('  - ' + name)
-            })
-            console.info()
-        } else if (!this.dryRun) {
-            console.info('INFO: Branches were removed')
-        } else {
-            console.info('INFO: To remove branches, don’t include the --dry-run flag')
+        if (failures.length === 0 && !this.dryRun) {
+            console.info('ℹ️ Branches were removed')
+        } else if (failures.length === 0) {
+            console.info('ℹ️ To remove branches, don’t include the --dry-run flag')
         }
 
-        return broken
+        // Add new failures to the list
+        this.failedToDelete = this.failedToDelete.concat(failures.filter((name) => !this.failedToDelete.includes(name)))
     }
 }

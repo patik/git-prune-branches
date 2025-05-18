@@ -4,7 +4,7 @@ import { checkbox, confirm } from '@inquirer/prompts'
 import minimist from 'minimist'
 import { exec } from 'node:child_process'
 import { exit } from 'node:process'
-import { bold, red } from 'yoctocolors'
+import { bold, red, yellowBright } from 'yoctocolors'
 import pkg from '../package.json' with { type: 'json' }
 import FindStale from './lib/find-stale.js'
 
@@ -37,16 +37,18 @@ const worker = new FindStale({
     remote: argv.remote,
 })
 
-const retry = async ({ failed }: { failed: string[] }) => {
+const retry = async () => {
     console.info(
-        `
+        yellowBright(
+            `
 ⚠️ Not all branches could be removed. You may try again using ${bold('--force')}, or press Ctrl+C to cancel
 `,
+        ),
     )
     const branchesToRetry = await checkbox({
         message: red('Select branches to forcefully remove'),
         pageSize: 40,
-        choices: failed.map((value) => ({ value })),
+        choices: worker.failedToDelete.map((value) => ({ value })),
     })
 
     if (branchesToRetry.length === 0) {
@@ -73,7 +75,7 @@ const retry = async ({ failed }: { failed: string[] }) => {
     await worker.deleteBranches(branchesToRetry)
 }
 
-const firstAttempt = async (): Promise<Array<string>> => {
+const firstAttempt = async (): Promise<void> => {
     const allStaleBranches = await worker.findStaleBranches()
 
     if (allStaleBranches.length === 0) {
@@ -100,11 +102,7 @@ const firstAttempt = async (): Promise<Array<string>> => {
         exit(0)
     }
 
-    console.info(`Removing ${userSelectedBranches.length} branch${userSelectedBranches.length !== 1 ? 'es' : ''}...`)
-
-    const failed = await worker.deleteBranches(userSelectedBranches)
-
-    return failed
+    await worker.deleteBranches(userSelectedBranches)
 }
 
 const program = async () => {
@@ -129,10 +127,10 @@ const program = async () => {
     })
 
     try {
-        const failed = await firstAttempt()
+        await firstAttempt()
 
-        if (failed.length > 0) {
-            await retry({ failed })
+        if (worker.failedToDelete.length > 0) {
+            await retry()
         }
     } catch (err: unknown) {
         if (typeof err === 'object' && err) {
