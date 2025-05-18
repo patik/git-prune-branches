@@ -2,7 +2,7 @@ List or remove local tracked branches, which are deleted from the remote.
 
 It's a fork of [git-removed-branches](https://github.com/nemisj/git-removed-branches) with an interactive prompt
 
-https://github.com/user-attachments/assets/ce5d0e53-6d42-4cfe-b920-0a268d87dd06
+<img src="https://github.com/user-attachments/assets/ce5d0e53-6d42-4cfe-b920-0a268d87dd06" width="200" alt="">
 
 Addresses questions, like:
 
