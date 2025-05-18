@@ -4,7 +4,7 @@
     "engines": {
         "node": ">=18"
     },
-    "description": "Remove local git branches which are no longer available on the remote",
+    "description": "Delete local git branches that have been merged and removed on the remote",
     "main": "dist/index.js",
     "type": "module",
     "preferGlobal": true,
