@@ -16,8 +16,8 @@
         "start": "tsx ./src/index.ts",
         "test": "pnpm run build && tsx ./src/test.ts",
         "lint": "tsc --noEmit && pnpm run format && eslint .",
-        "format": "prettier --write --list-different .",
-        "check-format": "prettier --check --list-different .",
+        "format": "prettier . --list-different --write",
+        "check-format": "prettier . --list-different",
         "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
         "ci": "pnpm build && pnpm check-format && pnpm check-exports",
         "prepublishOnly": "pnpm run ci"
