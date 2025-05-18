@@ -4,6 +4,8 @@ It's a fork of [git-removed-branches](https://github.com/nemisj/git-removed-bran
 
 <img src="https://github.com/user-attachments/assets/ce5d0e53-6d42-4cfe-b920-0a268d87dd06" width="1043" alt="">
 
+<!-- https://github.com/user-attachments/assets/e4502861-bd7d-47b7-aee7-e39154bc769c -->
+
 Addresses questions, like:
 
 - [Remove tracking branches no longer on remote](https://stackoverflow.com/questions/7726949/remove-tracking-branches-no-longer-on-remote)
@@ -22,8 +24,6 @@ This command will compare your local branches with remote and show you branches 
 <img width="449" alt="Prompt with list of branches, allowing arbitrary selection" src="https://github.com/user-attachments/assets/705d10ff-733e-449d-832a-94cef66e08c6" />
 
 This command works without the need to run `git fetch -p`, but a working network connection to your remote is required. If no connection can be established with the remote repository, then local information about your remote will be used instead. If your local repository is not in sync with the remote repository, it will warn you about it.
-
-https://github.com/user-attachments/assets/e4502861-bd7d-47b7-aee7-e39154bc769c
 
 ## Installation
 
