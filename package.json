@@ -17,7 +17,10 @@
         "test": "pnpm run build && tsx ./src/test.ts",
         "lint": "tsc --noEmit && pnpm run format && eslint .",
         "format": "prettier --write --list-different .",
-        "check-format": "prettier --check --list-different ."
+        "check-format": "prettier --check --list-different .",
+        "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
+        "ci": "pnpm build && pnpm check-format && pnpm check-exports",
+        "prepublishOnly": "pnpm run ci"
     },
     "repository": {
         "type": "git",
@@ -29,10 +32,24 @@
         "url": "https://github.com/patik/git-branch-cleanup/issues"
     },
     "homepage": "https://github.com/patik/git-branch-cleanup",
+    "keywords": [
+        "git",
+        "branch",
+        "cleanup",
+        "prune",
+        "remove",
+        "delete",
+        "interactive",
+        "confirmation",
+        "cli",
+        "command",
+        "tool"
+    ],
     "dependencies": {
         "minimist": "^1.2.8"
     },
     "devDependencies": {
+        "@arethetypeswrong/cli": "^0.18.1",
         "@eslint/js": "^9.27.0",
         "@inquirer/prompts": "^7.5.1",
         "@types/minimist": "^1.2.5",
