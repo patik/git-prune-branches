@@ -3,8 +3,9 @@ name: Publish to NPM
 on:
     push:
         tags:
-          # Only publish on version tags like v1.2.3
-          # git tag v1.2.3 && git push origin v1.2.3
+            # Only publish on version tags like v1.2.3
+            # git tag v1.2.3 && git push origin v1.2.3
+            # git tag -d v1.2.3 && git push origin :refs/tags/v1.2.3
             - 'v*.*.*'
 
 jobs:
