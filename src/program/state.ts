@@ -1,7 +1,8 @@
-import FindStale from '../lib/find-stale.js'
-import { establishArgs } from './establish-args.js'
+import { establishArgs } from '../utils/establish-args.js'
+import FindStale from '../utils/find-stale.js'
 
 const argv = establishArgs()
+const skipConfirmation = argv.yes || argv['prune-all']
 
 const worker = new FindStale({
     dryRun: argv['dry-run'],
@@ -10,6 +11,4 @@ const worker = new FindStale({
     remote: argv.remote,
 })
 
-const skipConfirmation = argv.yes || argv['prune-all']
-
-export { argv, worker, skipConfirmation }
+export { skipConfirmation, worker }
