@@ -3,9 +3,8 @@
 import { checkbox, confirm } from '@inquirer/prompts'
 import minimist from 'minimist'
 import { exec } from 'node:child_process'
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
 import { exit } from 'node:process'
+import pkg from '../package.json' assert { type: 'json' }
 import FindStale from './lib/find-stale.js'
 
 process.on('uncaughtException', (error) => {
@@ -16,16 +15,6 @@ process.on('uncaughtException', (error) => {
         throw error
     }
 })
-
-let version: string = '0.0.0'
-
-try {
-    const packageContent = readFileSync(path.join(__dirname, 'package.json'), 'utf-8')
-    const info = JSON.parse(packageContent)
-    version = info.version
-} catch (e) {
-    // do not care
-}
 
 const argv = minimist(process.argv, {
     string: 'remote',
@@ -49,7 +38,7 @@ const program = async () => {
     }
 
     if (argv.version) {
-        console.log(version)
+        console.log(pkg.version)
         exit(0)
     }
 
