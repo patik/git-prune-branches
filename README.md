@@ -2,7 +2,7 @@ List or remove local tracked branches, which are deleted from the remote.
 
 It's a fork of [git-removed-branches](https://github.com/nemisj/git-removed-branches) with an interactive prompt
 
-https://github.com/user-attachments/assets/e4502861-bd7d-47b7-aee7-e39154bc769c
+https://github.com/user-attachments/assets/ce5d0e53-6d42-4cfe-b920-0a268d87dd06
 
 Addresses questions, like:
 
@@ -17,9 +17,13 @@ Because I'm tired of doing every time `git fetch -p`, `git branch -r`, `git bran
 
 ## What does it do?
 
-This command will compare your local branches with remote and show you branches that are no longer available on remote but are still presented in your local repository. You can use it to view and delete all (remotely) removed branches in one go using `--prune-all` flag.
+This command will compare your local branches with remote and show you branches that are no longer available on remote but are still presented in your local repository. You can also use it to view and delete all (remotely) removed branches in one go using `--prune-all` flag.
+
+<img width="449" alt="Prompt with list of branches, allowing arbitrary selection" src="https://github.com/user-attachments/assets/705d10ff-733e-449d-832a-94cef66e08c6" />
 
 This command works without the need to run `git fetch -p`, but a working network connection to your remote is required. If no connection can be established with the remote repository, then local information about your remote will be used instead. If your local repository is not in sync with the remote repository, it will warn you about it.
+
+https://github.com/user-attachments/assets/e4502861-bd7d-47b7-aee7-e39154bc769c
 
 ## Installation
 
@@ -52,9 +56,7 @@ git prune-branches
 This command will look through the branches that are no longer available on the remote and display them.
 In case you haven't run `git fetch -p`, it will warn you to do so.
 
-<img width="609" alt="Prompt with list of branches, allowing arbitrary selection" src="https://github.com/user-attachments/assets/6a0530a7-c13c-42da-a983-ab365dd51f74" />
-
-<img width="1192" alt="Confirmation prompt" src="https://github.com/user-attachments/assets/2c620b7f-6b79-4a9c-a0fe-ff0b55539f1d" />
+<img width="1222" alt="Confirmation prompt" src="https://github.com/user-attachments/assets/0cf75cb7-af8d-43c6-81a1-3160ab7f48f3" />
 
 ### Auto-removal
 
@@ -82,7 +84,7 @@ If you get an error when trying to delete branches:
 The branch {branch_name} is not fully merged.
 ```
 
-you can force deletion by using `--force` flag or use `-f` alias
+you can force deletion by using `--force` flag or the `-f` alias
 
 ```bash
 git prune-branches --prune-all --force
