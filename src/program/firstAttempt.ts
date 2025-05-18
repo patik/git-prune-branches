@@ -1,8 +1,8 @@
 import { checkbox, confirm } from '@inquirer/prompts'
 import { exit } from 'node:process'
-import FindStale from '../lib/find-stale.js'
+import { skipConfirmation, worker } from './state.js'
 
-export async function firstAttempt(worker: FindStale, skipConfirmation: boolean): Promise<void> {
+export async function firstAttempt(): Promise<void> {
     await worker.findStaleBranches()
 
     if (worker.staleBranches.length === 0) {

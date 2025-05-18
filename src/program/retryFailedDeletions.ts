@@ -1,9 +1,9 @@
 import { checkbox, confirm } from '@inquirer/prompts'
 import { exit } from 'node:process'
 import { bold, red, yellowBright } from 'yoctocolors'
-import FindStale from '../lib/find-stale.js'
+import { skipConfirmation, worker } from './state.js'
 
-export async function retryFailedDeletions(worker: FindStale, skipConfirmation: boolean) {
+export async function retryFailedDeletions() {
     console.info(
         yellowBright(
             `

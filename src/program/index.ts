@@ -1,31 +1,19 @@
-#!/usr/bin/env -S node
-
-import { exit } from 'node:process'
-import FindStale from '../lib/find-stale.js'
-import { establishArgs } from './establish-args.js'
-import { firstAttempt } from './firstAttempt.js'
-import { retryFailedDeletions } from './retryFailedDeletions.js'
-
 // Side effects
 import './side-effects/check-for-git-repo.js'
 import './side-effects/handle-control-c.js'
 
-const argv = establishArgs()
-const skipConfirmation = argv.yes || argv['prune-all']
-
-const worker = new FindStale({
-    dryRun: argv['dry-run'],
-    pruneAll: argv['prune-all'],
-    force: argv.force,
-    remote: argv.remote,
-})
+// Program imports
+import { exit } from 'node:process'
+import { firstAttempt } from './firstAttempt.js'
+import { retryFailedDeletions } from './retryFailedDeletions.js'
+import { worker } from './state.js'
 
 export default async function program() {
     try {
-        await firstAttempt(worker, skipConfirmation)
+        await firstAttempt()
 
         if (worker.failedToDelete.length > 0) {
-            await retryFailedDeletions(worker, skipConfirmation)
+            await retryFailedDeletions()
         }
     } catch (err: unknown) {
         if (typeof err === 'object' && err) {
