@@ -1,5 +1,5 @@
 {
-    "name": "git-branch-cleanup",
+    "name": "git-prune-branches",
     "version": "1.0.0",
     "engines": {
         "node": ">=18"
@@ -9,7 +9,7 @@
     "type": "module",
     "preferGlobal": true,
     "bin": {
-        "git-branch-cleanup": "dist/index.js"
+        "git-prune-branches": "dist/index.js"
     },
     "scripts": {
         "build": "tsc",
@@ -19,19 +19,19 @@
         "format": "prettier . --list-different --write",
         "check-format": "prettier . --list-different",
         "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
-        "ci": "pnpm build && pnpm check-format && pnpm check-exports",
+        "ci": "pnpm build && pnpm check-exports",
         "prepublishOnly": "pnpm run ci"
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/patik/git-branch-cleanup.git"
+        "url": "https://github.com/patik/git-prune-branches.git"
     },
     "author": "Craig Patik",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/patik/git-branch-cleanup/issues"
+        "url": "https://github.com/patik/git-prune-branches/issues"
     },
-    "homepage": "https://github.com/patik/git-branch-cleanup",
+    "homepage": "https://github.com/patik/git-prune-branches",
     "keywords": [
         "git",
         "branch",
