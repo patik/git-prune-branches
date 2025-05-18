@@ -22,6 +22,10 @@ export default class FindStale {
         this.noConnection = false
     }
 
+    setRemove(remove: boolean) {
+        this.remove = remove
+    }
+
     async preprocess() {
         // cached branches from the remote
         this.remoteBranches = []
@@ -198,10 +202,10 @@ export default class FindStale {
         return this.staleBranches
     }
 
-    async deleteBranches(branchesToDelete: Array<string>) {
+    async deleteBranches(branchesToDelete: Array<string>): Promise<Array<string>> {
         if (!branchesToDelete.length) {
             console.info('No remotely removed branches found')
-            return
+            return []
         }
 
         if (!this.remove) {
@@ -243,5 +247,7 @@ export default class FindStale {
         } else {
             console.info('INFO: To remove branches, don’t include the --dry-run flag')
         }
+
+        return broken
     }
 }

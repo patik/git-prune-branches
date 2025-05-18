@@ -79,16 +79,36 @@ const program = async () => {
                   default: false,
               })
 
-        if (confirmAnswer) {
-            console.info(
-                `Removing ${userSelectedBranches.length} branch${userSelectedBranches.length !== 1 ? 'es' : ''}...`,
-            )
-            await obj.deleteBranches(userSelectedBranches)
-        } else {
+        if (!confirmAnswer) {
             console.info('No branches were removed.')
+            exit(0)
         }
 
-        exit(0)
+        console.info(
+            `Removing ${userSelectedBranches.length} branch${userSelectedBranches.length !== 1 ? 'es' : ''}...`,
+        )
+
+        const failed = await obj.deleteBranches(userSelectedBranches)
+
+        if (failed.length > 0) {
+            console.log()
+            console.info('⚠️ Not all branches were removed. You may try again using --force, or press ctrl+c to cancel')
+            console.log()
+            const branchesToRetry = await checkbox({
+                message: 'Select branches to forcefully remove',
+                pageSize: 40,
+                choices: failed.map((value) => ({ value })),
+            })
+
+            if (branchesToRetry.length === 0) {
+                console.log()
+                console.info('No additional branches were removed.')
+                exit(0)
+            }
+
+            obj.setRemove(true)
+            await obj.deleteBranches(branchesToRetry)
+        }
     } catch (err: unknown) {
         if (typeof err === 'object' && err) {
             if ('code' in err && typeof err.code === 'number' && err.code === 128) {
