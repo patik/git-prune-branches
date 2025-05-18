@@ -1,50 +1,14 @@
 #!/usr/bin/env -S node
 
 import { checkbox, confirm } from '@inquirer/prompts'
-import minimist, { ParsedArgs } from 'minimist'
 import { exec } from 'node:child_process'
 import { exit } from 'node:process'
 import { bold, red, yellowBright } from 'yoctocolors'
-import pkg from '../../package.json' with { type: 'json' }
 import FindStale from '../lib/find-stale.js'
+import { establishArgs } from './establishArgs.js'
 
-process.on('uncaughtException', (error) => {
-    if (error instanceof Error && error.name === 'ExitPromptError') {
-        console.log('👋 until next time!')
-    } else {
-        // Rethrow unknown errors
-        throw error
-    }
-})
-
-function establishArgs(): ParsedArgs {
-    const argv = minimist(process.argv, {
-        string: 'remote',
-        boolean: ['dry-run', 'prune-all', 'force', 'version'],
-        alias: { d: 'dry-run', p: 'prune-all', f: 'force', r: 'remote' },
-        default: {
-            remote: 'origin',
-            force: false,
-        },
-    })
-
-    const options = ['version', 'dry-run', 'd', 'prune-all', 'p', 'force', 'f', 'remote', 'r', '_']
-    const hasInvalidParams = Object.keys(argv).some((name) => options.indexOf(name) === -1)
-
-    if (hasInvalidParams) {
-        console.info(
-            'Usage: git prune-branches [-d|--dry-run] [-p|--prune-all] [-f|--force] [-r|--remote <remote>] [--version]',
-        )
-        exit(1)
-    }
-
-    if (argv.version) {
-        console.log(pkg.version)
-        exit(0)
-    }
-
-    return argv
-}
+// Side effects
+import './handle-control-c.js'
 
 const argv = establishArgs()
 
