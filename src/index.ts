@@ -4,6 +4,7 @@ import { checkbox, confirm } from '@inquirer/prompts'
 import minimist from 'minimist'
 import { exec } from 'node:child_process'
 import { exit } from 'node:process'
+import { bold, red } from 'yoctocolors'
 import pkg from '../package.json' with { type: 'json' }
 import FindStale from './lib/find-stale.js'
 
@@ -42,19 +43,19 @@ const program = async () => {
         exit(0)
     }
 
-    const obj = new FindStale({
-        remove: !argv['dry-run'],
-        force: argv.force,
-        remote: argv.remote,
+    // check for git repository
+    exec('git rev-parse --show-toplevel', (err) => {
+        if (err) {
+            process.stderr.write(err.message + '\r\n')
+            exit(1)
+        }
     })
 
-    // check for git repository
     try {
-        exec('git rev-parse --show-toplevel', (err) => {
-            if (err) {
-                process.stderr.write(err.message + '\r\n')
-                exit(1)
-            }
+        const obj = new FindStale({
+            remove: !argv['dry-run'],
+            force: argv.force,
+            remote: argv.remote,
         })
         const allStaleBranches = await obj.findStaleBranches()
 
@@ -64,7 +65,6 @@ const program = async () => {
         }
 
         const pruneAll = argv['prune-all']
-
         const userSelectedBranches = pruneAll
             ? allStaleBranches
             : await checkbox({
@@ -75,7 +75,7 @@ const program = async () => {
         const confirmAnswer = pruneAll
             ? true
             : await confirm({
-                  message: `Are you sure you want to remove all ${userSelectedBranches.length} branche${userSelectedBranches.length !== 1 ? 's' : ''}?`,
+                  message: `Are you sure you want to remove ${userSelectedBranches.length} branch${userSelectedBranches.length !== 1 ? 'es' : ''}?`,
                   default: false,
               })
 
@@ -92,16 +92,28 @@ const program = async () => {
 
         if (failed.length > 0) {
             console.log()
-            console.info('⚠️ Not all branches were removed. You may try again using --force, or press ctrl+c to cancel')
+            console.info(
+                `⚠️ Not all branches were removed. You may try again using ${bold('--force')}, or press ctrl+c to cancel`,
+            )
             console.log()
             const branchesToRetry = await checkbox({
-                message: 'Select branches to forcefully remove',
+                message: red('Select branches to forcefully remove'),
                 pageSize: 40,
                 choices: failed.map((value) => ({ value })),
             })
 
             if (branchesToRetry.length === 0) {
                 console.log()
+                console.info('No additional branches were removed.')
+                exit(0)
+            }
+
+            const confirmRetry = await confirm({
+                message: `Are you sure you want to forcefully remove ${branchesToRetry.length} branch${branchesToRetry.length !== 1 ? 'es' : ''}?`,
+                default: false,
+            })
+
+            if (!confirmRetry) {
                 console.info('No additional branches were removed.')
                 exit(0)
             }
@@ -116,9 +128,15 @@ const program = async () => {
             } else if ('code' in err && typeof err.code === 'number' && 'message' in err && err.code === 1984) {
                 process.stderr.write(`ERROR: ${err.message} \r\n`)
             } else if ('stack' in err) {
+                if (err instanceof Error && err.name === 'ExitPromptError') {
+                    console.log('\r\n👋 until next time!')
+                    exit(0)
+                }
+
                 process.stderr.write((err.stack || err) + '\r\n')
             }
         }
+
         exit(1)
     }
 }

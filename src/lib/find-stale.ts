@@ -216,7 +216,7 @@ export default class FindStale {
 
         for (const branchName of branchesToDelete) {
             if (this.remove) {
-                console.info('')
+                console.info()
                 console.info(`Removing "${branchName}"`)
 
                 try {
@@ -224,7 +224,7 @@ export default class FindStale {
                     const out = await stdout(`git branch ${dFlag} "${branchName}"`)
                     console.info(out)
                 } catch (err) {
-                    console.error(`ERROR: Unable to remove branch "${branchName}": `, err)
+                    // console.error(`ERROR: Unable to remove branch "${branchName}": `, err)
                     broken.push(branchName)
                 }
             } else {
@@ -232,7 +232,7 @@ export default class FindStale {
             }
         }
 
-        console.info('')
+        console.info()
 
         if (broken.length > 0) {
             // unable to remove branch
@@ -240,8 +240,7 @@ export default class FindStale {
             broken.forEach((name) => {
                 console.info('  - ' + name)
             })
-            console.info('')
-            console.info('INFO: To force removal use --force flag')
+            console.info()
         } else if (this.remove) {
             console.info('INFO: Branches were removed')
         } else {
