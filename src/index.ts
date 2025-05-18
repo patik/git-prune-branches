@@ -60,7 +60,7 @@ const program = async () => {
         const allStaleBranches = await obj.findStaleBranches()
 
         if (allStaleBranches.length === 0) {
-            console.info('No stale branches were found')
+            console.info('✅ No stale branches were found')
             exit(0)
         }
 
@@ -80,7 +80,7 @@ const program = async () => {
               })
 
         if (!confirmAnswer) {
-            console.info('No branches were removed.')
+            console.info('👋 No branches were removed.')
             exit(0)
         }
 
@@ -91,11 +91,11 @@ const program = async () => {
         const failed = await obj.deleteBranches(userSelectedBranches)
 
         if (failed.length > 0) {
-            console.log()
             console.info(
-                `⚠️ Not all branches were removed. You may try again using ${bold('--force')}, or press ctrl+c to cancel`,
+                `
+⚠️ Not all branches could be removed. You may try again using ${bold('--force')}, or press Ctrl+C to cancel
+`,
             )
-            console.log()
             const branchesToRetry = await checkbox({
                 message: red('Select branches to forcefully remove'),
                 pageSize: 40,
@@ -103,8 +103,8 @@ const program = async () => {
             })
 
             if (branchesToRetry.length === 0) {
-                console.log()
-                console.info('No additional branches were removed.')
+                console.info(`
+👋 No additional branches were removed.`)
                 exit(0)
             }
 
@@ -114,7 +114,8 @@ const program = async () => {
             })
 
             if (!confirmRetry) {
-                console.info('No additional branches were removed.')
+                console.info(`
+👋 No additional branches were removed.`)
                 exit(0)
             }
 

@@ -8,18 +8,12 @@ import { fileURLToPath } from 'node:url'
 import { green } from 'yoctocolors'
 
 const onlyPrepare = argv.find((one) => one === '--prepare')
-
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
 const bin = path.join(__dirname, '../dist/index.js')
-
 const isCI = process.argv[2]?.split('=')[1] === 'true'
 
-console.log(`isCI: ${isCI}`)
-
 let tempdir: string = process.argv[3]?.split('=')[1] || ''
-let bareDir: string
 let workingDir: string
 
 const setup = () => {
@@ -33,7 +27,7 @@ const setup = () => {
         tempdir = mkdtempSync(tmp + path.sep + 'git-prune-branches-')
     }
 
-    bareDir = tempdir + path.sep + 'bare'
+    const bareDir = tempdir + path.sep + 'bare'
     workingDir = tempdir + path.sep + 'working'
 
     const file = `${workingDir}${path.sep}lolipop`
