@@ -11,9 +11,6 @@ importers:
       minimist:
         specifier: ^1.2.8
         version: 1.2.8
-      tsx:
-        specifier: ^4.19.4
-        version: 4.19.4
     devDependencies:
       '@eslint/js':
         specifier: ^9.27.0
@@ -39,6 +36,9 @@ importers:
       prettier:
         specifier: ^3.5.3
         version: 3.5.3
+      tsx:
+        specifier: ^4.19.4
+        version: 4.19.4
       typescript:
         specifier: ^5.8.3
         version: 5.8.3

@@ -13,11 +13,11 @@ Addresses questions, like:
 
 ## Why?
 
-Because I'm tired of doing every time `git fetch -p`, `git branch -r`, `git branch` and keep comparing which branches are gone from the GitHub, but still available locally and doing `git branch -D ${branch_name}` on one by one of them.
+Because I'm tired of doing every time `git fetch -p`, `git branch -r`, `git branch` and keep comparing which branches are gone from the GitHub, but still available locally and doing `git branch -D ${branch_name}` on each of them, one by one.
 
 ## What does it do?
 
-This command will compare your local branches with remote and show you branches that are no longer available on remote but are still presented in your local repository. You can use it to view and delete all (remotely) removed branches in one go using `--prune` flag.
+This command will compare your local branches with remote and show you branches that are no longer available on remote but are still presented in your local repository. You can use it to view and delete all (remotely) removed branches in one go using `--prune-all` flag.
 
 This command works without the need to run `git fetch -p`, but a working network connection to your remote is required. If no connection can be established with the remote repository, then local information about your remote will be used instead. If your local repository is not in sync with the remote repository, it will warn you about it.
 
@@ -26,50 +26,52 @@ This command works without the need to run `git fetch -p`, but a working network
 ### NPM
 
 ```bash
-$ npm install -g git-branch-cleanup
+npm install -g git-branch-cleanup
 ```
 
 Please install a package globally with -g flag so that you can use it directly as a sub command of git, like this:
 
 ```bash
-$ git branch-cleanup
+git branch-cleanup
 ```
 
 ### NPX
 
-It's also possible to use package through npx directly. Execute inside any git folder:
+It's also possible to use package through `npx` without installing:
 
 ```bash
-$ npx git-branch-cleanup
+npx git-branch-cleanup
 ```
 
 ## Usage
 
 ```bash
-$ git branch-cleanup
+git branch-cleanup
 ```
 
 This command will look through the branches that are no longer available on the remote and display them.
 In case you haven't run `git fetch -p`, it will warn you to do so.
 
-This command is safe to run and it will not alter your repository.
+<img width="609" alt="Prompt with list of branches, allowing arbitrary selection" src="https://github.com/user-attachments/assets/6a0530a7-c13c-42da-a983-ab365dd51f74" />
 
-### Removing
+<img width="1192" alt="Confirmation prompt" src="https://github.com/user-attachments/assets/2c620b7f-6b79-4a9c-a0fe-ff0b55539f1d" />
 
-To delete local branches use `--prune` or `-p` flag
+### Auto-removal
+
+To delete all local branches without choosing which ones, and without confirmation, use `--prune-all` or `-p` flag
 
 ```bash
-$ git branch-cleanup --prune
+git branch-cleanup --prune-all
 ```
 
 This command will compare your local branches to the remote ones and remove, those which do not exist anymore on the remote side.
 
-### Different remote
+### Custom remote
 
 If you have configured remote alias to something different than **'origin'**, you can use `--remote` or `-r` flag to specify the name of the remote. e.g., to specify remote to be `upstream`, you can use:
 
 ```bash
-$ git branch-cleanup --remote upstream
+git branch-cleanup --remote upstream
 ```
 
 ## Forcing removal
@@ -83,24 +85,24 @@ The branch {branch_name} is not fully merged.
 you can force deletion by using `--force` flag or use `-f` alias
 
 ```bash
-$ git branch-cleanup --prune --force
+git branch-cleanup --prune-all --force
 ```
 
 ## Version
 
-To find out, which version you use ( since 2.3.0 )
+To print the version:
 
-```
+```bash
 git branch-cleanup --version
 ```
 
 ## Troubleshooting:
 
-If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too much branches, more then 3382. ( see [discussion](https://github.com/patik/git-branch-cleanup/issues/11) )
+If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too many branches (more then 3382—see [discussion](https://github.com/patik/git-branch-cleanup/issues/11)).
 
-You can fix this, by specifying NODE_MAX_BUFFER environment variable, like:
+You can fix this by specifying NODE_MAX_BUFFER environment variable. For example:
 
-```
+```bash
 NODE_MAX_BUFFER=1048576 git branch-cleanup
 ```
 

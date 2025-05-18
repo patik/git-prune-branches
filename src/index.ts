@@ -4,7 +4,7 @@ import { checkbox, confirm } from '@inquirer/prompts'
 import minimist from 'minimist'
 import { exec } from 'node:child_process'
 import { exit } from 'node:process'
-import pkg from '../package.json' assert { type: 'json' }
+import pkg from '../package.json' with { type: 'json' }
 import FindStale from './lib/find-stale.js'
 
 process.on('uncaughtException', (error) => {
