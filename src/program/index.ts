@@ -1,14 +1,14 @@
 #!/usr/bin/env -S node
 
 import { checkbox, confirm } from '@inquirer/prompts'
-import { exec } from 'node:child_process'
 import { exit } from 'node:process'
 import { bold, red, yellowBright } from 'yoctocolors'
 import FindStale from '../lib/find-stale.js'
-import { establishArgs } from './establishArgs.js'
+import { establishArgs } from './establish-args.js'
 
 // Side effects
-import './handle-control-c.js'
+import './side-effects/check-for-git-repo.js'
+import './side-effects/handle-control-c.js'
 
 const argv = establishArgs()
 
@@ -19,7 +19,7 @@ const worker = new FindStale({
     remote: argv.remote,
 })
 
-async function retry() {
+async function retryFailedDeletions() {
     console.info(
         yellowBright(
             `
@@ -88,19 +88,11 @@ async function firstAttempt(): Promise<void> {
 }
 
 export default async function program() {
-    // check for git repository
-    exec('git rev-parse --show-toplevel', (err) => {
-        if (err) {
-            process.stderr.write(err.message + '\r\n')
-            exit(1)
-        }
-    })
-
     try {
         await firstAttempt()
 
         if (worker.failedToDelete.length > 0) {
-            await retry()
+            await retryFailedDeletions()
         }
     } catch (err: unknown) {
         if (typeof err === 'object' && err) {
