@@ -30,7 +30,7 @@ const argv = minimist(process.argv, {
 const options = ['version', 'dry-run', 'd', 'prune-all', 'p', 'force', 'f', 'remote', 'r', '_']
 const hasInvalidParams = Object.keys(argv).some((name) => options.indexOf(name) === -1)
 
-const obj = new FindStale({
+const worker = new FindStale({
     dryRun: argv['dry-run'],
     pruneAll: argv['prune-all'],
     force: argv.force,
@@ -55,7 +55,7 @@ const retry = async ({ failed }: { failed: string[] }) => {
         exit(0)
     }
 
-    const confirmRetry = obj.pruneAll
+    const confirmRetry = worker.pruneAll
         ? true
         : await confirm({
               message: `Are you sure you want to forcefully remove ${branchesToRetry.length} branch${branchesToRetry.length !== 1 ? 'es' : ''}?`,
@@ -68,27 +68,27 @@ const retry = async ({ failed }: { failed: string[] }) => {
         exit(0)
     }
 
-    obj.setForce(true)
+    worker.setForce(true)
 
-    await obj.deleteBranches(branchesToRetry)
+    await worker.deleteBranches(branchesToRetry)
 }
 
 const firstAttempt = async (): Promise<Array<string>> => {
-    const allStaleBranches = await obj.findStaleBranches()
+    const allStaleBranches = await worker.findStaleBranches()
 
     if (allStaleBranches.length === 0) {
         console.info('✅ No stale branches were found')
         exit(0)
     }
 
-    const userSelectedBranches = obj.pruneAll
+    const userSelectedBranches = worker.pruneAll
         ? allStaleBranches
         : await checkbox({
               message: 'Select branches to remove',
               pageSize: 40,
               choices: allStaleBranches.map((value) => ({ value })),
           })
-    const confirmAnswer = obj.pruneAll
+    const confirmAnswer = worker.pruneAll
         ? true
         : await confirm({
               message: `Are you sure you want to remove ${userSelectedBranches.length} branch${userSelectedBranches.length !== 1 ? 'es' : ''}?`,
@@ -102,7 +102,7 @@ const firstAttempt = async (): Promise<Array<string>> => {
 
     console.info(`Removing ${userSelectedBranches.length} branch${userSelectedBranches.length !== 1 ? 'es' : ''}...`)
 
-    const failed = await obj.deleteBranches(userSelectedBranches)
+    const failed = await worker.deleteBranches(userSelectedBranches)
 
     return failed
 }
