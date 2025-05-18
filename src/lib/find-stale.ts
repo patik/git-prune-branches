@@ -4,7 +4,7 @@ import { stdout } from './stdout.js'
 export default class FindStale {
     remote: string
     force: boolean
-    remove: boolean
+    dryRun: boolean
     pruneAll: boolean
     remoteBranches: Array<string>
     localBranches: Array<{ localBranch: string; remoteBranch: string }>
@@ -12,11 +12,11 @@ export default class FindStale {
     liveBranches: string[]
     noConnection: boolean
 
-    constructor(ops: { remote: string; force: boolean; remove: boolean; pruneAll: boolean }) {
+    constructor(ops: { remote: string; force: boolean; dryRun: boolean; pruneAll: boolean }) {
         this.remote = ops.remote
-        this.force = !!ops.force
-        this.remove = !!ops.remove
-        this.pruneAll = !!ops.pruneAll
+        this.force = ops.force
+        this.dryRun = ops.dryRun
+        this.pruneAll = ops.pruneAll
         this.remoteBranches = []
         this.localBranches = []
         this.staleBranches = []
@@ -210,14 +210,14 @@ export default class FindStale {
             return []
         }
 
-        if (!this.remove) {
+        if (this.dryRun) {
             console.log('Found remotely removed branches:')
         }
 
         const broken: Array<string> = []
 
         for (const branchName of branchesToDelete) {
-            if (this.remove) {
+            if (!this.dryRun) {
                 console.info()
                 console.info(`Removing "${branchName}"`)
 
@@ -243,7 +243,7 @@ export default class FindStale {
                 console.info('  - ' + name)
             })
             console.info()
-        } else if (this.remove) {
+        } else if (!this.dryRun) {
             console.info('INFO: Branches were removed')
         } else {
             console.info('INFO: To remove branches, don’t include the --dry-run flag')

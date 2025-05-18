@@ -28,16 +28,16 @@ const argv = minimist(process.argv, {
 })
 
 const options = ['version', 'dry-run', 'd', 'prune-all', 'p', 'force', 'f', 'remote', 'r', '_']
-const hasInvalidParams: boolean = Object.keys(argv).some((name) => options.indexOf(name) == -1)
+const hasInvalidParams = Object.keys(argv).some((name) => options.indexOf(name) === -1)
 
 const obj = new FindStale({
-    remove: !argv['dry-run'],
+    dryRun: argv['dry-run'],
     pruneAll: argv['prune-all'],
     force: argv.force,
     remote: argv.remote,
 })
 
-const retry = async ({ obj, failed }: { obj: FindStale; failed: string[] }) => {
+const retry = async ({ failed }: { failed: string[] }) => {
     console.info(
         `
 ⚠️ Not all branches could be removed. You may try again using ${bold('--force')}, or press Ctrl+C to cancel
@@ -73,7 +73,7 @@ const retry = async ({ obj, failed }: { obj: FindStale; failed: string[] }) => {
     await obj.deleteBranches(branchesToRetry)
 }
 
-const firstAttempt = async ({ obj }: { obj: FindStale }): Promise<Array<string>> => {
+const firstAttempt = async (): Promise<Array<string>> => {
     const allStaleBranches = await obj.findStaleBranches()
 
     if (allStaleBranches.length === 0) {
@@ -129,10 +129,10 @@ const program = async () => {
     })
 
     try {
-        const failed = await firstAttempt({ obj })
+        const failed = await firstAttempt()
 
         if (failed.length > 0) {
-            await retry({ obj, failed })
+            await retry({ failed })
         }
     } catch (err: unknown) {
         if (typeof err === 'object' && err) {
