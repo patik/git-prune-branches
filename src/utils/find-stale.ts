@@ -1,3 +1,4 @@
+import { gray } from 'yoctocolors'
 import split from './split.js'
 import { stdout } from './stdout.js'
 
@@ -220,12 +221,11 @@ export default class FindStale {
 
         for (const branchName of branchesToDelete) {
             if (!this.dryRun) {
-                console.info()
-                console.info(`Removing "${branchName}"...`)
-
                 try {
                     const dFlag = this.force ? '-D' : '-d'
-                    const out = await stdout(`git branch ${dFlag} "${branchName}"`)
+                    const command = `git branch ${dFlag} "${branchName}"`
+                    console.info(gray(command))
+                    const out = await stdout(command)
                     console.info(out)
                 } catch (err) {
                     failures.push(branchName)

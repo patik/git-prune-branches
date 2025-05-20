@@ -2,6 +2,8 @@ import minimist, { ParsedArgs } from 'minimist'
 import { exit } from 'node:process'
 import pkg from '../../package.json' with { type: 'json' }
 
+const options = ['version', 'dry-run', 'd', 'prune-all', 'p', 'force', 'f', 'remote', 'r', 'yes', 'y', '_']
+
 export function establishArgs(): ParsedArgs {
     const argv = minimist(process.argv, {
         string: 'remote',
@@ -14,7 +16,6 @@ export function establishArgs(): ParsedArgs {
         },
     })
 
-    const options = ['version', 'dry-run', 'd', 'prune-all', 'p', 'force', 'f', 'remote', 'r', 'yes', 'y', '_']
     const hasInvalidParams = Object.keys(argv).some((name) => options.indexOf(name) === -1)
 
     if (hasInvalidParams) {

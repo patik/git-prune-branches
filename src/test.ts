@@ -14,7 +14,7 @@ const bin = path.join(__dirname, '../dist/index.js')
 const isCI = process.argv[2]?.split('=')[1] === 'true'
 
 let tempdir: string = process.argv[3]?.split('=')[1] || ''
-let workingDir: string
+let workingDir: string = ''
 
 const setup = () => {
     if (isCI) {
@@ -133,7 +133,10 @@ ${output}
 setup()
 
 if (onlyPrepare) {
-    console.log('All prepared')
+    console.log(`All prepared
+
+${workingDir}
+`)
 } else {
     test_nothing()
     testing_prune()
