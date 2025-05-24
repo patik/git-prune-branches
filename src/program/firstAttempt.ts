@@ -20,7 +20,7 @@ export async function firstAttempt(): Promise<void> {
     const confirmAnswer = skipConfirmation
         ? true
         : await confirm({
-              message: `Are you sure you want to remove ${userSelectedBranches.length} branch${userSelectedBranches.length !== 1 ? 'es' : ''}?`,
+              message: `Are you sure you want to remove ${userSelectedBranches.length === 1 ? 'this' : 'these'} ${userSelectedBranches.length} branch${userSelectedBranches.length !== 1 ? 'es' : ''}?`,
               default: false,
           })
 
@@ -29,5 +29,7 @@ export async function firstAttempt(): Promise<void> {
         exit(0)
     }
 
-    await worker.deleteBranches(userSelectedBranches)
+    worker.setQueuedForDeletion(userSelectedBranches)
+
+    await worker.deleteBranches()
 }

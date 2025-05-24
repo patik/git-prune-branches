@@ -10,8 +10,9 @@ export default class FindStale {
     remoteBranches: Array<string>
     localBranches: Array<{ localBranch: string; remoteBranch: string }>
     staleBranches: Array<string>
+    queuedForDeletion: Array<string>
     failedToDelete: Array<string>
-    liveBranches: string[]
+    liveBranches: Array<string>
     noConnection: boolean
 
     constructor(ops: { remote: string; force: boolean; dryRun: boolean; pruneAll: boolean }) {
@@ -22,6 +23,7 @@ export default class FindStale {
         this.remoteBranches = []
         this.localBranches = []
         this.staleBranches = []
+        this.queuedForDeletion = []
         this.failedToDelete = []
         this.liveBranches = []
         this.noConnection = false
@@ -29,6 +31,10 @@ export default class FindStale {
 
     setForce(force: boolean) {
         this.force = force
+    }
+
+    setQueuedForDeletion(branches: Array<string>) {
+        this.queuedForDeletion = branches
     }
 
     async preprocess() {
@@ -207,8 +213,8 @@ export default class FindStale {
         return this.staleBranches
     }
 
-    async deleteBranches(branchesToDelete: Array<string>) {
-        if (!branchesToDelete.length) {
+    async deleteBranches() {
+        if (!this.queuedForDeletion.length) {
             console.info('No remotely removed branches found')
             return
         }
@@ -219,7 +225,7 @@ export default class FindStale {
 
         const failures: Array<string> = []
 
-        for (const branchName of branchesToDelete) {
+        for (const branchName of this.queuedForDeletion) {
             if (!this.dryRun) {
                 try {
                     const dFlag = this.force ? '-D' : '-d'
@@ -244,6 +250,6 @@ export default class FindStale {
         }
 
         // Add new failures to the list
-        this.failedToDelete = this.failedToDelete.concat(failures.filter((name) => !this.failedToDelete.includes(name)))
+        this.failedToDelete = failures
     }
 }
