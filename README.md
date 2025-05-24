@@ -1,9 +1,10 @@
 List or remove local tracked branches, which are deleted from the remote.
 
-It's a fork of [git-removed-branches](https://github.com/nemisj/git-removed-branches) with an interactive prompt
+It's a fork of [git-removed-branches](https://github.com/nemisj/git-removed-branches) with an interactive prompt, and the ability to retry deleting branches with `--force`
 
-<img src="https://github.com/user-attachments/assets/ce5d0e53-6d42-4cfe-b920-0a268d87dd06" width="1043" alt="">
+<img src="https://github.com/user-attachments/assets/944bc691-2c0f-4047-8d83-35c13b1f9d82" width="821" alt="">
 
+<!-- <img src="https://github.com/user-attachments/assets/ce5d0e53-6d42-4cfe-b920-0a268d87dd06" width="1043" alt=""> -->
 <!-- https://github.com/user-attachments/assets/e4502861-bd7d-47b7-aee7-e39154bc769c -->
 
 Addresses questions, like:
@@ -88,6 +89,20 @@ you can force deletion by using `--force` flag or the `-f` alias
 
 ```bash
 git prune-branches --prune-all --force
+```
+
+## Retrying with `--force`
+
+If any branches fail to delete when the `--force` flag is not used, `git-prune-branches` will offer to retry and delete them again using `--force`.
+
+<img width="1178" alt="" src="https://github.com/user-attachments/assets/925783c3-c689-4279-b961-a094c63476b3" />
+
+## Skipping confirmation
+
+You can skip the confirmation prompts with `--yes` or the shortcut `-y`:
+
+```bash
+git prune-branches -y
 ```
 
 ## Version
