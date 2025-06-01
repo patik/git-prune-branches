@@ -14,7 +14,7 @@
     "scripts": {
         "build": "tsc",
         "start": "tsx ./src/index.ts",
-        "test": "pnpm run build && tsx ./src/test/index.ts",
+        "test": "pnpm run build && tsx ./src/tests/index.ts",
         "lint": "tsc --noEmit && pnpm run format && eslint .",
         "format": "prettier . --list-different --write",
         "check-format": "prettier . --list-different",
