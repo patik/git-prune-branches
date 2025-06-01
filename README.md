@@ -4,8 +4,9 @@ List or remove local tracked branches, which are deleted from the remote.
 
 It's a fork of [git-removed-branches](https://github.com/nemisj/git-removed-branches) with an interactive prompt, and the ability to retry deleting branches with `--force`
 
-<img src="https://github.com/user-attachments/assets/944bc691-2c0f-4047-8d83-35c13b1f9d82" width="821" alt="">
+<img src="https://github.com/user-attachments/assets/ac1a3823-a04c-4f83-960e-036788949fb7" width="720" alt="">
 
+<!-- <img src="https://github.com/user-attachments/assets/944bc691-2c0f-4047-8d83-35c13b1f9d82" width="821" alt="">-->
 <!-- <img src="https://github.com/user-attachments/assets/ce5d0e53-6d42-4cfe-b920-0a268d87dd06" width="1043" alt=""> -->
 <!-- https://github.com/user-attachments/assets/e4502861-bd7d-47b7-aee7-e39154bc769c -->
 
