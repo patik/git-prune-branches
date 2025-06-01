@@ -4,24 +4,24 @@ import './side-effects/handle-control-c.js'
 
 // Program imports
 import { exit } from 'node:process'
-import { firstAttempt } from './firstAttempt.js'
-import { retryFailedDeletions } from './retryFailedDeletions.js'
-import { worker } from './state.js'
 import { green } from 'yoctocolors'
+import { firstAttempt } from './first-attempt.js'
+import { retryFailedDeletions } from './retry-failed-dletions.js'
+import store from './store.js'
 
 export default async function program() {
     try {
         await firstAttempt()
 
-        if (worker.failedToDelete.length > 0) {
+        if (store.failedToDelete.length > 0) {
             await retryFailedDeletions()
         } else {
-            const total = worker.queuedForDeletion.length
+            const total = store.queuedForDeletion.length
             console.info(green(`✅ Deleted ${total === 1 ? '1' : `all ${total}`} branch${total === 1 ? '' : 'es'}`))
             exit(0)
         }
 
-        if (worker.failedToDelete.length > 0) {
+        if (store.failedToDelete.length > 0) {
             exit(1)
         }
     } catch (err: unknown) {

@@ -1,11 +1,11 @@
 import { checkbox, confirm } from '@inquirer/prompts'
 import { exit } from 'node:process'
 import { bold, green, red, yellowBright } from 'yoctocolors'
-import { skipConfirmation, worker } from './state.js'
+import store from './store.js'
 
 function getCountsText() {
-    const numFailed = worker.failedToDelete.length
-    const numAttempted = worker.queuedForDeletion.length
+    const numFailed = store.failedToDelete.length
+    const numAttempted = store.queuedForDeletion.length
 
     if (numFailed < numAttempted) {
         return `Could not remove ${numFailed} of those ${numAttempted} branch${numAttempted === 1 ? '' : 'es'}`
@@ -15,7 +15,7 @@ function getCountsText() {
 }
 
 export async function retryFailedDeletions() {
-    const numDeletedInFirstRun = worker.queuedForDeletion.length - worker.failedToDelete.length
+    const numDeletedInFirstRun = store.queuedForDeletion.length - store.failedToDelete.length
     console.info(
         yellowBright(
             `⚠️ ${getCountsText()}.\nYou may try again using ${bold('--force')}, or cancel by pressing Ctrl+C\n`,
@@ -24,7 +24,7 @@ export async function retryFailedDeletions() {
     const branchesToRetry = await checkbox({
         message: red('Select branches to forcefully remove'),
         pageSize: 40,
-        choices: worker.failedToDelete.map((value) => ({ value })),
+        choices: store.failedToDelete.map((value) => ({ value })),
     })
 
     if (branchesToRetry.length === 0) {
@@ -34,7 +34,7 @@ export async function retryFailedDeletions() {
     }
 
     const numRetried = branchesToRetry.length
-    const confirmRetry = skipConfirmation
+    const confirmRetry = store.skipConfirmation
         ? true
         : await confirm({
               message: `Are you sure you want to forcefully remove ${numRetried} branch${numRetried !== 1 ? 'es' : ''}?`,
@@ -47,11 +47,11 @@ export async function retryFailedDeletions() {
         exit(0)
     }
 
-    worker.setForce(true)
-    worker.setQueuedForDeletion(branchesToRetry)
-    await worker.deleteBranches()
+    store.setForce(true)
+    store.setQueuedForDeletion(branchesToRetry)
+    await store.deleteBranches()
 
-    const stillNotDeleted = worker.failedToDelete.length
+    const stillNotDeleted = store.failedToDelete.length
     const total = numDeletedInFirstRun + numRetried
 
     if (stillNotDeleted === 0) {
