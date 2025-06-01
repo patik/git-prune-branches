@@ -3,28 +3,31 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-// const isCI = process.argv[2]?.split('=')[1] === 'true'
-const isCI = process.env.isCI === 'true' || process.argv[2]?.split('=')[1] === 'true'
+// Check if running in CI environment
+const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
 
-let tempdir: string = process.env.tempdir || process.argv[3]?.split('=')[1] || ''
+// Get temp directory from environment or fallback to system temp
+let tempdir: string = process.env.TEMP_DIR || ''
 let workingDir: string = ''
 
-console.log('isCI from env var: ', typeof isCI, isCI)
-console.log('tempdir from env var: ', typeof tempdir, tempdir)
-
-export const testSetup = async () => {
-    console.log('Starting test setup...')
-    const gitUser = child_process.execSync('git config --get user.email', { cwd: tempdir })
-    console.log('gitUser: ', gitUser.toString())
-
-    if (!gitUser.toString()) {
-        child_process.execSync('git config user.email "you@example.com"', { cwd: tempdir })
-        child_process.execSync('git config user.name "Your Name"', { cwd: tempdir })
+export const testSetup = () => {
+    // Configure git user in CI environment
+    if (isCI) {
+        try {
+            child_process.execSync('git config --global user.email "ci@example.com"')
+            child_process.execSync('git config --global user.name "CI User"')
+        } catch (error) {
+            console.warn('Failed to configure git user:', error)
+        }
     }
 
+    // Use provided temp directory or create a new one
     if (!tempdir) {
         const tmp = os.tmpdir()
         tempdir = mkdtempSync(tmp + path.sep + 'git-prune-branches-')
+    } else {
+        // In CI, ensure the temp directory exists and create our subdirectory
+        tempdir = mkdtempSync(tempdir + path.sep + 'git-prune-branches-')
     }
 
     const bareDir = tempdir + path.sep + 'bare'
