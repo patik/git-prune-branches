@@ -3,10 +3,14 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-const isCI = process.argv[2]?.split('=')[1] === 'true'
+// const isCI = process.argv[2]?.split('=')[1] === 'true'
+const isCI = process.env.isCI === 'true' || process.argv[2]?.split('=')[1] === 'true'
 
-let tempdir: string = process.argv[3]?.split('=')[1] || ''
+let tempdir: string = process.env.tempdir || process.argv[3]?.split('=')[1] || ''
 let workingDir: string = ''
+
+console.log('isCI from env var: ', typeof isCI, isCI)
+console.log('tempdir from env var: ', typeof tempdir, tempdir)
 
 export const testSetup = () => {
     if (isCI) {

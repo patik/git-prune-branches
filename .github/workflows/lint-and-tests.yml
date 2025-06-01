@@ -36,4 +36,14 @@ jobs:
             - name: Build
               run: pnpm build
             - name: Test
-              run: pnpm test --ci=true --tempdir="${RUNNER_TEMP}"
+              shell: bash
+              run: |
+
+                isCI=true
+                tempdir="${RUNNER_TEMP}"
+
+                 # set them as GitHub ENV variables
+                echo "isCI=$isCI" >> $GITHUB_ENV
+                echo "tempdir=$tempdir" >> $GITHUB_ENV
+
+                pnpm test
