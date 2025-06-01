@@ -1,23 +1,23 @@
 import { checkbox, confirm } from '@inquirer/prompts'
 import { exit } from 'node:process'
-import { skipConfirmation, worker } from './state.js'
+import store from './state.js'
 
 export async function firstAttempt(): Promise<void> {
-    await worker.findStaleBranches()
+    await store.findStaleBranches()
 
-    if (worker.staleBranches.length === 0) {
+    if (store.staleBranches.length === 0) {
         console.info('✅ No stale branches were found')
         exit(0)
     }
 
-    const userSelectedBranches = worker.pruneAll
-        ? worker.staleBranches
+    const userSelectedBranches = store.pruneAll
+        ? store.staleBranches
         : await checkbox({
               message: 'Select branches to remove',
               pageSize: 40,
-              choices: worker.staleBranches.map((value) => ({ value })),
+              choices: store.staleBranches.map((value) => ({ value })),
           })
-    const confirmAnswer = skipConfirmation
+    const confirmAnswer = store.skipConfirmation
         ? true
         : await confirm({
               message: `Are you sure you want to remove ${userSelectedBranches.length === 1 ? 'this' : 'these'} ${userSelectedBranches.length} branch${userSelectedBranches.length !== 1 ? 'es' : ''}?`,
@@ -29,7 +29,7 @@ export async function firstAttempt(): Promise<void> {
         exit(0)
     }
 
-    worker.setQueuedForDeletion(userSelectedBranches)
+    store.setQueuedForDeletion(userSelectedBranches)
 
-    await worker.deleteBranches()
+    await store.deleteBranches()
 }

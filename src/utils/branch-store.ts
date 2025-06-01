@@ -7,6 +7,7 @@ export default class BranchStore {
     force: boolean
     dryRun: boolean
     pruneAll: boolean
+    skipConfirmation: boolean
     remoteBranches: Array<string>
     localBranches: Array<{ localBranch: string; remoteBranch: string }>
     staleBranches: Array<string>
@@ -15,11 +16,18 @@ export default class BranchStore {
     liveBranches: Array<string>
     noConnection: boolean
 
-    constructor(ops: { remote: string; force: boolean; dryRun: boolean; pruneAll: boolean }) {
+    constructor(ops: {
+        remote: string
+        force: boolean
+        dryRun: boolean
+        pruneAll: boolean
+        skipConfirmation: boolean
+    }) {
         this.remote = ops.remote
         this.force = ops.force
         this.dryRun = ops.dryRun
         this.pruneAll = ops.pruneAll
+        this.skipConfirmation = ops.skipConfirmation
         this.remoteBranches = []
         this.localBranches = []
         this.staleBranches = []
