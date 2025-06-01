@@ -231,7 +231,6 @@ export default class FindStale {
                 try {
                     const dFlag = this.force ? '-D' : '-d'
                     spinner.color = 'yellow'
-                    spinner.start()
                     const command = `git branch ${dFlag} "${branchName}"`
                     await stdout(command)
                     spinner.succeed(`Removed branch ${branchName}`)
