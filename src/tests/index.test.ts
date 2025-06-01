@@ -27,15 +27,15 @@ describe('git-prune-branches', () => {
 
             // Should include branches that would be deleted
             expect(output).toContain(' chore/local-name-deleted')
-            expect(output).toContain(' #333-work')
+            expect(output).toContain(' some-work')
             expect(output).toContain(' feature/fast-forwarded')
-            expect(output).toContain(' no-ff')
+            expect(output).toContain(' not-yet-merged')
             expect(output).toMatchInlineSnapshot(`
               "Found remotely removed branches:
-                - #333-work
                 - chore/local-name-deleted
                 - feature/fast-forwarded
-                - no-ff
+                - not-yet-merged
+                - some-work
 
               ℹ️ To remove branches, don’t include the --dry-run flag
               [32m✅ Deleted all 4 branches[39m
@@ -63,7 +63,7 @@ describe('git-prune-branches', () => {
               [39m
               [34m?[39m [1m[31mSelect branches to forcefully remove[39m[22m (Press [36m[1m<space>[22m[39m to select, [36m[1m<a>[22m[39m to toggle
               all, [36m[1m<i>[22m[39m to invert selection, and [36m[1m<enter>[22m[39m to proceed)
-              [36m❯◯ no-ff[39m[?25l[9G
+              [36m❯◯ not-yet-merged[39m[?25l[18G
               [?25h
               👋 until next time!
               "

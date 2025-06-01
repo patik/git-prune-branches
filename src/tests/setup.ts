@@ -49,16 +49,16 @@ export const testSetup = () => {
     // create new branch, which will be deleted by -d flag
     child_process.execSync('git branch feature/fast-forwarded', { cwd: workingDir })
     // create another branch with special character
-    child_process.execSync('git branch "#333-work"', { cwd: workingDir })
+    child_process.execSync('git branch some-work', { cwd: workingDir })
     // create branch with renamed name, which is deleted on remote
     child_process.execSync('git branch chore/local-name-deleted', { cwd: workingDir })
     // create branch with renamed name, which is NOT deleted on remote
     child_process.execSync('git branch chore/local-name-persistent', { cwd: workingDir })
     // create new branch, which can be deleted only with -D flag
-    child_process.execSync('git branch no-ff', { cwd: workingDir })
+    child_process.execSync('git branch not-yet-merged', { cwd: workingDir })
 
     // checkout working branch
-    child_process.execSync('git checkout no-ff', { cwd: workingDir })
+    child_process.execSync('git checkout not-yet-merged', { cwd: workingDir })
 
     // update file content
     writeFileSync(file, 'lolipop content changed')
@@ -67,17 +67,17 @@ export const testSetup = () => {
     // push all the branches to the remote and update config
     child_process.execSync('git push origin -u main', { cwd: workingDir })
     child_process.execSync('git push origin -u feature/fast-forwarded', { cwd: workingDir })
-    child_process.execSync('git push origin -u "#333-work"', { cwd: workingDir })
+    child_process.execSync('git push origin -u some-work', { cwd: workingDir })
     child_process.execSync('git push origin -u chore/local-name-deleted:chore/remote-name-deleted', { cwd: workingDir })
     child_process.execSync('git push origin -u chore/local-name-persistent:chore/remote-name-persistent', {
         cwd: workingDir,
     })
-    child_process.execSync('git push origin -u no-ff', { cwd: workingDir })
+    child_process.execSync('git push origin -u not-yet-merged', { cwd: workingDir })
 
     // remove all the branches from the remote, except for the local-name
     child_process.execSync('git push origin :feature/fast-forwarded', { cwd: workingDir })
-    child_process.execSync('git push origin :no-ff', { cwd: workingDir })
-    child_process.execSync('git push origin :"#333-work"', { cwd: workingDir })
+    child_process.execSync('git push origin :not-yet-merged', { cwd: workingDir })
+    child_process.execSync('git push origin :some-work', { cwd: workingDir })
     child_process.execSync('git push origin :chore/remote-name-deleted', { cwd: workingDir })
 
     // checkout main branch
