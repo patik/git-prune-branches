@@ -7,6 +7,7 @@ import { exit } from 'node:process'
 import { firstAttempt } from './firstAttempt.js'
 import { retryFailedDeletions } from './retryFailedDeletions.js'
 import { worker } from './state.js'
+import { green } from 'yoctocolors'
 
 export default async function program() {
     try {
@@ -14,6 +15,14 @@ export default async function program() {
 
         if (worker.failedToDelete.length > 0) {
             await retryFailedDeletions()
+        } else {
+            const total = worker.queuedForDeletion.length
+            console.info(green(`✅ Deleted ${total === 1 ? '1' : `all ${total}`} branch${total === 1 ? '' : 'es'}`))
+            exit(0)
+        }
+
+        if (worker.failedToDelete.length > 0) {
+            exit(1)
         }
     } catch (err: unknown) {
         if (typeof err === 'object' && err) {

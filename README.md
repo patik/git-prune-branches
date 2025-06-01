@@ -1,3 +1,5 @@
+# git-prune-branches
+
 List or remove local tracked branches, which are deleted from the remote.
 
 It's a fork of [git-removed-branches](https://github.com/nemisj/git-removed-branches) with an interactive prompt, and the ability to retry deleting branches with `--force`
@@ -12,7 +14,7 @@ Addresses questions, like:
 - [Remove tracking branches no longer on remote](https://stackoverflow.com/questions/7726949/remove-tracking-branches-no-longer-on-remote)
 - [How to prune local tracking branches that do not exist on remote anymore?](https://stackoverflow.com/questions/13064613/how-to-prune-local-tracking-branches-that-do-not-exist-on-remote-anymore/30494276#30494276)
 
-![](https://github.com/patik/git-prune-branches/blob/master/usage.gif)
+![Demo](https://github.com/patik/git-prune-branches/blob/master/usage.gif)
 
 ## Why?
 
@@ -113,7 +115,7 @@ To print the version:
 git prune-branches --version
 ```
 
-## Troubleshooting:
+## Troubleshooting
 
 If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too many branches (more then 3382—see [discussion](https://github.com/patik/git-prune-branches/issues/11)).
 
@@ -121,6 +123,39 @@ You can fix this by specifying NODE_MAX_BUFFER environment variable. For example
 
 ```bash
 NODE_MAX_BUFFER=1048576 git prune-branches
+```
+
+## Development
+
+### Testing
+
+This project uses [Vitest](https://vitest.dev/) for testing. The tests create a temporary git repository and verify the behavior of the tool in different scenarios.
+
+#### Run tests in watch mode
+
+```bash
+pnpm test
+```
+
+#### Run tests once
+
+```bash
+pnpm test:once
+```
+
+### Building
+
+Build the TypeScript source:
+
+```bash
+pnpm build
+```
+
+### Linting and Formatting
+
+```bash
+pnpm lint
+pnpm format
 ```
 
 ## Credit

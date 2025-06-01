@@ -3,20 +3,27 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-const isCI = process.argv[2]?.split('=')[1] === 'true'
+const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
 
-let tempdir: string = process.argv[3]?.split('=')[1] || ''
+let tempdir: string = process.env.TEMP_DIR || ''
 let workingDir: string = ''
 
 export const testSetup = () => {
     if (isCI) {
-        child_process.execSync('git config --global user.email "you@example.com"', { cwd: tempdir })
-        child_process.execSync('git config --global user.name "Your Name"', { cwd: tempdir })
+        try {
+            child_process.execSync('git config --global user.email "ci@example.com"')
+            child_process.execSync('git config --global user.name "CI User"')
+        } catch (error) {
+            console.warn('Failed to configure git user:', error)
+        }
     }
 
     if (!tempdir) {
         const tmp = os.tmpdir()
         tempdir = mkdtempSync(tmp + path.sep + 'git-prune-branches-')
+    } else {
+        // In CI, ensure the temp directory exists and create our subdirectory
+        tempdir = mkdtempSync(tempdir + path.sep + 'git-prune-branches-')
     }
 
     const bareDir = tempdir + path.sep + 'bare'
@@ -26,7 +33,7 @@ export const testSetup = () => {
 
     mkdirSync(bareDir)
 
-    console.log(`Using "${tempdir}" dir`)
+    console.log(`Using temp dir "${tempdir}"`)
 
     // create bare repository
     child_process.execSync('git init --bare --initial-branch=main', { cwd: bareDir })

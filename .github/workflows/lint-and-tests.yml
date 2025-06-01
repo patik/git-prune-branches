@@ -36,4 +36,8 @@ jobs:
             - name: Build
               run: pnpm build
             - name: Test
-              run: pnpm test --ci=true --tempdir="${RUNNER_TEMP}"
+              shell: bash
+              env:
+                  CI: true
+                  TEMP_DIR: ${{ runner.temp }}
+              run: pnpm test
