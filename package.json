@@ -1,6 +1,6 @@
 {
     "name": "git-prune-branches",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "engines": {
         "node": ">=18"
     },
@@ -14,12 +14,14 @@
     "scripts": {
         "build": "tsc",
         "start": "tsx ./src/index.ts",
-        "test": "pnpm run build && tsx ./src/tests/index.ts",
+        "test": "pnpm run build && vitest",
+        "test:once": "vitest run",
+        "test:legacy": "pnpm run build && tsx ./src/tests/index.ts",
         "lint": "tsc --noEmit && eslint . --fix && pnpm run format",
         "format": "prettier . --list-different --write",
         "check-format": "prettier . --list-different",
         "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
-        "ci": "pnpm build && pnpm check-exports",
+        "ci": "pnpm build && pnpm check-exports && pnpm test",
         "prepublishOnly": "pnpm run ci"
     },
     "repository": {
@@ -56,12 +58,14 @@
         "@eslint/js": "^9.27.0",
         "@types/minimist": "^1.2.5",
         "@types/node": "^22.15.18",
+        "@vitest/ui": "^3.1.4",
         "eslint": "^9.27.0",
         "eslint-config-prettier": "^10.1.5",
         "eslint-plugin-prettier": "^5.4.0",
         "prettier": "^3.5.3",
         "tsx": "^4.19.4",
         "typescript": "^5.8.3",
-        "typescript-eslint": "^8.32.1"
+        "typescript-eslint": "^8.32.1",
+        "vitest": "^3.1.4"
     }
 }
