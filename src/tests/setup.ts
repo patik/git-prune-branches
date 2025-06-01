@@ -18,7 +18,6 @@ export const testSetup = () => {
         }
     }
 
-    // Use provided temp directory or create a new one
     if (!tempdir) {
         const tmp = os.tmpdir()
         tempdir = mkdtempSync(tmp + path.sep + 'git-prune-branches-')

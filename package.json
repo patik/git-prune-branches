@@ -15,12 +15,12 @@
         "build": "tsc",
         "start": "tsx ./src/index.ts",
         "test": "pnpm run build && vitest",
-        "test:once": "vitest run",
+        "test:once": "pnpm run build && vitest run",
         "lint": "tsc --noEmit && eslint . --fix && pnpm run format",
         "format": "prettier . --list-different --write",
         "check-format": "prettier . --list-different",
         "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
-        "ci": "pnpm build && pnpm check-exports && pnpm test",
+        "ci": "pnpm build && pnpm check-exports && pnpm test:once",
         "prepublishOnly": "pnpm run ci"
     },
     "repository": {
