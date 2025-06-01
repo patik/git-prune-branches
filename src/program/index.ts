@@ -15,6 +15,10 @@ export default async function program() {
         if (worker.failedToDelete.length > 0) {
             await retryFailedDeletions()
         }
+
+        if (worker.failedToDelete.length > 0) {
+            exit(1)
+        }
     } catch (err: unknown) {
         if (typeof err === 'object' && err) {
             if ('code' in err && typeof err.code === 'number' && err.code === 128) {

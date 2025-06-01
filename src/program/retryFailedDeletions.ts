@@ -24,7 +24,7 @@ export async function retryFailedDeletions() {
     const branchesToRetry = await checkbox({
         message: red('Select branches to forcefully remove'),
         pageSize: 40,
-        choices: worker.failedToDelete.map((value) => ({ value, checked: true })),
+        choices: worker.failedToDelete.map((value) => ({ value })),
     })
 
     if (branchesToRetry.length === 0) {
@@ -49,7 +49,6 @@ export async function retryFailedDeletions() {
 
     worker.setForce(true)
     worker.setQueuedForDeletion(branchesToRetry)
-
     await worker.deleteBranches()
 
     const stillNotDeleted = worker.failedToDelete.length
