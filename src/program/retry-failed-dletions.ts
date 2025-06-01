@@ -1,7 +1,7 @@
 import { checkbox, confirm } from '@inquirer/prompts'
 import { exit } from 'node:process'
 import { bold, green, red, yellowBright } from 'yoctocolors'
-import store from './state.js'
+import store from './store.js'
 
 function getCountsText() {
     const numFailed = store.failedToDelete.length

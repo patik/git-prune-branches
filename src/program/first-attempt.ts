@@ -1,6 +1,6 @@
 import { checkbox, confirm } from '@inquirer/prompts'
 import { exit } from 'node:process'
-import store from './state.js'
+import store from './store.js'
 
 export async function firstAttempt(): Promise<void> {
     await store.findStaleBranches()

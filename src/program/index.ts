@@ -7,7 +7,7 @@ import { exit } from 'node:process'
 import { green } from 'yoctocolors'
 import { firstAttempt } from './first-attempt.js'
 import { retryFailedDeletions } from './retry-failed-dletions.js'
-import store from './state.js'
+import store from './store.js'
 
 export default async function program() {
     try {
