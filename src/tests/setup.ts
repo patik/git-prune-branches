@@ -2,7 +2,6 @@ import child_process from 'node:child_process'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { stdout } from '../utils/stdout.js'
 
 // const isCI = process.argv[2]?.split('=')[1] === 'true'
 const isCI = process.env.isCI === 'true' || process.argv[2]?.split('=')[1] === 'true'
@@ -14,12 +13,13 @@ console.log('isCI from env var: ', typeof isCI, isCI)
 console.log('tempdir from env var: ', typeof tempdir, tempdir)
 
 export const testSetup = async () => {
-    const gitUser = await stdout('git config --global --get user.email')
-    console.log('gitUser: ', gitUser)
+    console.log('Starting test setup...')
+    const gitUser = child_process.execSync('git config --get user.email', { cwd: tempdir })
+    console.log('gitUser: ', gitUser.toString())
 
-    if (!gitUser) {
-        child_process.execSync('git config --global user.email "you@example.com"', { cwd: tempdir })
-        child_process.execSync('git config --global user.name "Your Name"', { cwd: tempdir })
+    if (!gitUser.toString()) {
+        child_process.execSync('git config user.email "you@example.com"', { cwd: tempdir })
+        child_process.execSync('git config user.name "Your Name"', { cwd: tempdir })
     }
 
     if (!tempdir) {
