@@ -1,4 +1,4 @@
-import { gray } from 'yoctocolors'
+import ora from 'ora'
 import split from './split.js'
 import { stdout } from './stdout.js'
 
@@ -227,14 +227,17 @@ export default class FindStale {
 
         for (const branchName of this.queuedForDeletion) {
             if (!this.dryRun) {
+                const spinner = ora(`Removing branch ${branchName}`).start()
                 try {
                     const dFlag = this.force ? '-D' : '-d'
+                    spinner.color = 'yellow'
+                    spinner.start()
                     const command = `git branch ${dFlag} "${branchName}"`
-                    console.info(gray(command))
-                    const out = await stdout(command)
-                    console.info(out)
+                    await stdout(command)
+                    spinner.succeed(`Removed branch ${branchName}`)
                 } catch (err) {
                     failures.push(branchName)
+                    spinner.fail(`Failed to remove branch ${branchName}`)
                 }
             } else {
                 console.info(`  - ${branchName}`)
@@ -243,9 +246,7 @@ export default class FindStale {
 
         console.info()
 
-        if (failures.length === 0 && !this.dryRun) {
-            console.info('ℹ️ Branches were removed')
-        } else if (failures.length === 0) {
+        if (failures.length === 0 && this.dryRun) {
             console.info('ℹ️ To remove branches, don’t include the --dry-run flag')
         }
 

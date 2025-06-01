@@ -75,6 +75,8 @@ export const testSetup = () => {
 
     // checkout main branch
     child_process.execSync('git checkout main', { cwd: workingDir })
-
+    console.log(`cd ${workingDir}`)
     return workingDir
 }
+
+testSetup()

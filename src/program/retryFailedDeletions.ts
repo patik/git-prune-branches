@@ -11,22 +11,20 @@ function getCountsText() {
         return `Could not remove ${numFailed} of those ${numAttempted} branch${numAttempted === 1 ? '' : 'es'}`
     }
 
-    return `Could not remove any of those ${numAttempted} branch${numAttempted === 1 ? '' : 'es'}`
+    return `Could not remove  ${numAttempted === 1 ? 'that' : 'any of those'} branch${numAttempted === 1 ? '' : 'es'}`
 }
 
 export async function retryFailedDeletions() {
     const numDeletedInFirstRun = worker.queuedForDeletion.length - worker.failedToDelete.length
     console.info(
         yellowBright(
-            `
-            ⚠️ ${getCountsText()}. You may try again using ${bold('--force')}, or cancel by pressing Ctrl+C
-            `,
+            `⚠️ ${getCountsText()}.\nYou may try again using ${bold('--force')}, or cancel by pressing Ctrl+C\n`,
         ),
     )
     const branchesToRetry = await checkbox({
         message: red('Select branches to forcefully remove'),
         pageSize: 40,
-        choices: worker.failedToDelete.map((value) => ({ value })),
+        choices: worker.failedToDelete.map((value) => ({ value, checked: true })),
     })
 
     if (branchesToRetry.length === 0) {
@@ -59,10 +57,11 @@ export async function retryFailedDeletions() {
 
     if (stillNotDeleted === 0) {
         console.info(
-            green(`
-✅ Deleted ${
-                total
-            } branch${total === 1 ? '' : 'es'} in total: ${numRetried} with --force, and ${numDeletedInFirstRun} without --force.`),
+            green(
+                `✅ Deleted ${
+                    total
+                } branch${total === 1 ? '' : 'es'} in total: ${numRetried} with --force, and ${numDeletedInFirstRun} without --force.`,
+            ),
         )
         return
     }
