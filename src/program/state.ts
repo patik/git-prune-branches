@@ -1,10 +1,10 @@
+import BranchStore from '../utils/branch-store.js'
 import { establishArgs } from '../utils/establish-args.js'
-import FindStale from '../utils/find-stale.js'
 
 const argv = establishArgs()
 const skipConfirmation = argv.yes || argv['prune-all']
 
-const worker = new FindStale({
+const worker = new BranchStore({
     dryRun: argv['dry-run'],
     pruneAll: argv['prune-all'],
     force: argv.force,

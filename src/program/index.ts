@@ -4,8 +4,8 @@ import './side-effects/handle-control-c.js'
 
 // Program imports
 import { exit } from 'node:process'
-import { firstAttempt } from './firstAttempt.js'
-import { retryFailedDeletions } from './retryFailedDeletions.js'
+import { firstAttempt } from './first-attempt.js'
+import { retryFailedDeletions } from './retry-failed-dletions.js'
 import { worker } from './state.js'
 import { green } from 'yoctocolors'
 
