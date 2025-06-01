@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import BranchStore from '../utils/branch-store.js'
-import * as stdoutModule from '../utils/stdout.js'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import BranchStore from './branch-store.js'
+import * as stdoutModule from './stdout.js'
 
 // Mock the stdout module
 vi.mock('../utils/stdout.js', () => ({
