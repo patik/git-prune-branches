@@ -14,8 +14,8 @@ export const testSetup = () => {
     // Configure git user in CI environment
     if (isCI) {
         try {
-            child_process.execSync('git config user.email "ci@example.com"')
-            child_process.execSync('git config user.name "CI User"')
+            child_process.execSync('git config --global user.email "ci@example.com"')
+            child_process.execSync('git config --global user.name "CI User"')
         } catch (error) {
             console.warn('Failed to configure git user:', error)
         }
