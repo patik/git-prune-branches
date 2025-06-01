@@ -3,15 +3,12 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-// Check if running in CI environment
 const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
 
-// Get temp directory from environment or fallback to system temp
 let tempdir: string = process.env.TEMP_DIR || ''
 let workingDir: string = ''
 
 export const testSetup = () => {
-    // Configure git user in CI environment
     if (isCI) {
         try {
             child_process.execSync('git config --global user.email "ci@example.com"')

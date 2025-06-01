@@ -16,7 +16,6 @@
         "start": "tsx ./src/index.ts",
         "test": "pnpm run build && vitest",
         "test:once": "vitest run",
-        "test:legacy": "pnpm run build && tsx ./src/tests/index.ts",
         "lint": "tsc --noEmit && eslint . --fix && pnpm run format",
         "format": "prettier . --list-different --write",
         "check-format": "prettier . --list-different",

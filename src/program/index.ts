@@ -18,6 +18,7 @@ export default async function program() {
         } else {
             const total = worker.queuedForDeletion.length
             console.info(green(`✅ Deleted ${total === 1 ? '1' : `all ${total}`} branch${total === 1 ? '' : 'es'}`))
+            exit(0)
         }
 
         if (worker.failedToDelete.length > 0) {
