@@ -4,7 +4,7 @@ import path from 'node:path'
 import { argv } from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { green } from 'yoctocolors'
-import { testSetup } from './testSetup.js'
+import { testSetup } from './setup.js'
 
 const onlyPrepare = argv.find((one) => one === '--prepare')
 const __filename = fileURLToPath(import.meta.url)
