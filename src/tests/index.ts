@@ -40,10 +40,10 @@ const testing_prune = () => {
 ${output}
 -------------------`)
 
-    // assert.notEqual(output.indexOf('✔ Removed branch #333-work'), -1)
-    // assert.notEqual(output.indexOf('Removed branch feature/fast-forwarded'), -1)
     assert.notEqual(output.indexOf('Could not remove 1 of those 4 branches'), -1)
     assert.notEqual(output.indexOf(' no-ff'), -1)
+    assert.equal(output.indexOf('feature/fast-forwarded'), -1)
+    assert.equal(output.indexOf('#333-work'), -1)
 }
 
 const testing_force = () => {
@@ -56,7 +56,7 @@ const testing_force = () => {
 ${output}
 -------------------`)
 
-    assert.notEqual(output.indexOf('Removed branch no-ff'), -1)
+    assert.notEqual(output.indexOf('Deleted 1 branch'), -1)
 }
 
 if (onlyPrepare) {
@@ -65,8 +65,8 @@ if (onlyPrepare) {
 ${workingDir}
 `)
 } else {
-    // test_nothing()
+    test_nothing()
     testing_prune()
-    // testing_force()
+    testing_force()
     console.log(green('All tests passed!'))
 }
