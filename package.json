@@ -48,6 +48,7 @@
     ],
     "dependencies": {
         "@inquirer/prompts": "^7.5.3",
+        "easy-stdout": "^0.1.0",
         "minimist": "^1.2.8",
         "ora": "^8.2.0",
         "yoctocolors": "^2.1.1"

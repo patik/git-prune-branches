@@ -1,6 +1,6 @@
+import stdout from 'easy-stdout'
 import ora from 'ora'
 import split from './split.js'
-import { stdout } from './stdout.js'
 
 export default class BranchStore {
     remote: string
