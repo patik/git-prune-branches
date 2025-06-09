@@ -1,9 +1,9 @@
+import stdoutModule from 'easy-stdout'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import BranchStore from './branch-store.js'
-import * as stdoutModule from './stdout.js'
 
 // Mock the stdout module
-vi.mock('../utils/stdout.js', () => ({
+vi.mock('easy-stdout', () => ({
     stdout: vi.fn(),
 }))
 
@@ -17,7 +17,7 @@ vi.mock('ora', () => ({
     })),
 }))
 
-const mockStdout = vi.mocked(stdoutModule.stdout)
+const mockStdout = vi.mocked(stdoutModule)
 
 describe('BranchStore', () => {
     let branchStore: BranchStore
