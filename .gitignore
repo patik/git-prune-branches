@@ -26,3 +26,8 @@ node_modules
 .vscode/
 .DS_Store
 dist/
+
+# Shared Copilot instruction symlinks
+.github/instructions/*.instructions.md
+.github/chatmodes
+.github/prompts
