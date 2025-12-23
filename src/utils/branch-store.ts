@@ -14,6 +14,7 @@ export default class BranchStore {
     queuedForDeletion: Array<string>
     failedToDelete: Array<string>
     liveBranches: Array<string>
+    unmergedBranches: Array<string>
     noConnection: boolean
 
     constructor(ops: {
@@ -34,6 +35,7 @@ export default class BranchStore {
         this.queuedForDeletion = []
         this.failedToDelete = []
         this.liveBranches = []
+        this.unmergedBranches = []
         this.noConnection = false
     }
 
@@ -58,41 +60,20 @@ export default class BranchStore {
         // branches which are available on host
         this.liveBranches = []
 
+        // branches which are not yet merged
+        this.unmergedBranches = []
+
         // if we are unable to connect to remote
         // this will become true
         this.noConnection = false
 
-        await this.findLiveBranches()
-        await this.findLocalBranches()
-        await this.findRemoteBranches()
+        await Promise.all([
+            this.findLiveBranches(),
+            this.findLocalBranches(),
+            this.findUnmergedBranches(),
+            this.findRemoteBranches(),
+        ])
         await this.analyzeLiveAndCache()
-    }
-
-    async findLocalBranches() {
-        // list all the branches
-        // by using format
-        // git branch --format="%(refname:short)@{%(upstream)}"
-        const out = await stdout('git branch --format="%(refname:short)@{%(upstream)}"')
-        const lines = split(out)
-
-        lines?.forEach((line) => {
-            // upstream has format: "@{refs/remotes/origin/#333-work}"
-            const startIndex = line.indexOf(`@{refs/remotes/${this.remote}`)
-            if (startIndex === -1) {
-                return
-            }
-
-            const localBranch = line.slice(0, startIndex)
-            const upstream = line.slice(startIndex + 2, -1).trim()
-
-            const upParts = upstream.match(/refs\/remotes\/[^/]+\/(.+)/)
-            const [, remoteBranch] = upParts || []
-
-            this.localBranches.push({
-                localBranch,
-                remoteBranch: remoteBranch || '',
-            })
-        })
     }
 
     //
@@ -153,13 +134,60 @@ export default class BranchStore {
         }
     }
 
+    async findLocalBranches() {
+        // list all the branches
+        // by using format
+        // git branch --format="%(refname:short)@{%(upstream)}"
+        const out = await stdout('git branch --format="%(refname:short)@{%(upstream)}"')
+        const lines = split(out)
+
+        lines.forEach((line) => {
+            // upstream has format: "@{refs/remotes/origin/#333-work}"
+            const startIndex = line.indexOf(`@{refs/remotes/${this.remote}`)
+            if (startIndex === -1) {
+                return
+            }
+
+            const localBranch = line.slice(0, startIndex)
+            const upstream = line.slice(startIndex + 2, -1).trim()
+
+            const upParts = upstream.match(/refs\/remotes\/[^/]+\/(.+)/)
+            const [, remoteBranch] = upParts || []
+
+            this.localBranches.push({
+                localBranch,
+                remoteBranch: remoteBranch || '',
+            })
+        })
+    }
+
+    async findUnmergedBranches() {
+        // list all the unmerged branches
+        // by using format
+        // "%(refname:short)@{%(upstream)}"
+        const out = await stdout('git branch --format="%(refname:short)@{%(upstream)}" --no-merged')
+        const lines = split(out)
+
+        lines.forEach((line) => {
+            // upstream has format: "@{refs/remotes/origin/#333-work}"
+            const startIndex = line.indexOf(`@{refs/remotes/${this.remote}`)
+            if (startIndex === -1) {
+                return
+            }
+
+            const localBranch = line.slice(0, startIndex)
+
+            this.unmergedBranches.push(localBranch)
+        })
+    }
+
     async findRemoteBranches() {
         this.remoteBranches = []
 
         // get list of remote branches
         const out = await stdout('git branch -r')
 
-        //split lines
+        // split lines
         const branches = split(out)
 
         // filter out non origin branches

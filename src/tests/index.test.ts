@@ -11,8 +11,8 @@ const bin = path.join(__dirname, '../../dist/index.js')
 let workingDir: string
 
 describe('git-prune-branches', () => {
-    beforeAll(async () => {
-        workingDir = await testSetup()
+    beforeAll(() => {
+        workingDir = testSetup()
     })
 
     describe('dry run mode', () => {

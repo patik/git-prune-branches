@@ -1,10 +1,12 @@
 import stdoutModule from 'easy-stdout'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import BranchStore from './branch-store.js'
+import BranchStore from '../utils/branch-store.js'
 
 // Mock the stdout module
 vi.mock('easy-stdout', () => ({
-    stdout: vi.fn(),
+    default: vi.fn(() => ({
+        stdout: vi.fn(),
+    })),
 }))
 
 // Mock ora
@@ -423,22 +425,30 @@ ghi789\trefs/heads/hotfix/bug`
 
     describe('integration scenarios', () => {
         it('should handle complete workflow with stale branches', async () => {
-            // Mock git command outputs
-            const remotesOutput = 'origin\tgit@github.com:user/repo.git (fetch)'
-            const lsRemoteOutput = `abc123\trefs/heads/main
+            // Mock git command outputs based on command
+            mockStdout.mockImplementation(async (command: string) => {
+                if (command === 'git remote -v') {
+                    return 'origin\tgit@github.com:user/repo.git (fetch)'
+                }
+                if (command === 'git ls-remote -h origin') {
+                    return `abc123\trefs/heads/main
 def456\trefs/heads/develop`
-            const localBranchesOutput = `main@{refs/remotes/origin/main}
+                }
+                if (command === 'git branch --format="%(refname:short)@{%(upstream)}"') {
+                    return `main@{refs/remotes/origin/main}
 develop@{refs/remotes/origin/develop}
 feature/old@{refs/remotes/origin/feature/old}`
-            const remoteBranchesOutput = `  origin/main
+                }
+                if (command === 'git branch --format="%(refname:short)@{%(upstream)}" --no-merged') {
+                    return '' // No unmerged branches
+                }
+                if (command === 'git branch -r') {
+                    return `  origin/main
   origin/develop
   origin/feature/old`
-
-            mockStdout
-                .mockResolvedValueOnce(remotesOutput)
-                .mockResolvedValueOnce(lsRemoteOutput)
-                .mockResolvedValueOnce(localBranchesOutput)
-                .mockResolvedValueOnce(remoteBranchesOutput)
+                }
+                return ''
+            })
 
             const staleBranches = await branchStore.findStaleBranches()
 

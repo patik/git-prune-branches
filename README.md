@@ -118,7 +118,7 @@ git prune-branches --version
 
 ## Troubleshooting
 
-If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too many branches (more then 3382—see [discussion](https://github.com/patik/git-prune-branches/issues/11)).
+If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too many branches (more then 3382—see [discussion](https://github.com/nemisj/git-removed-branches/issues/11)).
 
 You can fix this by specifying NODE_MAX_BUFFER environment variable. For example:
 
@@ -128,6 +128,14 @@ NODE_MAX_BUFFER=1048576 git prune-branches
 
 ## Development
 
+### Running
+
+Run the source code using `tsx`, e.g. to test it on another local repo
+
+```sh
+npx tsx ~/code/git-prune-branches/src/index.ts
+```
+
 ### Testing
 
 This project uses [Vitest](https://vitest.dev/) for testing. The tests create a temporary git repository and verify the behavior of the tool in different scenarios.
@@ -135,13 +143,8 @@ This project uses [Vitest](https://vitest.dev/) for testing. The tests create a 
 #### Run tests in watch mode
 
 ```bash
-pnpm test
-```
-
-#### Run tests once
-
-```bash
-pnpm test:once
+pnpm test # watch mode
+pnpm test:once # run all tests once
 ```
 
 ### Building
