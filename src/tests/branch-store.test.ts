@@ -73,6 +73,7 @@ describe('BranchStore', () => {
             expect(branchStore.queuedForDeletion).toEqual([])
             expect(branchStore.failedToDelete).toEqual([])
             expect(branchStore.liveBranches).toEqual([])
+            expect(branchStore.unmergedBranches).toEqual([])
         })
 
         it('should initialize noConnection as false', () => {
@@ -202,6 +203,65 @@ ghi789\trefs/heads/hotfix/bug`
         })
     })
 
+    describe('findUnmergedBranches', () => {
+        it('should parse unmerged branches with upstream information', async () => {
+            const gitOutput = `feature/wip@{refs/remotes/origin/feature/wip}
+hotfix/incomplete@{refs/remotes/origin/hotfix/incomplete}
+develop@{refs/remotes/origin/develop}
+local-only@{}
+another@{refs/remotes/upstream/another}`
+
+            mockStdout.mockResolvedValueOnce(gitOutput)
+
+            await branchStore.findUnmergedBranches()
+
+            expect(branchStore.unmergedBranches).toEqual(['feature/wip', 'hotfix/incomplete', 'develop'])
+        })
+
+        it('should handle branches with special characters', async () => {
+            const gitOutput = `#333-work@{refs/remotes/origin/#333-work}
+feature/with-dash@{refs/remotes/origin/feature/with-dash}`
+
+            mockStdout.mockResolvedValueOnce(gitOutput)
+
+            await branchStore.findUnmergedBranches()
+
+            expect(branchStore.unmergedBranches).toEqual(['#333-work', 'feature/with-dash'])
+        })
+
+        it('should ignore branches without upstream or different remote', async () => {
+            const gitOutput = `feature/wip@{refs/remotes/origin/feature/wip}
+local-only@{}
+upstream-branch@{refs/remotes/upstream/upstream-branch}`
+
+            mockStdout.mockResolvedValueOnce(gitOutput)
+
+            await branchStore.findUnmergedBranches()
+
+            expect(branchStore.unmergedBranches).toEqual(['feature/wip'])
+        })
+
+        it('should handle empty output when all branches are merged', async () => {
+            const gitOutput = ''
+
+            mockStdout.mockResolvedValueOnce(gitOutput)
+
+            await branchStore.findUnmergedBranches()
+
+            expect(branchStore.unmergedBranches).toEqual([])
+        })
+
+        it('should only store local branch names, not remote branch names', async () => {
+            const gitOutput = `my-local-name@{refs/remotes/origin/different-remote-name}`
+
+            mockStdout.mockResolvedValueOnce(gitOutput)
+
+            await branchStore.findUnmergedBranches()
+
+            expect(branchStore.unmergedBranches).toEqual(['my-local-name'])
+        })
+    })
+
     describe('findRemoteBranches', () => {
         it('should parse remote branches from git branch -r output', async () => {
             const gitOutput = `  origin/main
@@ -296,11 +356,13 @@ ghi789\trefs/heads/hotfix/bug`
             branchStore.localBranches = [{ localBranch: 'old', remoteBranch: 'old' }]
             branchStore.staleBranches = ['old-stale']
             branchStore.liveBranches = ['old-live']
+            branchStore.unmergedBranches = ['old-unmerged']
             branchStore.noConnection = true
 
             // Mock all the methods
             const findLiveBranchesSpy = vi.spyOn(branchStore, 'findLiveBranches').mockResolvedValue()
             const findLocalBranchesSpy = vi.spyOn(branchStore, 'findLocalBranches').mockResolvedValue()
+            const findUnmergedBranchesSpy = vi.spyOn(branchStore, 'findUnmergedBranches').mockResolvedValue()
             const findRemoteBranchesSpy = vi.spyOn(branchStore, 'findRemoteBranches').mockResolvedValue()
             const analyzeLiveAndCacheSpy = vi.spyOn(branchStore, 'analyzeLiveAndCache').mockResolvedValue()
 
@@ -311,11 +373,13 @@ ghi789\trefs/heads/hotfix/bug`
             expect(branchStore.localBranches).toEqual([])
             expect(branchStore.staleBranches).toEqual([])
             expect(branchStore.liveBranches).toEqual([])
+            expect(branchStore.unmergedBranches).toEqual([])
             expect(branchStore.noConnection).toBe(false)
 
             // Check methods are called in correct order
             expect(findLiveBranchesSpy).toHaveBeenCalled()
             expect(findLocalBranchesSpy).toHaveBeenCalled()
+            expect(findUnmergedBranchesSpy).toHaveBeenCalled()
             expect(findRemoteBranchesSpy).toHaveBeenCalled()
             expect(analyzeLiveAndCacheSpy).toHaveBeenCalled()
         })
