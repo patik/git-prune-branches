@@ -2,7 +2,7 @@
 
 ## Project description
 
-This is a command line tool that helps clean up Git branches the user no longer needs. It compares local branches to the remote ones and removes those which do not exist anymore on the remote side. It features an interactive prompt to let the user choose which branches to delete.
+This is a command line tool that helps clean up Git branches the user no longer needs. It compares local branches to the remote ones and removes those which do not exist anymore on the remote side. It features an interactive prompt to let the user choose which branches to delete. The spirit of the tool is to lean more towards nice UX rather than full automation.
 
 The tool is written in TypeScript and uses the Inquirer.js library for the interactive prompts.
 

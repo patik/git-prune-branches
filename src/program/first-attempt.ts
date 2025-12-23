@@ -1,6 +1,7 @@
-import { checkbox, confirm } from '@inquirer/prompts'
+import { checkbox, confirm, Separator } from '@inquirer/prompts'
 import { exit } from 'node:process'
 import store from './store.js'
+import { bold, green } from 'yoctocolors'
 
 export async function firstAttempt(): Promise<void> {
     await store.findStaleBranches()
@@ -10,12 +11,39 @@ export async function firstAttempt(): Promise<void> {
         exit(0)
     }
 
+    const merged = store.staleBranches.filter((branch) => !store.unmergedBranches.includes(branch))
+    const unmerged = store.unmergedBranches.filter((branch) => store.staleBranches.includes(branch))
+
     const userSelectedBranches = store.pruneAll
         ? store.staleBranches
         : await checkbox({
               message: 'Select branches to remove',
               pageSize: 40,
-              choices: store.staleBranches.map((value) => ({ value })),
+              choices: [
+                  new Separator(' '),
+                  new Separator(bold('✅ Merged Branches')),
+                  ...merged.map((branch) => {
+                      return { name: branch, value: branch }
+                  }),
+                  new Separator(' '),
+                  new Separator(bold('⚠️ Unmerged Branches')),
+                  ...unmerged.map((branch) => {
+                      return {
+                          name: branch,
+                          value: branch,
+                      }
+                  }),
+              ],
+              theme: {
+                  style: {
+                      answer: (text: string) => bold(green(text)),
+                  },
+                  icon: {
+                      checked: '    ◉',
+                      unchecked: '    ◯',
+                      //   cursor: '   ❯ ',
+                  },
+              },
           })
     const confirmAnswer = store.skipConfirmation
         ? true

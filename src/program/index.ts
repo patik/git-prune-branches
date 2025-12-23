@@ -1,13 +1,13 @@
 // Side effects
 import './side-effects/check-for-git-repo.js'
 import './side-effects/handle-control-c.js'
+import store from './store.js'
 
 // Program imports
 import { exit } from 'node:process'
 import { green } from 'yoctocolors'
 import { firstAttempt } from './first-attempt.js'
 import { retryFailedDeletions } from './retry-failed-dletions.js'
-import store from './store.js'
 
 export default async function program() {
     try {
