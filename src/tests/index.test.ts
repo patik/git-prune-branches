@@ -38,7 +38,7 @@ describe('git-prune-branches', () => {
                 - some-work
 
               ℹ️ To remove branches, don’t include the --dry-run flag
-              [32m✅ Deleted all 4 branches[39m
+              ✅ Deleted all 4 branches
               "
             `)
         })
@@ -58,10 +58,10 @@ describe('git-prune-branches', () => {
             expect(output).toContain('until next time!')
             expect(output).toMatchInlineSnapshot(`
               "
-              [93m⚠️ Could not remove 1 of those 4 branches.
-              You may try again using [1m--force[22m, or cancel by pressing Ctrl+C
-              [39m
-              [34m?[39m [1m[31mSelect branches to forcefully remove[39m[22m (Press [36m[1m<space>[22m[39m to select, [36m[1m<a>[22m[39m to toggle
+              ⚠️ Could not remove 1 of those 4 branches.
+              You may try again using --force, or cancel by pressing Ctrl+C
+
+              [34m?[39m [1mSelect branches to forcefully remove[22m (Press [36m[1m<space>[22m[39m to select, [36m[1m<a>[22m[39m to toggle
               all, [36m[1m<i>[22m[39m to invert selection, and [36m[1m<enter>[22m[39m to proceed)
               [36m❯◯ not-yet-merged[39m[?25l[18G
               [?25h
@@ -82,7 +82,7 @@ describe('git-prune-branches', () => {
             expect(output).toContain('Deleted 1 branch')
             expect(output).toMatchInlineSnapshot(`
               "
-              [32m✅ Deleted 1 branch[39m
+              ✅ Deleted 1 branch
               "
             `)
         })

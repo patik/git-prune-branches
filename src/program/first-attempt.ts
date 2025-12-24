@@ -1,7 +1,7 @@
 import { checkbox, confirm, Separator } from '@inquirer/prompts'
 import { exit } from 'node:process'
+import { bold, green } from '../utils/colors.js'
 import store from './store.js'
-import { bold, green } from 'yoctocolors'
 
 export async function firstAttempt(): Promise<void> {
     await store.findStaleBranches()

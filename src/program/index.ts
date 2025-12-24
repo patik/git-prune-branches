@@ -5,7 +5,7 @@ import store from './store.js'
 
 // Program imports
 import { exit } from 'node:process'
-import { green } from 'yoctocolors'
+import { green } from '../utils/colors.js'
 import { firstAttempt } from './first-attempt.js'
 import { retryFailedDeletions } from './retry-failed-dletions.js'
 
