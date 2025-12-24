@@ -12,7 +12,7 @@ For background, this package started as a fork of https://github.com/nemisj/git-
 
 ## Test branches
 
-These are the branches used for testing in `src/tests/setup.ts` and should represent a variety of different use cases. Here is how they're handled by V1 (as demonstrated with `src/tests/store-debug.ts`), and how they could/should be handled by V2.
+These are the branches used for testing in `src/tests/manual/setup.ts` and should represent a variety of different use cases. Here is how they're handled by V1 (as demonstrated with `src/tests/store-debug.ts`), and how they could/should be handled by V2.
 
 - `#567--echo--special-chars--pushed-then-deleted-from-remote--no-commits`
     - Version 1 offers to delete? Yes

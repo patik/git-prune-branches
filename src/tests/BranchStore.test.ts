@@ -24,22 +24,14 @@ const mockStdout = vi.mocked(stdoutModule)
 describe('BranchStore', () => {
     let branchStore: BranchStore
     let consoleLogSpy: ReturnType<typeof vi.spyOn>
-    let consoleWarnSpy: ReturnType<typeof vi.spyOn>
-    let consoleInfoSpy: ReturnType<typeof vi.spyOn>
 
     beforeEach(() => {
         branchStore = new BranchStore({
             remote: 'origin',
-            force: false,
-            dryRun: false,
-            pruneAll: false,
-            skipConfirmation: false,
         })
 
         // Spy on console methods
         consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-        consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-        consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
 
         // Reset mocks
         vi.clearAllMocks()
@@ -53,17 +45,9 @@ describe('BranchStore', () => {
         it('should initialize with provided options', () => {
             const store = new BranchStore({
                 remote: 'upstream',
-                force: true,
-                dryRun: true,
-                pruneAll: true,
-                skipConfirmation: true,
             })
 
             expect(store.remote).toBe('upstream')
-            expect(store.force).toBe(true)
-            expect(store.dryRun).toBe(true)
-            expect(store.pruneAll).toBe(true)
-            expect(store.skipConfirmation).toBe(true)
         })
 
         it('should initialize arrays as empty', () => {
@@ -71,9 +55,23 @@ describe('BranchStore', () => {
             expect(branchStore.localOrphanedBranches).toEqual([])
             expect(branchStore.staleBranches).toEqual([])
             expect(branchStore.queuedForDeletion).toEqual([])
+            expect(branchStore.queuedForForceDeletion).toEqual([])
             expect(branchStore.failedToDelete).toEqual([])
             expect(branchStore.liveBranches).toEqual([])
             expect(branchStore.unmergedBranches).toEqual([])
+            expect(branchStore.neverPushedBranches).toEqual([])
+            expect(branchStore.mergedBranches).toEqual([])
+            expect(branchStore.safeToDelete).toEqual([])
+            expect(branchStore.requiresForce).toEqual([])
+            expect(branchStore.infoOnly).toEqual([])
+        })
+
+        it('should initialize protected branches', () => {
+            expect(branchStore.protectedBranches).toEqual(['main', 'master', 'develop', 'development'])
+        })
+
+        it('should initialize currentBranch as empty string', () => {
+            expect(branchStore.currentBranch).toBe('')
         })
 
         it('should initialize noConnection as false', () => {
@@ -81,19 +79,13 @@ describe('BranchStore', () => {
         })
     })
 
-    describe('setForce', () => {
-        it('should update the force property', () => {
-            expect(branchStore.force).toBe(false)
-            branchStore.setForce(true)
-            expect(branchStore.force).toBe(true)
-        })
-    })
-
     describe('setQueuedForDeletion', () => {
-        it('should update the queuedForDeletion array', () => {
-            const branches = ['branch1', 'branch2']
-            branchStore.setQueuedForDeletion(branches)
-            expect(branchStore.queuedForDeletion).toEqual(branches)
+        it('should update both queuedForDeletion arrays', () => {
+            const safeBranches = ['branch1', 'branch2']
+            const forceBranches = ['branch3']
+            branchStore.setQueuedForDeletion(safeBranches, forceBranches)
+            expect(branchStore.queuedForDeletion).toEqual(safeBranches)
+            expect(branchStore.queuedForForceDeletion).toEqual(forceBranches)
         })
     })
 
@@ -204,23 +196,22 @@ ghi789\trefs/heads/hotfix/bug`
     })
 
     describe('findUnmergedBranches', () => {
-        it('should parse unmerged branches with upstream information', async () => {
-            const gitOutput = `feature/wip@{refs/remotes/origin/feature/wip}
-hotfix/incomplete@{refs/remotes/origin/hotfix/incomplete}
-develop@{refs/remotes/origin/develop}
-local-only@{}
-another@{refs/remotes/upstream/another}`
+        it('should parse unmerged branches', async () => {
+            const gitOutput = `feature/wip
+hotfix/incomplete
+develop
+local-only`
 
             mockStdout.mockResolvedValueOnce(gitOutput)
 
             await branchStore.findUnmergedBranches()
 
-            expect(branchStore.unmergedBranches).toEqual(['feature/wip', 'hotfix/incomplete', 'develop'])
+            expect(branchStore.unmergedBranches).toEqual(['feature/wip', 'hotfix/incomplete', 'develop', 'local-only'])
         })
 
         it('should handle branches with special characters', async () => {
-            const gitOutput = `#333-work@{refs/remotes/origin/#333-work}
-feature/with-dash@{refs/remotes/origin/feature/with-dash}`
+            const gitOutput = `#333-work
+feature/with-dash`
 
             mockStdout.mockResolvedValueOnce(gitOutput)
 
@@ -229,16 +220,16 @@ feature/with-dash@{refs/remotes/origin/feature/with-dash}`
             expect(branchStore.unmergedBranches).toEqual(['#333-work', 'feature/with-dash'])
         })
 
-        it('should ignore branches without upstream or different remote', async () => {
-            const gitOutput = `feature/wip@{refs/remotes/origin/feature/wip}
-local-only@{}
-upstream-branch@{refs/remotes/upstream/upstream-branch}`
+        it('should include all unmerged branches regardless of upstream', async () => {
+            const gitOutput = `feature/wip
+local-only
+upstream-branch`
 
             mockStdout.mockResolvedValueOnce(gitOutput)
 
             await branchStore.findUnmergedBranches()
 
-            expect(branchStore.unmergedBranches).toEqual(['feature/wip'])
+            expect(branchStore.unmergedBranches).toEqual(['feature/wip', 'local-only', 'upstream-branch'])
         })
 
         it('should handle empty output when all branches are merged', async () => {
@@ -251,14 +242,14 @@ upstream-branch@{refs/remotes/upstream/upstream-branch}`
             expect(branchStore.unmergedBranches).toEqual([])
         })
 
-        it('should only store local branch names, not remote branch names', async () => {
-            const gitOutput = `my-local-name@{refs/remotes/origin/different-remote-name}`
+        it('should store branch names from git output', async () => {
+            const gitOutput = `my-local-branch`
 
             mockStdout.mockResolvedValueOnce(gitOutput)
 
             await branchStore.findUnmergedBranches()
 
-            expect(branchStore.unmergedBranches).toEqual(['my-local-name'])
+            expect(branchStore.unmergedBranches).toEqual(['my-local-branch'])
         })
     })
 
@@ -301,54 +292,6 @@ upstream-branch@{refs/remotes/upstream/upstream-branch}`
         })
     })
 
-    describe('analyzeLiveAndCache', () => {
-        beforeEach(() => {
-            branchStore.remoteBranches = ['main', 'feature/old', 'hotfix/bug']
-            branchStore.liveBranches = ['main', 'develop', 'feature/new']
-        })
-
-        it('should warn when no connection and return early', async () => {
-            branchStore.noConnection = true
-
-            await branchStore.analyzeLiveAndCache()
-
-            expect(consoleWarnSpy).toHaveBeenCalledWith('WARNING: Unable to connect to remote host')
-            // remoteBranches should not be updated
-            expect(branchStore.remoteBranches).toEqual(['main', 'feature/old', 'hotfix/bug'])
-        })
-
-        it('should warn about outdated branches and update remoteBranches', async () => {
-            await branchStore.analyzeLiveAndCache()
-
-            expect(consoleWarnSpy).toHaveBeenCalledWith(
-                expect.stringContaining('WARNING: Your git repository is outdated'),
-            )
-            expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('- feature/old'))
-            expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('- hotfix/bug'))
-            expect(branchStore.remoteBranches).toEqual(['main', 'develop', 'feature/new'])
-        })
-
-        it('should not warn when all remote branches are live', async () => {
-            branchStore.remoteBranches = ['main']
-            branchStore.liveBranches = ['main', 'develop']
-
-            await branchStore.analyzeLiveAndCache()
-
-            expect(consoleWarnSpy).not.toHaveBeenCalled()
-            expect(branchStore.remoteBranches).toEqual(['main', 'develop'])
-        })
-
-        it('should ignore HEAD branch in comparison', async () => {
-            branchStore.remoteBranches = ['main', 'HEAD', 'feature/old']
-            branchStore.liveBranches = ['main', 'develop']
-
-            await branchStore.analyzeLiveAndCache()
-
-            expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('- feature/old'))
-            expect(consoleWarnSpy).not.toHaveBeenCalledWith(expect.stringContaining('- HEAD'))
-        })
-    })
-
     describe('preprocess', () => {
         it('should reset all arrays and call all find methods', async () => {
             // Set some initial data
@@ -360,11 +303,14 @@ upstream-branch@{refs/remotes/upstream/upstream-branch}`
             branchStore.noConnection = true
 
             // Mock all the methods
+            const findCurrentBranchSpy = vi.spyOn(branchStore, 'findCurrentBranch').mockResolvedValue()
             const findLiveBranchesSpy = vi.spyOn(branchStore, 'findLiveBranches').mockResolvedValue()
             const findLocalOrphanedBranchesSpy = vi.spyOn(branchStore, 'findLocalOrphanedBranches').mockResolvedValue()
             const findUnmergedBranchesSpy = vi.spyOn(branchStore, 'findUnmergedBranches').mockResolvedValue()
             const findRemoteBranchesSpy = vi.spyOn(branchStore, 'findRemoteBranches').mockResolvedValue()
-            const analyzeLiveAndCacheSpy = vi.spyOn(branchStore, 'analyzeLiveAndCache').mockResolvedValue()
+            const findNeverPushedBranchesSpy = vi.spyOn(branchStore, 'findNeverPushedBranches').mockResolvedValue()
+            const findMergedBranchesSpy = vi.spyOn(branchStore, 'findMergedBranches').mockResolvedValue()
+            const classifyBranchesSpy = vi.spyOn(branchStore, 'classifyBranches').mockImplementation(() => {})
 
             await branchStore.preprocess()
 
@@ -374,28 +320,42 @@ upstream-branch@{refs/remotes/upstream/upstream-branch}`
             expect(branchStore.staleBranches).toEqual([])
             expect(branchStore.liveBranches).toEqual([])
             expect(branchStore.unmergedBranches).toEqual([])
+            expect(branchStore.neverPushedBranches).toEqual([])
+            expect(branchStore.mergedBranches).toEqual([])
+            expect(branchStore.safeToDelete).toEqual([])
+            expect(branchStore.requiresForce).toEqual([])
+            expect(branchStore.infoOnly).toEqual([])
             expect(branchStore.noConnection).toBe(false)
 
-            // Check methods are called in correct order
+            // Check methods are called
+            expect(findCurrentBranchSpy).toHaveBeenCalled()
             expect(findLiveBranchesSpy).toHaveBeenCalled()
             expect(findLocalOrphanedBranchesSpy).toHaveBeenCalled()
             expect(findUnmergedBranchesSpy).toHaveBeenCalled()
             expect(findRemoteBranchesSpy).toHaveBeenCalled()
-            expect(analyzeLiveAndCacheSpy).toHaveBeenCalled()
+            expect(findNeverPushedBranchesSpy).toHaveBeenCalled()
+            expect(findMergedBranchesSpy).toHaveBeenCalled()
+            expect(classifyBranchesSpy).toHaveBeenCalled()
         })
     })
 
     describe('findStaleBranches', () => {
         it('should identify stale branches correctly', async () => {
-            const preprocessSpy = vi.spyOn(branchStore, 'preprocess').mockResolvedValue()
+            // Mock preprocess to manually set the data, then also calculate staleBranches
+            const preprocessSpy = vi.spyOn(branchStore, 'preprocess').mockImplementation(async () => {
+                branchStore.localOrphanedBranches = [
+                    { localBranch: 'main', remoteBranch: 'main' },
+                    { localBranch: 'feature/old', remoteBranch: 'feature/old' },
+                    { localBranch: 'hotfix/bug', remoteBranch: 'hotfix/bug' },
+                    { localBranch: 'feature/new', remoteBranch: 'feature/new' },
+                ]
+                branchStore.remoteBranches = ['main', 'feature/new']
 
-            branchStore.localOrphanedBranches = [
-                { localBranch: 'main', remoteBranch: 'main' },
-                { localBranch: 'feature/old', remoteBranch: 'feature/old' },
-                { localBranch: 'hotfix/bug', remoteBranch: 'hotfix/bug' },
-                { localBranch: 'feature/new', remoteBranch: 'feature/new' },
-            ]
-            branchStore.remoteBranches = ['main', 'feature/new']
+                // Calculate staleBranches (this now happens in preprocess)
+                branchStore.staleBranches = branchStore.localOrphanedBranches
+                    .filter(({ remoteBranch }) => !branchStore.remoteBranches.includes(remoteBranch))
+                    .map(({ localBranch }) => localBranch)
+            })
 
             const result = await branchStore.findStaleBranches()
 
@@ -405,13 +365,18 @@ upstream-branch@{refs/remotes/upstream/upstream-branch}`
         })
 
         it('should return empty array when no stale branches', async () => {
-            const preprocessSpy = vi.spyOn(branchStore, 'preprocess').mockResolvedValue()
+            const preprocessSpy = vi.spyOn(branchStore, 'preprocess').mockImplementation(async () => {
+                branchStore.localOrphanedBranches = [
+                    { localBranch: 'main', remoteBranch: 'main' },
+                    { localBranch: 'develop', remoteBranch: 'develop' },
+                ]
+                branchStore.remoteBranches = ['main', 'develop']
 
-            branchStore.localOrphanedBranches = [
-                { localBranch: 'main', remoteBranch: 'main' },
-                { localBranch: 'develop', remoteBranch: 'develop' },
-            ]
-            branchStore.remoteBranches = ['main', 'develop']
+                // Calculate staleBranches (this now happens in preprocess)
+                branchStore.staleBranches = branchStore.localOrphanedBranches
+                    .filter(({ remoteBranch }) => !branchStore.remoteBranches.includes(remoteBranch))
+                    .map(({ localBranch }) => localBranch)
+            })
 
             const result = await branchStore.findStaleBranches()
 
@@ -421,63 +386,76 @@ upstream-branch@{refs/remotes/upstream/upstream-branch}`
     })
 
     describe('deleteBranches', () => {
-        it('should log message when no branches queued for deletion', async () => {
+        it('should return empty arrays when no branches queued for deletion', async () => {
             branchStore.queuedForDeletion = []
+            branchStore.queuedForForceDeletion = []
 
-            await branchStore.deleteBranches()
+            const result = await branchStore.deleteBranches()
 
-            expect(consoleInfoSpy).toHaveBeenCalledWith('No remotely removed branches found')
+            expect(result.success).toEqual([])
+            expect(result.failed).toEqual([])
         })
 
-        it('should show branches in dry run mode', async () => {
-            branchStore.dryRun = true
+        it('should delete safe branches successfully', async () => {
             branchStore.queuedForDeletion = ['branch1', 'branch2']
-
-            await branchStore.deleteBranches()
-
-            expect(consoleLogSpy).toHaveBeenCalledWith('Found remotely removed branches:')
-
-            // Check all info calls in order
-            expect(consoleInfoSpy).toHaveBeenNthCalledWith(1, '  - branch1')
-            expect(consoleInfoSpy).toHaveBeenNthCalledWith(2, '  - branch2')
-            expect(consoleInfoSpy).toHaveBeenNthCalledWith(3) // Empty call
-            expect(consoleInfoSpy).toHaveBeenNthCalledWith(4, 'ℹ️ To remove branches, don’t include the --dry-run flag')
-        })
-
-        it('should delete branches successfully without force', async () => {
-            branchStore.queuedForDeletion = ['branch1', 'branch2']
+            branchStore.queuedForForceDeletion = []
             mockStdout.mockResolvedValue('')
 
-            await branchStore.deleteBranches()
+            const result = await branchStore.deleteBranches()
 
             expect(mockStdout).toHaveBeenCalledWith('git branch -d "branch1"')
             expect(mockStdout).toHaveBeenCalledWith('git branch -d "branch2"')
+            expect(result.success).toEqual(['branch1', 'branch2'])
+            expect(result.failed).toEqual([])
             expect(branchStore.failedToDelete).toEqual([])
         })
 
-        it('should delete branches with force flag', async () => {
-            branchStore.force = true
-            branchStore.queuedForDeletion = ['branch1']
+        it('should delete force branches with -D flag', async () => {
+            branchStore.queuedForDeletion = []
+            branchStore.queuedForForceDeletion = ['branch1', 'branch2']
             mockStdout.mockResolvedValue('')
 
-            await branchStore.deleteBranches()
+            const result = await branchStore.deleteBranches()
 
             expect(mockStdout).toHaveBeenCalledWith('git branch -D "branch1"')
+            expect(mockStdout).toHaveBeenCalledWith('git branch -D "branch2"')
+            expect(result.success).toEqual(['branch1', 'branch2'])
+            expect(result.failed).toEqual([])
+        })
+
+        it('should delete both safe and force branches', async () => {
+            branchStore.queuedForDeletion = ['safe1', 'safe2']
+            branchStore.queuedForForceDeletion = ['force1']
+            mockStdout.mockResolvedValue('')
+
+            const result = await branchStore.deleteBranches()
+
+            expect(mockStdout).toHaveBeenCalledWith('git branch -d "safe1"')
+            expect(mockStdout).toHaveBeenCalledWith('git branch -d "safe2"')
+            expect(mockStdout).toHaveBeenCalledWith('git branch -D "force1"')
+            expect(result.success).toEqual(['safe1', 'safe2', 'force1'])
+            expect(result.failed).toEqual([])
         })
 
         it('should handle failed deletions', async () => {
             branchStore.queuedForDeletion = ['branch1', 'branch2']
+            branchStore.queuedForForceDeletion = []
             mockStdout
                 .mockResolvedValueOnce('') // branch1 succeeds
                 .mockRejectedValueOnce(new Error('Cannot delete')) // branch2 fails
 
-            await branchStore.deleteBranches()
+            const result = await branchStore.deleteBranches()
 
-            expect(branchStore.failedToDelete).toEqual(['branch2'])
+            expect(result.success).toEqual(['branch1'])
+            expect(result.failed).toHaveLength(1)
+            expect(result.failed[0]!.branch).toBe('branch2')
+            expect(result.failed[0]!.error).toContain('Cannot delete')
+            expect(branchStore.failedToDelete).toHaveLength(1)
         })
 
         it('should handle branches with special characters in names', async () => {
             branchStore.queuedForDeletion = ['#333-work', 'feature/with spaces']
+            branchStore.queuedForForceDeletion = []
             mockStdout.mockResolvedValue('')
 
             await branchStore.deleteBranches()
@@ -491,6 +469,12 @@ upstream-branch@{refs/remotes/upstream/upstream-branch}`
         it('should handle complete workflow with stale branches', async () => {
             // Mock git command outputs based on command
             mockStdout.mockImplementation(async (command: string) => {
+                if (command === 'git fetch origin --prune') {
+                    return ''
+                }
+                if (command === 'git branch --show-current') {
+                    return 'main'
+                }
                 if (command === 'git remote -v') {
                     return 'origin\tgit@github.com:user/repo.git (fetch)'
                 }
@@ -503,13 +487,17 @@ def456\trefs/heads/develop`
 develop@{refs/remotes/origin/develop}
 feature/old@{refs/remotes/origin/feature/old}`
                 }
-                if (command === 'git branch --format="%(refname:short)@{%(upstream)}" --no-merged') {
+                if (command === 'git branch --format="%(refname:short)" --no-merged') {
                     return '' // No unmerged branches
+                }
+                if (command === 'git branch --format="%(refname:short)" --merged') {
+                    return `main
+develop
+feature/old`
                 }
                 if (command === 'git branch -r') {
                     return `  origin/main
-  origin/develop
-  origin/feature/old`
+  origin/develop`
                 }
                 return ''
             })
@@ -518,7 +506,6 @@ feature/old@{refs/remotes/origin/feature/old}`
 
             expect(staleBranches).toEqual(['feature/old'])
             expect(branchStore.localOrphanedBranches).toHaveLength(3)
-            expect(branchStore.remoteBranches).toEqual(['main', 'develop']) // Updated by analyzeLiveAndCache
         })
 
         it('should handle no connection scenario', async () => {

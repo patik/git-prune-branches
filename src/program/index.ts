@@ -1,29 +1,29 @@
 // Side effects
 import './side-effects/check-for-git-repo.js'
 import './side-effects/handle-control-c.js'
-import store from './store.js'
 
 // Program imports
 import { exit } from 'node:process'
-import { green } from '../utils/colors.js'
-import { firstAttempt } from './first-attempt.js'
-import { retryFailedDeletions } from './retry-failed-dletions.js'
+import { confirmDeletion } from './confirm-deletion.js'
+import { executeDeletions } from './execute-deletions.js'
+import { selectBranches } from './select-branches.js'
 
 export default async function program() {
     try {
-        await firstAttempt()
+        // Screen 1: Select branches
+        const { safe, force } = await selectBranches()
 
-        if (store.failedToDelete.length > 0) {
-            await retryFailedDeletions()
-        } else {
-            const total = store.queuedForDeletion.length
-            console.info(green(`✅ Deleted ${total === 1 ? '1' : `all ${total}`} branch${total === 1 ? '' : 'es'}`))
+        // Screen 2: Confirm with command preview
+        const confirmed = await confirmDeletion(safe, force)
+
+        if (!confirmed) {
+            console.info('👋 No branches were removed.')
             exit(0)
         }
 
-        if (store.failedToDelete.length > 0) {
-            exit(1)
-        }
+        // Screen 3: Execute and show results (auto-exit)
+        const exitCode = await executeDeletions(safe, force)
+        exit(exitCode)
     } catch (err: unknown) {
         if (typeof err === 'object' && err) {
             if ('code' in err && typeof err.code === 'number' && err.code === 128) {

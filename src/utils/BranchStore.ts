@@ -4,10 +4,6 @@ import split from './split.js'
 
 export default class BranchStore {
     remote: string
-    force: boolean
-    dryRun: boolean
-    pruneAll: boolean
-    skipConfirmation: boolean
     remoteBranches: Array<string>
 
     /**
@@ -20,7 +16,8 @@ export default class BranchStore {
      */
     staleBranches: Array<string>
     queuedForDeletion: Array<string>
-    failedToDelete: Array<string>
+    queuedForForceDeletion: Array<string>
+    failedToDelete: Array<{ branch: string; error: string }>
 
     /**
      * Branches that are still in use; will never be deleted
@@ -32,66 +29,109 @@ export default class BranchStore {
      */
     unmergedBranches: Array<string>
 
+    /**
+     * Current branch (cannot be deleted)
+     */
+    currentBranch: string
+
+    /**
+     * Protected branches that should never be deleted
+     */
+    protectedBranches: Array<string>
+
+    /**
+     * Branches that have never been pushed to remote
+     */
+    neverPushedBranches: Array<string>
+
+    /**
+     * Branches that are merged into current branch
+     */
+    mergedBranches: Array<string>
+
+    /**
+     * Safe to delete (pre-selected in UI)
+     */
+    safeToDelete: Array<string>
+
+    /**
+     * Requires force to delete (NOT pre-selected in UI)
+     */
+    requiresForce: Array<string>
+
+    /**
+     * Info only - renamed branches still on remote (disabled in UI)
+     */
+    infoOnly: Array<string>
+
     noConnection: boolean
 
-    constructor(ops: {
-        remote: string
-        force: boolean
-        dryRun: boolean
-        pruneAll: boolean
-        skipConfirmation: boolean
-    }) {
+    constructor(ops: { remote: string }) {
         this.remote = ops.remote
-        this.force = ops.force
-        this.dryRun = ops.dryRun
-        this.pruneAll = ops.pruneAll
-        this.skipConfirmation = ops.skipConfirmation
         this.remoteBranches = []
         this.localOrphanedBranches = []
         this.staleBranches = []
         this.queuedForDeletion = []
+        this.queuedForForceDeletion = []
         this.failedToDelete = []
         this.liveBranches = []
         this.unmergedBranches = []
+        this.currentBranch = ''
+        this.protectedBranches = ['main', 'master', 'develop', 'development']
+        this.neverPushedBranches = []
+        this.mergedBranches = []
+        this.safeToDelete = []
+        this.requiresForce = []
+        this.infoOnly = []
         this.noConnection = false
     }
 
-    setForce(force: boolean) {
-        this.force = force
-    }
-
-    setQueuedForDeletion(branches: Array<string>) {
-        this.queuedForDeletion = branches
+    setQueuedForDeletion(safe: Array<string>, force: Array<string>) {
+        this.queuedForDeletion = safe
+        this.queuedForForceDeletion = force
     }
 
     async preprocess() {
-        // cached branches from the remote
+        // Auto-prune: fetch and prune from remote
+        const spinner = ora('Fetching from remote...').start()
+        try {
+            await stdout(`git fetch ${this.remote} --prune`)
+            spinner.succeed('Fetched from remote')
+        } catch (err) {
+            spinner.warn('Could not fetch from remote (will use cached data)')
+        }
+
+        // Reset all arrays
         this.remoteBranches = []
-
-        // local branches which are checkout from the remote
         this.localOrphanedBranches = []
-
-        // branches which are available locally but not remotely
         this.staleBranches = []
-
-        // branches which are available on host
         this.liveBranches = []
-
-        // branches which are not yet merged
         this.unmergedBranches = []
-
-        // if we are unable to connect to remote
-        // this will become true
+        this.neverPushedBranches = []
+        this.mergedBranches = []
+        this.safeToDelete = []
+        this.requiresForce = []
+        this.infoOnly = []
         this.noConnection = false
 
         // Gather all the information
         await Promise.all([
+            this.findCurrentBranch(),
             this.findLiveBranches(),
             this.findLocalOrphanedBranches(),
             this.findUnmergedBranches(),
             this.findRemoteBranches(),
+            this.findNeverPushedBranches(),
+            this.findMergedBranches(),
         ])
-        await this.analyzeLiveAndCache()
+
+        // Calculate stale branches (must be done AFTER finding local orphaned and remote branches)
+        this.staleBranches = this.localOrphanedBranches
+            .filter(({ remoteBranch }) => !this.remoteBranches.includes(remoteBranch))
+            .map(({ localBranch }) => localBranch)
+
+        // Classify branches into the 3 groups
+        this.classifyBranches()
     }
 
     //
@@ -181,21 +221,14 @@ export default class BranchStore {
 
     async findUnmergedBranches() {
         // list all the unmerged branches
-        // by using format
-        // "%(refname:short)@{%(upstream)}"
-        const out = await stdout('git branch --format="%(refname:short)@{%(upstream)}" --no-merged')
+        const out = await stdout('git branch --format="%(refname:short)" --no-merged')
         const lines = split(out)
 
         lines.forEach((line) => {
-            // upstream has format: "@{refs/remotes/origin/#333-work}"
-            const startIndex = line.indexOf(`@{refs/remotes/${this.remote}`)
-            if (startIndex === -1) {
-                return
+            const branchName = line.trim()
+            if (branchName) {
+                this.unmergedBranches.push(branchName)
             }
-
-            const localBranch = line.slice(0, startIndex)
-
-            this.unmergedBranches.push(localBranch)
         })
     }
 
@@ -219,88 +252,141 @@ export default class BranchStore {
         })
     }
 
-    //
-    // this method will look which branches on remote are absent
-    // but still available in here in remotes
-    //
-    async analyzeLiveAndCache() {
-        if (this.noConnection) {
-            // unable to determinate remote branches, because host is not available
-            console.warn('WARNING: Unable to connect to remote host')
-            return
+    async findCurrentBranch() {
+        try {
+            const out = await stdout('git branch --show-current')
+            this.currentBranch = out.trim()
+        } catch (err) {
+            this.currentBranch = ''
         }
+    }
 
-        const message = [
-            'WARNING: Your git repository is outdated, please run "git fetch -p"',
-            '         Following branches are not pruned yet locally:',
-            '',
-        ]
-        let showWarning = false
+    async findNeverPushedBranches() {
+        // Get branches with no upstream tracking
+        const out = await stdout('git branch --format="%(refname:short)@{%(upstream)}"')
+        const lines = split(out)
 
-        // compare absent remotes
-        this.remoteBranches.forEach((branch) => {
-            if (branch !== 'HEAD' && this.liveBranches.indexOf(branch) === -1) {
-                message.push('         - ' + branch)
-                showWarning = true
+        lines.forEach((line) => {
+            // If line ends with "@{}", it has no upstream
+            if (line.endsWith('@{}')) {
+                const branchName = line.slice(0, -3) // Remove "@{}"
+                if (branchName) {
+                    this.neverPushedBranches.push(branchName)
+                }
             }
         })
+    }
 
-        message.push('')
+    async findMergedBranches() {
+        // Get all merged branches
+        const out = await stdout('git branch --format="%(refname:short)" --merged')
+        const lines = split(out)
 
-        if (showWarning) {
-            console.warn(message.join('\r\n'))
-        }
+        lines.forEach((line) => {
+            const branchName = line.trim()
+            if (branchName) {
+                this.mergedBranches.push(branchName)
+            }
+        })
+    }
 
-        this.remoteBranches = this.liveBranches
+    classifyBranches() {
+        // Group 1: Safe to delete (pre-selected)
+        const safeToDelete = [
+            // Stale branches that are merged (deleted from remote, no force needed)
+            ...this.staleBranches.filter((b) => !this.unmergedBranches.includes(b)),
+
+            // Local merged branches never pushed to remote
+            ...this.mergedBranches.filter(
+                (b) => this.neverPushedBranches.includes(b) && !this.unmergedBranches.includes(b),
+            ),
+        ]
+            // Remove duplicates, current branch, and protected branches
+            .filter(
+                (b, i, arr) => arr.indexOf(b) === i && b !== this.currentBranch && !this.protectedBranches.includes(b),
+            )
+
+        // Group 2: Requires force (NOT pre-selected)
+        const requiresForce = [
+            // Stale branches that are unmerged
+            ...this.staleBranches.filter((b) => this.unmergedBranches.includes(b)),
+
+            // Never pushed branches that are unmerged
+            ...this.neverPushedBranches.filter((b) => this.unmergedBranches.includes(b)),
+        ]
+            // Remove duplicates, current branch, and protected branches
+            .filter(
+                (b, i, arr) => arr.indexOf(b) === i && b !== this.currentBranch && !this.protectedBranches.includes(b),
+            )
+
+        // Group 3: Info only (disabled)
+        const infoOnly = [
+            // Local branches with different names tracking active remote branches
+            // (renamed locally, original still exists on remote)
+            ...this.localOrphanedBranches
+                .filter(
+                    ({ remoteBranch, localBranch }) =>
+                        remoteBranch !== localBranch && this.liveBranches.includes(remoteBranch),
+                )
+                .map(({ localBranch }) => localBranch),
+        ]
+            // Remove duplicates, current branch, and protected branches
+            .filter(
+                (b, i, arr) => arr.indexOf(b) === i && b !== this.currentBranch && !this.protectedBranches.includes(b),
+            )
+
+        this.safeToDelete = safeToDelete
+        this.requiresForce = requiresForce
+        this.infoOnly = infoOnly
     }
 
     async findStaleBranches() {
         await this.preprocess()
-
-        this.staleBranches = this.localOrphanedBranches
-            .filter(({ remoteBranch }) => !this.remoteBranches.includes(remoteBranch))
-            .map(({ localBranch }) => localBranch)
-
+        // staleBranches is now populated in preprocess()
         return this.staleBranches
     }
 
-    async deleteBranches() {
-        if (!this.queuedForDeletion.length) {
-            console.info('No remotely removed branches found')
-            return
+    async deleteBranches(): Promise<{ success: string[]; failed: Array<{ branch: string; error: string }> }> {
+        const success: string[] = []
+        const failed: Array<{ branch: string; error: string }> = []
+
+        if (!this.queuedForDeletion.length && !this.queuedForForceDeletion.length) {
+            return { success, failed }
         }
 
-        if (this.dryRun) {
-            console.log('Found remotely removed branches:')
-        }
-
-        const failures: Array<string> = []
-
+        // Delete safe branches first (with -d)
         for (const branchName of this.queuedForDeletion) {
-            if (!this.dryRun) {
-                const spinner = ora(`Removing branch ${branchName}`).start()
-                try {
-                    const dFlag = this.force ? '-D' : '-d'
-                    spinner.color = 'yellow'
-                    const command = `git branch ${dFlag} "${branchName}"`
-                    await stdout(command)
-                    spinner.succeed(`Removed branch ${branchName}`)
-                } catch (err) {
-                    failures.push(branchName)
-                    spinner.fail(`Failed to remove branch ${branchName}`)
-                }
-            } else {
-                console.info(`  - ${branchName}`)
+            const spinner = ora(`Removing branch ${branchName}`).start()
+            try {
+                spinner.color = 'yellow'
+                const command = `git branch -d "${branchName}"`
+                await stdout(command)
+                spinner.succeed(`Removed branch ${branchName}`)
+                success.push(branchName)
+            } catch (err) {
+                const errorMessage = err instanceof Error ? err.message : String(err)
+                failed.push({ branch: branchName, error: errorMessage })
+                spinner.fail(`Failed to remove branch ${branchName}`)
             }
         }
 
-        console.info()
-
-        if (failures.length === 0 && this.dryRun) {
-            console.info('ℹ️ To remove branches, don’t include the --dry-run flag')
+        // Delete force branches (with -D)
+        for (const branchName of this.queuedForForceDeletion) {
+            const spinner = ora(`Force removing branch ${branchName}`).start()
+            try {
+                spinner.color = 'red'
+                const command = `git branch -D "${branchName}"`
+                await stdout(command)
+                spinner.succeed(`Force removed branch ${branchName}`)
+                success.push(branchName)
+            } catch (err) {
+                const errorMessage = err instanceof Error ? err.message : String(err)
+                failed.push({ branch: branchName, error: errorMessage })
+                spinner.fail(`Failed to force remove branch ${branchName}`)
+            }
         }
 
-        // Add new failures to the list
-        this.failedToDelete = failures
+        this.failedToDelete = failed
+        return { success, failed }
     }
 }

@@ -19,11 +19,15 @@ Addresses questions, like:
 
 ## What does it do?
 
-This command will compare your local branches with remote and show you branches that are no longer available on remote but are still presented in your local repository. You can also use it to view and delete all (remotely) removed branches in one go using `--prune-all` flag.
+This command will automatically run `git fetch --prune` to sync with your remote, then compare your local branches and show you an interactive list of branches organized into three categories:
+
+- **Safe to delete**: Branches that are merged and can be safely removed without `--force`
+- **Requires force delete**: Unmerged branches that need `--force` to delete (not pre-selected for safety)
+- **Info only**: Renamed branches that still exist on remote (shown for context)
 
 <img width="449" alt="Prompt with list of branches, allowing arbitrary selection" src="https://github.com/user-attachments/assets/705d10ff-733e-449d-832a-94cef66e08c6" />
 
-This command works without the need to run `git fetch -p`, but a working network connection to your remote is required. If no connection can be established with the remote repository, then local information about your remote will be used instead. If your local repository is not in sync with the remote repository, it will warn you about it.
+The tool automatically fetches and prunes from your remote before showing branches, ensuring you always have up-to-date information. A working network connection to your remote is required. If no connection can be established, cached local information will be used instead.
 
 ## Installation
 
@@ -53,55 +57,22 @@ npx git-prune-branches
 git prune-branches
 ```
 
-This command will look through the branches that are no longer available on the remote and display them.
-In case you haven't run `git fetch -p`, it will warn you to do so.
+This command will automatically fetch and prune from your remote, then display an interactive selection of branches to delete organized into three groups:
+
+1. **Safe to delete** (pre-selected) - Merged branches that were deleted from remote, or local merged branches that were never pushed
+2. **Requires force delete** (not pre-selected) - Unmerged branches with commits that need `--force` to delete
+3. **Info only** - Renamed branches that still exist on remote (shown for context, cannot be deleted)
+
+After selecting branches, you'll see a preview of the exact git commands that will be executed before confirming the deletion.
 
 <img width="1222" alt="Confirmation prompt" src="https://github.com/user-attachments/assets/0cf75cb7-af8d-43c6-81a1-3160ab7f48f3" />
 
-### Auto-removal
-
-To delete all local branches without choosing which ones, and without confirmation, use `--prune-all` or `-p` flag
-
-```bash
-git prune-branches --prune-all
-```
-
-This command will compare your local branches to the remote ones and remove, those which do not exist anymore on the remote side.
-
 ### Custom remote
 
-If you have configured remote alias to something different than **'origin'**, you can use `--remote` or `-r` flag to specify the name of the remote. e.g., to specify remote to be `upstream`, you can use:
+If you have configured remote alias to something different than **'origin'**, you can use `--remote` or `-r` flag to specify the name of the remote. For example, to specify remote to be `upstream`, you can use:
 
 ```bash
 git prune-branches --remote upstream
-```
-
-## Forcing removal
-
-If you get an error when trying to delete branches:
-
-```bash
-The branch {branch_name} is not fully merged.
-```
-
-you can force deletion by using `--force` flag or the `-f` alias
-
-```bash
-git prune-branches --prune-all --force
-```
-
-## Retrying with `--force`
-
-If any branches fail to delete when the `--force` flag is not used, `git-prune-branches` will offer to retry and delete them again using `--force`.
-
-<img width="1178" alt="" src="https://github.com/user-attachments/assets/925783c3-c689-4279-b961-a094c63476b3" />
-
-## Skipping confirmation
-
-You can skip the confirmation prompts with `--yes` or the shortcut `-y`:
-
-```bash
-git prune-branches -y
 ```
 
 ## Version
@@ -145,11 +116,10 @@ pnpm test:once # run all tests once
 
 #### Manual testing
 
-To run the app on an actual git repository:
+You can also create a test git repo in a temporary folder.
 
-1. Run `npx tsx src/tests/manual.ts`
-2. The last line of output will be `cd /some/temp/dir`; copy this line and run it to put yourself in the repo's folder
-3. Run `npx tsx ~/code/git-prune-branches/src/index.ts`
+- Scripts can call `src/tests/manual/setup.ts` to set up the repo, e.g. for automated testing; it will return the temp directory
+- Devs can run `npx tsx src/tests/manual/run.ts` to set up the repo and run the app in it
 
 ### Building
 

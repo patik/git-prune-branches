@@ -1,7 +1,9 @@
 import { confirm } from '@inquirer/prompts'
 import groupedCheckbox from 'inquirer-grouped-checkbox'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { firstAttempt } from '../program/first-attempt.js'
+import { confirmDeletion } from '../program/confirm-deletion.js'
+import { executeDeletions } from '../program/execute-deletions.js'
+import { selectBranches } from '../program/select-branches.js'
 import store from '../program/store.js'
 
 // Mock process.exit to throw an error to stop execution
@@ -35,6 +37,7 @@ vi.mock('ora', () => ({
         start: vi.fn().mockReturnThis(),
         succeed: vi.fn().mockReturnThis(),
         fail: vi.fn().mockReturnThis(),
+        warn: vi.fn().mockReturnThis(),
         color: '',
     })),
 }))
@@ -45,7 +48,7 @@ const mockConfirm = vi.mocked(confirm)
 // Get mock exit after import
 let mockExit: ReturnType<typeof vi.fn>
 
-describe('Grouped Checkbox UI (e2e)', () => {
+describe('Grouped Checkbox UI V2 (e2e)', () => {
     let consoleLogSpy: ReturnType<typeof vi.spyOn>
     let consoleInfoSpy: ReturnType<typeof vi.spyOn>
 
@@ -69,416 +72,301 @@ describe('Grouped Checkbox UI (e2e)', () => {
         store.staleBranches = []
         store.unmergedBranches = []
         store.queuedForDeletion = []
+        store.queuedForForceDeletion = []
         store.failedToDelete = []
-        store.pruneAll = false
-        store.skipConfirmation = false
-        store.dryRun = false
-        store.force = false
+        store.safeToDelete = []
+        store.requiresForce = []
+        store.infoOnly = []
+        store.currentBranch = ''
     })
 
     afterEach(() => {
         vi.restoreAllMocks()
     })
 
-    describe('with merged and unmerged branches', () => {
-        it('should display grouped checkbox with merged and unmerged branches (e2e)', async () => {
-            // Setup: Configure store with mixed branches
-            store.staleBranches = ['feature/merged-1', 'feature/merged-2', 'feature/unmerged-1', 'hotfix/unmerged-2']
-            store.unmergedBranches = ['feature/unmerged-1', 'hotfix/unmerged-2']
+    describe('selectBranches - 3 group structure', () => {
+        it('should display 3 groups: safe, force, and info', async () => {
+            store.safeToDelete = ['feature/safe-1', 'feature/safe-2']
+            store.requiresForce = ['feature/unmerged']
+            store.infoOnly = ['feature/renamed']
 
-            // Mock user selecting only merged branches
             mockGroupedCheckbox.mockResolvedValueOnce({
-                merged: ['feature/merged-1', 'feature/merged-2'],
-                unmerged: [],
+                safe: ['feature/safe-1'],
+                force: [],
+                info: [],
             })
 
-            // Mock confirmation
-            mockConfirm.mockResolvedValueOnce(true)
+            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
 
-            // Mock findStaleBranches to return our test data
-            vi.spyOn(store, 'findStaleBranches').mockResolvedValueOnce(store.staleBranches)
+            await selectBranches()
 
-            // Mock deleteBranches to succeed
-            vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce()
-
-            await firstAttempt()
-
-            // Verify grouped checkbox was called with correct structure
             expect(mockGroupedCheckbox).toHaveBeenCalledWith({
                 message: 'Select branches to remove',
                 pageSize: 40,
                 groups: [
                     {
-                        key: 'merged',
-                        label: 'Merged Branches',
+                        key: 'safe',
+                        label: 'Safe to delete',
                         icon: '✅',
-                        choices: [
-                            { value: 'feature/merged-1', name: 'feature/merged-1' },
-                            { value: 'feature/merged-2', name: 'feature/merged-2' },
-                        ],
+                        choices: expect.arrayContaining([
+                            expect.objectContaining({ value: 'feature/safe-1', checked: true }),
+                            expect.objectContaining({ value: 'feature/safe-2', checked: true }),
+                        ]),
                     },
                     {
-                        key: 'unmerged',
-                        label: expect.stringContaining('Unmerged Branches'),
+                        key: 'force',
+                        label: expect.stringContaining('Requires force delete'),
                         icon: '⚠️',
-                        choices: [
-                            { value: 'feature/unmerged-1', name: 'feature/unmerged-1' },
-                            { value: 'hotfix/unmerged-2', name: 'hotfix/unmerged-2' },
-                        ],
+                        choices: expect.arrayContaining([
+                            expect.objectContaining({ value: 'feature/unmerged', checked: false }),
+                        ]),
+                    },
+                    {
+                        key: 'info',
+                        label: expect.stringContaining('Info only'),
+                        icon: 'ℹ️',
+                        choices: expect.arrayContaining([
+                            expect.objectContaining({ value: 'feature/renamed', disabled: true }),
+                        ]),
                     },
                 ],
                 searchable: true,
             })
-
-            // Verify branches were queued for deletion
-            expect(store.queuedForDeletion).toEqual(['feature/merged-1', 'feature/merged-2'])
         })
 
-        it('should display warning message for unmerged branches', async () => {
-            store.staleBranches = ['feature/merged', 'feature/unmerged']
-            store.unmergedBranches = ['feature/unmerged']
+        it('should pre-select safe branches by default', async () => {
+            store.safeToDelete = ['branch1', 'branch2']
+            store.requiresForce = []
+            store.infoOnly = []
 
-            mockGroupedCheckbox.mockResolvedValueOnce({
-                merged: ['feature/merged'],
-                unmerged: [],
-            })
-            mockConfirm.mockResolvedValueOnce(true)
+            mockGroupedCheckbox.mockResolvedValueOnce({ safe: ['branch1', 'branch2'], force: [], info: [] })
+            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
 
-            vi.spyOn(store, 'findStaleBranches').mockResolvedValueOnce(store.staleBranches)
-            vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce()
+            await selectBranches()
 
-            await firstAttempt()
+            const call = mockGroupedCheckbox.mock.calls[0]?.[0]
+            const safeGroup = call?.groups.find((g: { key: string }) => g.key === 'safe')
 
-            // Verify the unmerged group label contains the warning
-            const groupedCheckboxCall = mockGroupedCheckbox.mock.calls[0]?.[0]
-            const unmergedGroup = groupedCheckboxCall?.groups.find((g: { key: string }) => g.key === 'unmerged')
-
-            expect(unmergedGroup?.label).toContain('will be removed with --force')
-            expect(unmergedGroup?.label).toContain('cannot be undone')
+            expect(safeGroup?.choices).toEqual([
+                { value: 'branch1', name: 'branch1', checked: true },
+                { value: 'branch2', name: 'branch2', checked: true },
+            ])
         })
 
-        it('should handle user selecting both merged and unmerged branches', async () => {
-            store.staleBranches = ['feature/merged', 'feature/unmerged']
-            store.unmergedBranches = ['feature/unmerged']
+        it('should NOT pre-select force branches', async () => {
+            store.safeToDelete = []
+            store.requiresForce = ['unmerged1', 'unmerged2']
+            store.infoOnly = []
 
-            // User selects both types
-            mockGroupedCheckbox.mockResolvedValueOnce({
-                merged: ['feature/merged'],
-                unmerged: ['feature/unmerged'],
-            })
+            mockGroupedCheckbox.mockResolvedValueOnce({ safe: [], force: [], info: [] })
+            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
 
-            mockConfirm.mockResolvedValueOnce(true)
+            await selectBranches()
 
-            vi.spyOn(store, 'findStaleBranches').mockResolvedValueOnce(store.staleBranches)
-            vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce()
+            const call = mockGroupedCheckbox.mock.calls[0]?.[0]
+            const forceGroup = call?.groups.find((g: { key: string }) => g.key === 'force')
 
-            await firstAttempt()
-
-            expect(store.queuedForDeletion).toEqual(['feature/merged', 'feature/unmerged'])
+            expect(forceGroup?.choices).toEqual([
+                { value: 'unmerged1', name: 'unmerged1', checked: false },
+                { value: 'unmerged2', name: 'unmerged2', checked: false },
+            ])
         })
 
-        it('should show correct confirmation message for multiple branches', async () => {
-            store.staleBranches = ['branch1', 'branch2', 'branch3']
-            store.unmergedBranches = []
+        it('should disable info-only branches', async () => {
+            store.safeToDelete = ['safe-branch'] // Need at least one deletable branch so UI is shown
+            store.requiresForce = []
+            store.infoOnly = ['renamed-branch']
 
-            mockGroupedCheckbox.mockResolvedValueOnce({
-                merged: ['branch1', 'branch2', 'branch3'],
-                unmerged: [],
-            })
+            mockGroupedCheckbox.mockResolvedValueOnce({ safe: [], force: [], info: [] })
+            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
 
+            await selectBranches()
+
+            const call = mockGroupedCheckbox.mock.calls[0]?.[0]
+            const infoGroup = call?.groups.find((g: { key: string }) => g.key === 'info')
+
+            expect(infoGroup?.choices).toEqual([{ value: 'renamed-branch', name: 'renamed-branch', disabled: true }])
+        })
+    })
+
+    describe('confirmDeletion - command preview', () => {
+        it('should show git commands for both safe and force deletions', async () => {
             mockConfirm.mockResolvedValueOnce(true)
 
-            vi.spyOn(store, 'findStaleBranches').mockResolvedValueOnce(store.staleBranches)
-            vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce()
+            await confirmDeletion(['safe1', 'safe2'], ['force1'])
 
-            await firstAttempt()
+            expect(consoleLogSpy).toHaveBeenCalledWith(
+                expect.stringContaining('The following commands will be executed'),
+            )
+            expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Safe deletes (2 branches)'))
+            expect(consoleLogSpy).toHaveBeenCalledWith('  git branch -d safe1')
+            expect(consoleLogSpy).toHaveBeenCalledWith('  git branch -d safe2')
+            expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Force deletes (1 branch)'))
+            expect(consoleLogSpy).toHaveBeenCalledWith('  git branch -D force1')
+        })
 
-            // Verify confirmation was called with plural message
+        it('should return false when no branches selected', async () => {
+            const result = await confirmDeletion([], [])
+
+            expect(result).toBe(false)
+            expect(consoleInfoSpy).toHaveBeenCalledWith('👋 No branches selected')
+            expect(mockConfirm).not.toHaveBeenCalled()
+        })
+
+        it('should show correct message for single branch', async () => {
+            mockConfirm.mockResolvedValueOnce(true)
+
+            await confirmDeletion(['single'], [])
+
             expect(mockConfirm).toHaveBeenCalledWith({
-                message: 'Are you sure you want to remove these 3 branches?',
+                message: 'Delete 1 branch?',
                 default: false,
             })
         })
 
-        it('should show correct confirmation message for single branch', async () => {
-            store.staleBranches = ['single-branch']
-            store.unmergedBranches = []
-
-            mockGroupedCheckbox.mockResolvedValueOnce({
-                merged: ['single-branch'],
-                unmerged: [],
-            })
-
+        it('should show correct message for multiple branches', async () => {
             mockConfirm.mockResolvedValueOnce(true)
 
-            vi.spyOn(store, 'findStaleBranches').mockResolvedValueOnce(store.staleBranches)
-            vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce()
+            await confirmDeletion(['b1', 'b2'], ['b3'])
 
-            await firstAttempt()
-
-            // Verify confirmation was called with singular message
             expect(mockConfirm).toHaveBeenCalledWith({
-                message: 'Are you sure you want to remove this 1 branch?',
+                message: 'Delete 3 branches?',
                 default: false,
             })
         })
     })
 
-    describe('user cancels selection', () => {
-        it('should exit when user cancels confirmation', async () => {
-            store.staleBranches = ['feature/test']
-            store.unmergedBranches = []
+    describe('executeDeletions - results and cleanup', () => {
+        it('should call setQueuedForDeletion with both arrays', async () => {
+            const setQueuedSpy = vi.spyOn(store, 'setQueuedForDeletion')
+            vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce({ success: ['b1'], failed: [] })
 
-            mockGroupedCheckbox.mockResolvedValueOnce({
-                merged: ['feature/test'],
-                unmerged: [],
-            })
+            await executeDeletions(['b1'], ['b2'])
 
-            // User cancels confirmation
-            mockConfirm.mockResolvedValueOnce(false)
-
-            vi.spyOn(store, 'findStaleBranches').mockResolvedValueOnce(store.staleBranches)
-
-            // Expect exit to be called, so wrap in try-catch to handle it
-            try {
-                await firstAttempt()
-            } catch (e) {
-                // Exit throws in tests, that's ok
-            }
-
-            expect(consoleInfoSpy).toHaveBeenCalledWith('👋 No branches were removed.')
-            expect(mockExit).toHaveBeenCalledWith(0)
+            expect(setQueuedSpy).toHaveBeenCalledWith(['b1'], ['b2'])
         })
 
-        it('should not call deleteBranches when user cancels', async () => {
-            store.staleBranches = ['feature/test']
-            store.unmergedBranches = []
-
-            mockGroupedCheckbox.mockResolvedValueOnce({
-                merged: ['feature/test'],
-                unmerged: [],
+        it('should show success message when all deletions succeed', async () => {
+            vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce({
+                success: ['b1', 'b2', 'b3'],
+                failed: [],
             })
-            mockConfirm.mockResolvedValueOnce(false)
 
-            vi.spyOn(store, 'findStaleBranches').mockResolvedValueOnce(store.staleBranches)
-            const deleteBranchesSpy = vi.spyOn(store, 'deleteBranches')
+            await executeDeletions(['b1', 'b2'], ['b3'])
 
-            // Expect exit to be called, so wrap in try-catch
-            try {
-                await firstAttempt()
-            } catch (e) {
-                // Exit throws in tests, that's ok
-            }
-
-            expect(deleteBranchesSpy).not.toHaveBeenCalled()
+            expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('Successfully deleted 3 branch'))
         })
-    })
 
-    describe('only merged branches scenario', () => {
-        it('should only show merged group when no unmerged branches exist', async () => {
-            store.staleBranches = ['feature/merged-1', 'feature/merged-2', 'hotfix/merged']
-            store.unmergedBranches = []
-
-            mockGroupedCheckbox.mockResolvedValueOnce({
-                merged: ['feature/merged-1'],
-                unmerged: [],
+        it('should show failure message with details when some fail', async () => {
+            vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce({
+                success: ['b1'],
+                failed: [{ branch: 'b2', error: 'Branch not fully merged' }],
             })
-            mockConfirm.mockResolvedValueOnce(true)
 
-            vi.spyOn(store, 'findStaleBranches').mockResolvedValueOnce(store.staleBranches)
-            vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce()
+            await executeDeletions(['b1'], ['b2'])
 
-            await firstAttempt()
-
-            const groupedCheckboxCall = mockGroupedCheckbox.mock.calls[0]?.[0]
-
-            // Should have merged group with all branches
-            const mergedGroup = groupedCheckboxCall?.groups.find((g: { key: string }) => g.key === 'merged')
-            expect(mergedGroup?.choices).toHaveLength(3)
-
-            // Unmerged group should have no choices
-            const unmergedGroup = groupedCheckboxCall?.groups.find((g: { key: string }) => g.key === 'unmerged')
-            expect(unmergedGroup?.choices).toHaveLength(0)
-        })
-    })
-
-    describe('only unmerged branches scenario', () => {
-        it('should only show unmerged group when no merged branches exist', async () => {
-            store.staleBranches = ['feature/unmerged-1', 'feature/unmerged-2']
-            store.unmergedBranches = ['feature/unmerged-1', 'feature/unmerged-2']
-
-            mockGroupedCheckbox.mockResolvedValueOnce({
-                merged: [],
-                unmerged: ['feature/unmerged-1'],
-            })
-            mockConfirm.mockResolvedValueOnce(true)
-
-            vi.spyOn(store, 'findStaleBranches').mockResolvedValueOnce(store.staleBranches)
-            vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce()
-
-            await firstAttempt()
-
-            const groupedCheckboxCall = mockGroupedCheckbox.mock.calls[0]?.[0]
-
-            // Merged group should have no choices
-            const mergedGroup = groupedCheckboxCall?.groups.find((g: { key: string }) => g.key === 'merged')
-            expect(mergedGroup?.choices).toHaveLength(0)
-
-            // Should have unmerged group with all branches
-            const unmergedGroup = groupedCheckboxCall?.groups.find((g: { key: string }) => g.key === 'unmerged')
-            expect(unmergedGroup?.choices).toHaveLength(2)
+            expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('Deleted 1 of 2 branches'))
+            expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to delete'))
+            expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('b2'))
         })
     })
 
     describe('no stale branches', () => {
-        it('should exit early when no stale branches are found', async () => {
-            // Explicitly set store staleBranches to empty AND mock findStaleBranches
-            store.staleBranches = []
-            const findStaleSpy = vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => {
-                store.staleBranches = []
+        it('should exit early when no branches to delete', async () => {
+            store.safeToDelete = []
+            store.requiresForce = []
+            store.infoOnly = []
+
+            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => {
+                // Branches already set above
                 return []
             })
 
-            // Expect exit to be called, so wrap in try-catch
             try {
-                await firstAttempt()
+                await selectBranches()
             } catch (e) {
-                // Exit throws in tests, that's ok
+                // Exit throws in tests
             }
 
-            expect(findStaleSpy).toHaveBeenCalled()
             expect(consoleInfoSpy).toHaveBeenCalledWith('✅ No stale branches were found')
             expect(mockExit).toHaveBeenCalledWith(0)
             expect(mockGroupedCheckbox).not.toHaveBeenCalled()
         })
-    })
 
-    describe('skip confirmation mode', () => {
-        it('should skip confirmation when skipConfirmation is true', async () => {
-            store.staleBranches = ['feature/test']
-            store.unmergedBranches = []
-            store.skipConfirmation = true
+        it('should show info-only branches when no deletable branches exist', async () => {
+            store.safeToDelete = []
+            store.requiresForce = []
+            store.infoOnly = ['renamed1', 'renamed2']
 
-            mockGroupedCheckbox.mockResolvedValueOnce({
-                merged: ['feature/test'],
-                unmerged: [],
-            })
+            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
 
-            vi.spyOn(store, 'findStaleBranches').mockResolvedValueOnce(store.staleBranches)
-            vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce()
+            try {
+                await selectBranches()
+            } catch (e) {
+                // Exit throws in tests
+            }
 
-            await firstAttempt()
-
-            // Confirmation should not have been called
-            expect(mockConfirm).not.toHaveBeenCalled()
-            expect(store.queuedForDeletion).toEqual(['feature/test'])
+            expect(consoleInfoSpy).toHaveBeenCalledWith('✅ No deletable branches were found')
+            expect(consoleInfoSpy).toHaveBeenCalledWith(
+                expect.stringContaining('Some branches are renamed locally but still exist on remote'),
+            )
+            expect(mockExit).toHaveBeenCalledWith(0)
         })
     })
 
-    describe('prune-all mode', () => {
-        it('should bypass grouped checkbox when pruneAll is true', async () => {
-            store.staleBranches = ['feature/merged', 'feature/unmerged']
-            store.unmergedBranches = ['feature/unmerged']
-            store.pruneAll = true
-            store.skipConfirmation = true
+    describe('full e2e flow', () => {
+        it('should work end-to-end with safe and force branches', async () => {
+            // Setup
+            store.safeToDelete = ['safe1', 'safe2']
+            store.requiresForce = ['force1']
+            store.infoOnly = []
 
-            vi.spyOn(store, 'findStaleBranches').mockResolvedValueOnce(store.staleBranches)
-            vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce()
-
-            await firstAttempt()
-
-            // Grouped checkbox should not be called in prune-all mode
-            expect(mockGroupedCheckbox).not.toHaveBeenCalled()
-            expect(store.queuedForDeletion).toEqual(['feature/merged', 'feature/unmerged'])
-        })
-    })
-
-    describe('UI snapshots', () => {
-        it('should create grouped checkbox with correct structure for mixed branches', async () => {
-            store.staleBranches = [
-                'feature/authentication',
-                'feature/payment',
-                'hotfix/security-patch',
-                'feature/unmerged-work',
-                'develop',
-            ]
-            store.unmergedBranches = ['feature/unmerged-work', 'develop']
-
+            // User selects some branches
             mockGroupedCheckbox.mockResolvedValueOnce({
-                merged: ['feature/authentication', 'feature/payment'],
-                unmerged: [],
+                safe: ['safe1'],
+                force: ['force1'],
+                info: [],
             })
+
+            // User confirms
             mockConfirm.mockResolvedValueOnce(true)
 
-            vi.spyOn(store, 'findStaleBranches').mockResolvedValueOnce(store.staleBranches)
-            vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce()
+            // Mock successful deletions
+            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
+            vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce({
+                success: ['safe1', 'force1'],
+                failed: [],
+            })
 
-            await firstAttempt()
+            // Execute flow
+            const { safe, force } = await selectBranches()
+            const confirmed = await confirmDeletion(safe, force)
+            expect(confirmed).toBe(true)
 
-            // Snapshot the grouped checkbox call structure
-            expect(mockGroupedCheckbox.mock.calls[0]?.[0]).toMatchInlineSnapshot(`
-              {
-                "groups": [
-                  {
-                    "choices": [
-                      {
-                        "name": "feature/authentication",
-                        "value": "feature/authentication",
-                      },
-                      {
-                        "name": "feature/payment",
-                        "value": "feature/payment",
-                      },
-                      {
-                        "name": "hotfix/security-patch",
-                        "value": "hotfix/security-patch",
-                      },
-                    ],
-                    "icon": "✅",
-                    "key": "merged",
-                    "label": "Merged Branches",
-                  },
-                  {
-                    "choices": [
-                      {
-                        "name": "feature/unmerged-work",
-                        "value": "feature/unmerged-work",
-                      },
-                      {
-                        "name": "develop",
-                        "value": "develop",
-                      },
-                    ],
-                    "icon": "⚠️",
-                    "key": "unmerged",
-                    "label": "Unmerged Branches — will be removed with --force and cannot be undone",
-                  },
-                ],
-                "message": "Select branches to remove",
-                "pageSize": 40,
-                "searchable": true,
-              }
-            `)
+            const exitCode = await executeDeletions(safe, force)
+
+            // Verify
+            expect(safe).toEqual(['safe1'])
+            expect(force).toEqual(['force1'])
+            expect(exitCode).toBe(0)
+            expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('Successfully deleted 2 branch'))
         })
 
-        it('should create grouped checkbox with searchable option enabled', async () => {
-            store.staleBranches = ['feature/test']
-            store.unmergedBranches = []
+        it('should handle user cancellation', async () => {
+            store.safeToDelete = ['branch1']
+            store.requiresForce = []
+            store.infoOnly = []
 
-            mockGroupedCheckbox.mockResolvedValueOnce({
-                merged: ['feature/test'],
-                unmerged: [],
-            })
-            mockConfirm.mockResolvedValueOnce(true)
+            mockGroupedCheckbox.mockResolvedValueOnce({ safe: ['branch1'], force: [], info: [] })
+            mockConfirm.mockResolvedValueOnce(false) // User cancels
 
-            vi.spyOn(store, 'findStaleBranches').mockResolvedValueOnce(store.staleBranches)
-            vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce()
+            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
 
-            await firstAttempt()
+            const { safe, force } = await selectBranches()
+            const confirmed = await confirmDeletion(safe, force)
 
-            const groupedCheckboxCall = mockGroupedCheckbox.mock.calls[0]?.[0]
-            expect(groupedCheckboxCall?.searchable).toBe(true)
-            expect(groupedCheckboxCall?.pageSize).toBe(40)
+            expect(confirmed).toBe(false)
+            expect(safe).toEqual(['branch1'])
         })
     })
 })
