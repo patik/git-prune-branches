@@ -4,6 +4,12 @@ Organizing and defining which updates will go into the next major version of `gi
 
 For background, this package started as a fork of https://github.com/nemisj/git-removed-branches. That tool was meant for a more automated approach, i.e. run a single command and it deletes stuff. My tool is meant to be more interactive, visual, and explanatory.
 
+**📋 See [VERSION_2_IMPLEMENTATION_PLAN.md](./VERSION_2_IMPLEMENTATION_PLAN.md) for the complete implementation plan.**
+
+---
+
+## Planning Notes (Original)
+
 ## Test branches
 
 These are the branches used for testing in `src/tests/setup.ts` and should represent a variety of different use cases. Here is how they're handled by V1 (as demonstrated with `src/tests/store-debug.ts`), and how they could/should be handled by V2.
