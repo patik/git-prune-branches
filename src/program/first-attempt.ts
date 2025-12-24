@@ -1,6 +1,7 @@
-import { checkbox, confirm, Separator } from '@inquirer/prompts'
+import { confirm } from '@inquirer/prompts'
+import groupedCheckbox from 'inquirer-grouped-checkbox'
 import { exit } from 'node:process'
-import { bold, green } from '../utils/colors.js'
+import { red } from '../utils/colors.js'
 import store from './store.js'
 
 export async function firstAttempt(): Promise<void> {
@@ -14,41 +15,42 @@ export async function firstAttempt(): Promise<void> {
     const merged = store.staleBranches.filter((branch) => !store.unmergedBranches.includes(branch))
     const unmerged = store.unmergedBranches.filter((branch) => store.staleBranches.includes(branch))
 
-    const userSelectedBranches = store.pruneAll
-        ? store.staleBranches
-        : await checkbox({
-              message: 'Select branches to remove',
-              pageSize: 40,
-              choices: [
-                  new Separator(' '),
-                  new Separator(bold('✅ Merged Branches')),
-                  ...merged.map((branch) => {
-                      return { name: branch, value: branch }
-                  }),
-                  new Separator(' '),
-                  new Separator(bold('⚠️ Unmerged Branches')),
-                  ...unmerged.map((branch) => {
-                      return {
-                          name: branch,
-                          value: branch,
-                      }
-                  }),
-              ],
-              theme: {
-                  style: {
-                      answer: (text: string) => bold(green(text)),
-                  },
-                  icon: {
-                      checked: '    ◉',
-                      unchecked: '    ◯',
-                      //   cursor: '   ❯ ',
-                  },
-              },
-          })
+    let branchesToDelete: Array<string> = []
+
+    if (store.pruneAll) {
+        branchesToDelete = store.staleBranches
+    } else {
+        const userSelection = await groupedCheckbox({
+            message: 'Select branches to remove',
+            pageSize: 40,
+            groups: [
+                {
+                    key: 'merged',
+                    label: 'Merged Branches',
+                    icon: '✅',
+                    choices: merged.map((branch) => {
+                        return { value: branch, name: branch }
+                    }),
+                },
+                {
+                    key: 'unmerged',
+                    label: `Unmerged Branches — ${red('will be removed with --force and cannot be undone')}`,
+                    icon: '⚠️',
+                    choices: unmerged.map((branch) => {
+                        return { value: branch, name: branch }
+                    }),
+                },
+            ],
+            searchable: true,
+        })
+
+        branchesToDelete = Object.values(userSelection).flat()
+    }
+
     const confirmAnswer = store.skipConfirmation
         ? true
         : await confirm({
-              message: `Are you sure you want to remove ${userSelectedBranches.length === 1 ? 'this' : 'these'} ${userSelectedBranches.length} branch${userSelectedBranches.length !== 1 ? 'es' : ''}?`,
+              message: `Are you sure you want to remove ${branchesToDelete.length === 1 ? 'this' : 'these'} ${branchesToDelete.length} branch${branchesToDelete.length !== 1 ? 'es' : ''}?`,
               default: false,
           })
 
@@ -57,7 +59,7 @@ export async function firstAttempt(): Promise<void> {
         exit(0)
     }
 
-    store.setQueuedForDeletion(userSelectedBranches)
+    store.setQueuedForDeletion(branchesToDelete)
 
     await store.deleteBranches()
 }

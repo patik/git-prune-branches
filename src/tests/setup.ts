@@ -47,38 +47,73 @@ export const testSetup = () => {
     child_process.execSync('git commit -m "inital commit"', { cwd: workingDir })
 
     // create new branch, which will be deleted by -d flag
-    child_process.execSync('git branch feature/fast-forwarded', { cwd: workingDir })
+    child_process.execSync('git branch alpha/pushed-then-deleted-from-remote--no-commits', { cwd: workingDir })
     // create another branch with special character
-    child_process.execSync('git branch some-work', { cwd: workingDir })
+    child_process.execSync('git branch "#567--echo--special-chars--pushed-then-deleted-from-remote--no-commits"', {
+        cwd: workingDir,
+    })
     // create branch with renamed name, which is deleted on remote
-    child_process.execSync('git branch chore/local-name-deleted', { cwd: workingDir })
+    child_process.execSync('git branch foxtrot/local-name-different--removed--can-be-soft-removed', { cwd: workingDir })
     // create branch with renamed name, which is NOT deleted on remote
-    child_process.execSync('git branch chore/local-name-persistent', { cwd: workingDir })
+    child_process.execSync('git branch golf/renamed-locally--not-deleted-on-remote--not-offered-for-deletion', {
+        cwd: workingDir,
+    })
     // create new branch, which can be deleted only with -D flag
-    child_process.execSync('git branch not-yet-merged', { cwd: workingDir })
+    child_process.execSync('git branch delta/with-commits--remote-deleted--needs-force', { cwd: workingDir })
 
     // checkout working branch
-    child_process.execSync('git checkout not-yet-merged', { cwd: workingDir })
+    child_process.execSync('git checkout delta/with-commits--remote-deleted--needs-force', { cwd: workingDir })
 
     // update file content
     writeFileSync(file, 'lolipop content changed')
     child_process.execSync('git commit -a -m "second commit"', { cwd: workingDir })
 
+    // Create local-only branch, with commits, that is not merged into main
+    child_process.execSync('git checkout -b charlie/local-never-pushed', { cwd: workingDir })
+    writeFileSync(file, 'local only branch content')
+    child_process.execSync('git commit -a -m "local only commit"', { cwd: workingDir })
+
+    // Create local-only branch, with commits, that is merged into main
+    child_process.execSync('git checkout main', { cwd: workingDir })
+    child_process.execSync('git checkout -b bravo/local-merged--never-on-remote', { cwd: workingDir })
+    writeFileSync(file, 'local merged branch content')
+    child_process.execSync('git commit -a -m "local merged commit"', { cwd: workingDir })
+    child_process.execSync('git checkout main', { cwd: workingDir })
+    child_process.execSync('git merge bravo/local-merged--never-on-remote', { cwd: workingDir })
+
     // push all the branches to the remote and update config
     child_process.execSync('git push origin -u main', { cwd: workingDir })
-    child_process.execSync('git push origin -u feature/fast-forwarded', { cwd: workingDir })
-    child_process.execSync('git push origin -u some-work', { cwd: workingDir })
-    child_process.execSync('git push origin -u chore/local-name-deleted:chore/remote-name-deleted', { cwd: workingDir })
-    child_process.execSync('git push origin -u chore/local-name-persistent:chore/remote-name-persistent', {
-        cwd: workingDir,
-    })
-    child_process.execSync('git push origin -u not-yet-merged', { cwd: workingDir })
+    child_process.execSync('git push origin -u alpha/pushed-then-deleted-from-remote--no-commits', { cwd: workingDir })
+    child_process.execSync(
+        'git push origin -u "#567--echo--special-chars--pushed-then-deleted-from-remote--no-commits"',
+        {
+            cwd: workingDir,
+        },
+    )
+    child_process.execSync(
+        'git push origin -u foxtrot/local-name-different--removed--can-be-soft-removed:hotel/remote-for-foxtrot-but-diff-name--deleted-from-remote',
+        { cwd: workingDir },
+    )
+    child_process.execSync(
+        'git push origin -u golf/renamed-locally--not-deleted-on-remote--not-offered-for-deletion:india/remote-name-diff--not-deleted',
+        {
+            cwd: workingDir,
+        },
+    )
+    child_process.execSync('git push origin -u delta/with-commits--remote-deleted--needs-force', { cwd: workingDir })
 
     // remove all the branches from the remote, except for the local-name
-    child_process.execSync('git push origin :feature/fast-forwarded', { cwd: workingDir })
-    child_process.execSync('git push origin :not-yet-merged', { cwd: workingDir })
-    child_process.execSync('git push origin :some-work', { cwd: workingDir })
-    child_process.execSync('git push origin :chore/remote-name-deleted', { cwd: workingDir })
+    child_process.execSync('git push origin :alpha/pushed-then-deleted-from-remote--no-commits', { cwd: workingDir })
+    child_process.execSync('git push origin :delta/with-commits--remote-deleted--needs-force', { cwd: workingDir })
+    child_process.execSync(
+        'git push origin :"#567--echo--special-chars--pushed-then-deleted-from-remote--no-commits"',
+        {
+            cwd: workingDir,
+        },
+    )
+    child_process.execSync('git push origin :hotel/remote-for-foxtrot-but-diff-name--deleted-from-remote', {
+        cwd: workingDir,
+    })
 
     // checkout main branch
     child_process.execSync('git checkout main', { cwd: workingDir })

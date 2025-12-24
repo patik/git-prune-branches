@@ -1,0 +1,33 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`git-prune-branches > interactive grouped checkbox mode (end-to-end) > should display complete UI snapshot with all elements > grouped-checkbox-clean-output 1`] = `
+"? Select branches to remove
+
+✅ Merged Branches (0/3)
+❯ ◯ #567--echo--special-chars--pushed-then-deleted-from-remote--no-commits
+  ◯ alpha/pushed-then-deleted-from-remote--no-commits
+  ◯ foxtrot/local-name-different--removed--can-be-soft-removed
+
+⚠️ Unmerged Branches — will be removed with --force and cannot be undone (0/1)
+  ◯ delta/with-commits--remote-deleted--needs-force
+(space: select, ctrl+a: toggle all, ctrl+i: invert, type to search)
+
+👋 until next time!
+"
+`;
+
+exports[`git-prune-branches > interactive grouped checkbox mode (end-to-end) > should display complete UI snapshot with all elements > grouped-checkbox-full-terminal-output 1`] = `
+"? Select branches to remove
+
+✅ Merged Branches (0/3)
+❯ ◯ #567--echo--special-chars--pushed-then-deleted-from-remote--no-commits
+  ◯ alpha/pushed-then-deleted-from-remote--no-commits
+  ◯ foxtrot/local-name-different--removed--can-be-soft-removed
+
+⚠️ Unmerged Branches — will be removed with --force and cannot be undone (0/1)
+  ◯ delta/with-commits--remote-deleted--needs-force
+(space: select, ctrl+a: toggle all, ctrl+i: invert, type to search)[68G
+[?25h
+👋 until next time!
+"
+`;

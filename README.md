@@ -17,10 +17,6 @@ Addresses questions, like:
 
 ![Demo](https://github.com/patik/git-prune-branches/blob/master/usage.gif)
 
-## Why?
-
-Because I'm tired of doing every time `git fetch -p`, `git branch -r`, `git branch` and keep comparing which branches are gone from the GitHub, but still available locally and doing `git branch -D ${branch_name}` on each of them, one by one.
-
 ## What does it do?
 
 This command will compare your local branches with remote and show you branches that are no longer available on remote but are still presented in your local repository. You can also use it to view and delete all (remotely) removed branches in one go using `--prune-all` flag.
@@ -146,6 +142,14 @@ This project uses [Vitest](https://vitest.dev/) for testing. The tests create a 
 pnpm test # watch mode
 pnpm test:once # run all tests once
 ```
+
+#### Manual testing
+
+To run the app on an actual git repository:
+
+1. Run `npx tsx src/tests/manual.ts`
+2. The last line of output will be `cd /some/temp/dir`; copy this line and run it to put yourself in the repo's folder
+3. Run `npx tsx ~/code/git-prune-branches/src/index.ts`
 
 ### Building
 

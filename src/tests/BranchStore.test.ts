@@ -1,6 +1,6 @@
 import stdoutModule from 'easy-stdout'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import BranchStore from '../utils/branch-store.js'
+import BranchStore from '../utils/BranchStore.js'
 
 // Mock the stdout module
 vi.mock('easy-stdout', () => ({
@@ -68,7 +68,7 @@ describe('BranchStore', () => {
 
         it('should initialize arrays as empty', () => {
             expect(branchStore.remoteBranches).toEqual([])
-            expect(branchStore.localBranches).toEqual([])
+            expect(branchStore.localOrphanedBranches).toEqual([])
             expect(branchStore.staleBranches).toEqual([])
             expect(branchStore.queuedForDeletion).toEqual([])
             expect(branchStore.failedToDelete).toEqual([])
@@ -107,9 +107,9 @@ another@{refs/remotes/upstream/another}`
 
             mockStdout.mockResolvedValueOnce(gitOutput)
 
-            await branchStore.findLocalBranches()
+            await branchStore.findLocalOrphanedBranches()
 
-            expect(branchStore.localBranches).toEqual([
+            expect(branchStore.localOrphanedBranches).toEqual([
                 { localBranch: 'main', remoteBranch: 'main' },
                 { localBranch: 'feature/test', remoteBranch: 'feature/test' },
                 { localBranch: 'hotfix/bug', remoteBranch: 'hotfix/bug' },
@@ -122,9 +122,9 @@ feature/with-dash@{refs/remotes/origin/feature/with-dash}`
 
             mockStdout.mockResolvedValueOnce(gitOutput)
 
-            await branchStore.findLocalBranches()
+            await branchStore.findLocalOrphanedBranches()
 
-            expect(branchStore.localBranches).toEqual([
+            expect(branchStore.localOrphanedBranches).toEqual([
                 { localBranch: '#333-work', remoteBranch: '#333-work' },
                 { localBranch: 'feature/with-dash', remoteBranch: 'feature/with-dash' },
             ])
@@ -137,9 +137,9 @@ upstream-branch@{refs/remotes/upstream/upstream-branch}`
 
             mockStdout.mockResolvedValueOnce(gitOutput)
 
-            await branchStore.findLocalBranches()
+            await branchStore.findLocalOrphanedBranches()
 
-            expect(branchStore.localBranches).toEqual([{ localBranch: 'main', remoteBranch: 'main' }])
+            expect(branchStore.localOrphanedBranches).toEqual([{ localBranch: 'main', remoteBranch: 'main' }])
         })
     })
 
@@ -353,7 +353,7 @@ upstream-branch@{refs/remotes/upstream/upstream-branch}`
         it('should reset all arrays and call all find methods', async () => {
             // Set some initial data
             branchStore.remoteBranches = ['old-data']
-            branchStore.localBranches = [{ localBranch: 'old', remoteBranch: 'old' }]
+            branchStore.localOrphanedBranches = [{ localBranch: 'old', remoteBranch: 'old' }]
             branchStore.staleBranches = ['old-stale']
             branchStore.liveBranches = ['old-live']
             branchStore.unmergedBranches = ['old-unmerged']
@@ -361,7 +361,7 @@ upstream-branch@{refs/remotes/upstream/upstream-branch}`
 
             // Mock all the methods
             const findLiveBranchesSpy = vi.spyOn(branchStore, 'findLiveBranches').mockResolvedValue()
-            const findLocalBranchesSpy = vi.spyOn(branchStore, 'findLocalBranches').mockResolvedValue()
+            const findLocalOrphanedBranchesSpy = vi.spyOn(branchStore, 'findLocalOrphanedBranches').mockResolvedValue()
             const findUnmergedBranchesSpy = vi.spyOn(branchStore, 'findUnmergedBranches').mockResolvedValue()
             const findRemoteBranchesSpy = vi.spyOn(branchStore, 'findRemoteBranches').mockResolvedValue()
             const analyzeLiveAndCacheSpy = vi.spyOn(branchStore, 'analyzeLiveAndCache').mockResolvedValue()
@@ -370,7 +370,7 @@ upstream-branch@{refs/remotes/upstream/upstream-branch}`
 
             // Check arrays are reset
             expect(branchStore.remoteBranches).toEqual([])
-            expect(branchStore.localBranches).toEqual([])
+            expect(branchStore.localOrphanedBranches).toEqual([])
             expect(branchStore.staleBranches).toEqual([])
             expect(branchStore.liveBranches).toEqual([])
             expect(branchStore.unmergedBranches).toEqual([])
@@ -378,7 +378,7 @@ upstream-branch@{refs/remotes/upstream/upstream-branch}`
 
             // Check methods are called in correct order
             expect(findLiveBranchesSpy).toHaveBeenCalled()
-            expect(findLocalBranchesSpy).toHaveBeenCalled()
+            expect(findLocalOrphanedBranchesSpy).toHaveBeenCalled()
             expect(findUnmergedBranchesSpy).toHaveBeenCalled()
             expect(findRemoteBranchesSpy).toHaveBeenCalled()
             expect(analyzeLiveAndCacheSpy).toHaveBeenCalled()
@@ -389,7 +389,7 @@ upstream-branch@{refs/remotes/upstream/upstream-branch}`
         it('should identify stale branches correctly', async () => {
             const preprocessSpy = vi.spyOn(branchStore, 'preprocess').mockResolvedValue()
 
-            branchStore.localBranches = [
+            branchStore.localOrphanedBranches = [
                 { localBranch: 'main', remoteBranch: 'main' },
                 { localBranch: 'feature/old', remoteBranch: 'feature/old' },
                 { localBranch: 'hotfix/bug', remoteBranch: 'hotfix/bug' },
@@ -407,7 +407,7 @@ upstream-branch@{refs/remotes/upstream/upstream-branch}`
         it('should return empty array when no stale branches', async () => {
             const preprocessSpy = vi.spyOn(branchStore, 'preprocess').mockResolvedValue()
 
-            branchStore.localBranches = [
+            branchStore.localOrphanedBranches = [
                 { localBranch: 'main', remoteBranch: 'main' },
                 { localBranch: 'develop', remoteBranch: 'develop' },
             ]
@@ -517,7 +517,7 @@ feature/old@{refs/remotes/origin/feature/old}`
             const staleBranches = await branchStore.findStaleBranches()
 
             expect(staleBranches).toEqual(['feature/old'])
-            expect(branchStore.localBranches).toHaveLength(3)
+            expect(branchStore.localOrphanedBranches).toHaveLength(3)
             expect(branchStore.remoteBranches).toEqual(['main', 'develop']) // Updated by analyzeLiveAndCache
         })
 

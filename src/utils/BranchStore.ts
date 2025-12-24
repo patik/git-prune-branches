@@ -9,12 +9,29 @@ export default class BranchStore {
     pruneAll: boolean
     skipConfirmation: boolean
     remoteBranches: Array<string>
-    localBranches: Array<{ localBranch: string; remoteBranch: string }>
+
+    /**
+     * Local branches which track remote branches that no longer exist
+     */
+    localOrphanedBranches: Array<{ localBranch: string; remoteBranch: string }>
+
+    /**
+     * The app will offer to delete these
+     */
     staleBranches: Array<string>
     queuedForDeletion: Array<string>
     failedToDelete: Array<string>
+
+    /**
+     * Branches that are still in use; will never be deleted
+     */
     liveBranches: Array<string>
+
+    /**
+     * Should be offered for deletion, will need force
+     */
     unmergedBranches: Array<string>
+
     noConnection: boolean
 
     constructor(ops: {
@@ -30,7 +47,7 @@ export default class BranchStore {
         this.pruneAll = ops.pruneAll
         this.skipConfirmation = ops.skipConfirmation
         this.remoteBranches = []
-        this.localBranches = []
+        this.localOrphanedBranches = []
         this.staleBranches = []
         this.queuedForDeletion = []
         this.failedToDelete = []
@@ -52,7 +69,7 @@ export default class BranchStore {
         this.remoteBranches = []
 
         // local branches which are checkout from the remote
-        this.localBranches = []
+        this.localOrphanedBranches = []
 
         // branches which are available locally but not remotely
         this.staleBranches = []
@@ -67,9 +84,10 @@ export default class BranchStore {
         // this will become true
         this.noConnection = false
 
+        // Gather all the information
         await Promise.all([
             this.findLiveBranches(),
-            this.findLocalBranches(),
+            this.findLocalOrphanedBranches(),
             this.findUnmergedBranches(),
             this.findRemoteBranches(),
         ])
@@ -134,7 +152,7 @@ export default class BranchStore {
         }
     }
 
-    async findLocalBranches() {
+    async findLocalOrphanedBranches() {
         // list all the branches
         // by using format
         // git branch --format="%(refname:short)@{%(upstream)}"
@@ -154,7 +172,7 @@ export default class BranchStore {
             const upParts = upstream.match(/refs\/remotes\/[^/]+\/(.+)/)
             const [, remoteBranch] = upParts || []
 
-            this.localBranches.push({
+            this.localOrphanedBranches.push({
                 localBranch,
                 remoteBranch: remoteBranch || '',
             })
@@ -192,7 +210,7 @@ export default class BranchStore {
 
         // filter out non origin branches
         const re = new RegExp('^%s\\/([^\\s]*)'.replace('%s', this.remote))
-        branches?.forEach((branchName) => {
+        branches.forEach((branchName) => {
             const group = branchName.match(re)
 
             if (group) {
@@ -217,21 +235,19 @@ export default class BranchStore {
             '         Following branches are not pruned yet locally:',
             '',
         ]
-        let show = false
+        let showWarning = false
 
         // compare absent remotes
         this.remoteBranches.forEach((branch) => {
-            if (branch === 'HEAD') {
-                //
-            } else if (this.liveBranches.indexOf(branch) === -1) {
+            if (branch !== 'HEAD' && this.liveBranches.indexOf(branch) === -1) {
                 message.push('         - ' + branch)
-                show = true
+                showWarning = true
             }
         })
 
         message.push('')
 
-        if (show) {
+        if (showWarning) {
             console.warn(message.join('\r\n'))
         }
 
@@ -240,11 +256,10 @@ export default class BranchStore {
 
     async findStaleBranches() {
         await this.preprocess()
-        this.localBranches.forEach(({ localBranch, remoteBranch }) => {
-            if (this.remoteBranches.indexOf(remoteBranch) === -1) {
-                this.staleBranches.push(localBranch)
-            }
-        })
+
+        this.staleBranches = this.localOrphanedBranches
+            .filter(({ remoteBranch }) => !this.remoteBranches.includes(remoteBranch))
+            .map(({ localBranch }) => localBranch)
 
         return this.staleBranches
     }

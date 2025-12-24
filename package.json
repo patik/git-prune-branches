@@ -50,6 +50,7 @@
     "dependencies": {
         "@inquirer/prompts": "^7.8.6",
         "easy-stdout": "^0.1.0",
+        "inquirer-grouped-checkbox": "^0.3.0",
         "minimist": "^1.2.8",
         "ora": "^8.2.0"
     },
@@ -64,6 +65,7 @@
         "eslint-plugin-prettier": "^5.5.4",
         "husky": "^9.1.7",
         "prettier": "^3.6.2",
+        "strip-ansi": "7.1.0",
         "tsx": "^4.20.6",
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.45.0",
