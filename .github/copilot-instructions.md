@@ -19,8 +19,7 @@ The tool is written in TypeScript and uses the Inquirer.js library for the inter
 
 ## Dependencies
 
-The main contributor of this repo (@patik) also maintains the following Node modules. While working on this repo, if you (the agent) discover a bug in one of these packages, or feel that a package could be improved in some way that would benefit this repo, please consider suggesting that the package be modified.
+The owner of this repo (@patik) also maintains the following Node modules. While working on this repo, if you (the agent) discover a bug in one of these packages, or feel that a package could be improved in some way that would benefit this repo, please consider suggesting that the package be modified.
 
-- inquirer-form-prompt
-- inquirer-select-with-state
-- simple-stdout
+- inquirer-grouped-checkbox
+- easy-stdout
