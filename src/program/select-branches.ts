@@ -34,7 +34,7 @@ export async function selectBranches(): Promise<{
             icon: '✅',
             choices: store.safeToDelete.map((branch) => ({
                 value: branch,
-                name: branch,
+                name: `${branch} ${gray(`[${store.getSafeToDeleteReason(branch)}]`)}`,
                 checked: true, // Pre-selected
             })),
         })
@@ -48,7 +48,7 @@ export async function selectBranches(): Promise<{
             icon: '⚠️',
             choices: store.requiresForce.map((branch) => ({
                 value: branch,
-                name: branch,
+                name: `${branch} ${gray(`[${store.getRequiresForceReason(branch)}]`)}`,
                 checked: false, // NOT pre-selected
             })),
         })
@@ -58,11 +58,11 @@ export async function selectBranches(): Promise<{
     if (store.infoOnly.length > 0) {
         groups.push({
             key: 'info',
-            label: gray('ℹ️ Info only - renamed branches still on remote'),
+            label: gray('Info only - renamed branches still on remote'),
             icon: 'ℹ️',
             choices: store.infoOnly.map((branch) => ({
                 value: branch,
-                name: branch,
+                name: `${branch} ${gray(`[${store.getInfoOnlyReason(branch)}]`)}`,
                 disabled: true, // Cannot select
             })),
         })

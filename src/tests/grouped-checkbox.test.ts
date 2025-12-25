@@ -138,6 +138,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             store.safeToDelete = ['branch1', 'branch2']
             store.requiresForce = []
             store.infoOnly = []
+            store.staleBranches = ['branch1', 'branch2']
 
             mockGroupedCheckbox.mockResolvedValueOnce({ safe: ['branch1', 'branch2'], force: [], info: [] })
             vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
@@ -148,8 +149,8 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             const safeGroup = call?.groups.find((g: { key: string }) => g.key === 'safe')
 
             expect(safeGroup?.choices).toEqual([
-                { value: 'branch1', name: 'branch1', checked: true },
-                { value: 'branch2', name: 'branch2', checked: true },
+                { value: 'branch1', name: expect.stringContaining('branch1'), checked: true },
+                { value: 'branch2', name: expect.stringContaining('branch2'), checked: true },
             ])
         })
 
@@ -157,6 +158,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             store.safeToDelete = []
             store.requiresForce = ['unmerged1', 'unmerged2']
             store.infoOnly = []
+            store.staleBranches = ['unmerged1', 'unmerged2']
 
             mockGroupedCheckbox.mockResolvedValueOnce({ safe: [], force: [], info: [] })
             vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
@@ -167,8 +169,8 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             const forceGroup = call?.groups.find((g: { key: string }) => g.key === 'force')
 
             expect(forceGroup?.choices).toEqual([
-                { value: 'unmerged1', name: 'unmerged1', checked: false },
-                { value: 'unmerged2', name: 'unmerged2', checked: false },
+                { value: 'unmerged1', name: expect.stringContaining('unmerged1'), checked: false },
+                { value: 'unmerged2', name: expect.stringContaining('unmerged2'), checked: false },
             ])
         })
 
@@ -176,6 +178,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             store.safeToDelete = ['safe-branch'] // Need at least one deletable branch so UI is shown
             store.requiresForce = []
             store.infoOnly = ['renamed-branch']
+            store.staleBranches = ['safe-branch']
 
             mockGroupedCheckbox.mockResolvedValueOnce({ safe: [], force: [], info: [] })
             vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
@@ -185,7 +188,9 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             const call = mockGroupedCheckbox.mock.calls[0]?.[0]
             const infoGroup = call?.groups.find((g: { key: string }) => g.key === 'info')
 
-            expect(infoGroup?.choices).toEqual([{ value: 'renamed-branch', name: 'renamed-branch', disabled: true }])
+            expect(infoGroup?.choices).toEqual([
+                { value: 'renamed-branch', name: expect.stringContaining('renamed-branch'), disabled: true },
+            ])
         })
     })
 

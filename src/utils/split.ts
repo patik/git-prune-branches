@@ -1,8 +1,9 @@
-// Split the stdout output
-// and will take out all the empty lines
+/**
+ * Split the stdout output and will take out all the empty lines
+ */
 const split = (stdout: string) => {
     return (
-        stdout
+        (stdout || '')
             .split('\n')
             .map((line) => line.trim())
             // remove empty

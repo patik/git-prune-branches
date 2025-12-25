@@ -48,6 +48,12 @@ export const testSetup = () => {
 
     // create new branch, which will be deleted by -d flag
     child_process.execSync('git branch alpha/pushed-then-deleted-from-remote--no-commits', { cwd: workingDir })
+
+    // create branch with deep nested path (tests multiple slashes in branch name)
+    child_process.execSync('git branch feature/team/auth/oauth-refresh-token', { cwd: workingDir })
+
+    // create branch with version-like name (dots are common in release branches)
+    child_process.execSync('git branch release/v2.0.0', { cwd: workingDir })
     // create another branch with special character
     child_process.execSync('git branch "#567--echo--special-chars--pushed-then-deleted-from-remote--no-commits"', {
         cwd: workingDir,
@@ -81,9 +87,31 @@ export const testSetup = () => {
     child_process.execSync('git checkout main', { cwd: workingDir })
     child_process.execSync('git merge bravo/local-merged--never-on-remote', { cwd: workingDir })
 
+    // Create a branch that simulates PR merge workflow:
+    // 1. Create branch with commits
+    // 2. Push to remote
+    // 3. Merge to main (simulating GitHub PR merge)
+    // 4. Delete remote branch
+    // This is the most common real-world scenario
+    child_process.execSync('git checkout -b juliet/pr-merged-on-github', { cwd: workingDir })
+    writeFileSync(file, 'PR branch content')
+    child_process.execSync('git commit -a -m "PR commit"', { cwd: workingDir })
+    child_process.execSync('git checkout main', { cwd: workingDir })
+    child_process.execSync('git merge juliet/pr-merged-on-github', { cwd: workingDir })
+
+    // Create a protected branch (develop) that would otherwise be deletable
+    // This tests that protected branches are excluded from deletion
+    child_process.execSync('git checkout -b develop', { cwd: workingDir })
+    writeFileSync(file, 'develop branch content')
+    child_process.execSync('git commit -a -m "develop commit"', { cwd: workingDir })
+    child_process.execSync('git checkout main', { cwd: workingDir })
+    child_process.execSync('git merge develop', { cwd: workingDir })
+
     // push all the branches to the remote and update config
     child_process.execSync('git push origin -u main', { cwd: workingDir })
     child_process.execSync('git push origin -u alpha/pushed-then-deleted-from-remote--no-commits', { cwd: workingDir })
+    child_process.execSync('git push origin -u feature/team/auth/oauth-refresh-token', { cwd: workingDir })
+    child_process.execSync('git push origin -u release/v2.0.0', { cwd: workingDir })
     child_process.execSync(
         'git push origin -u "#567--echo--special-chars--pushed-then-deleted-from-remote--no-commits"',
         {
@@ -101,9 +129,17 @@ export const testSetup = () => {
         },
     )
     child_process.execSync('git push origin -u delta/with-commits--remote-deleted--needs-force', { cwd: workingDir })
+    child_process.execSync('git push origin -u juliet/pr-merged-on-github', { cwd: workingDir })
+    child_process.execSync('git push origin -u develop', { cwd: workingDir })
 
-    // remove all the branches from the remote, except for the local-name
+    // For juliet/pr-merged-on-github: merge to main on remote first (simulating GitHub PR merge)
+    // Then delete the branch - this is the typical PR workflow
+    child_process.execSync('git push origin main', { cwd: workingDir }) // Push the merged main
+
+    // remove all the branches from the remote, except for the local-name and protected branches
     child_process.execSync('git push origin :alpha/pushed-then-deleted-from-remote--no-commits', { cwd: workingDir })
+    child_process.execSync('git push origin :feature/team/auth/oauth-refresh-token', { cwd: workingDir })
+    child_process.execSync('git push origin :release/v2.0.0', { cwd: workingDir })
     child_process.execSync('git push origin :delta/with-commits--remote-deleted--needs-force', { cwd: workingDir })
     child_process.execSync(
         'git push origin :"#567--echo--special-chars--pushed-then-deleted-from-remote--no-commits"',
@@ -114,6 +150,8 @@ export const testSetup = () => {
     child_process.execSync('git push origin :hotel/remote-for-foxtrot-but-diff-name--deleted-from-remote', {
         cwd: workingDir,
     })
+    child_process.execSync('git push origin :juliet/pr-merged-on-github', { cwd: workingDir })
+    child_process.execSync('git push origin :develop', { cwd: workingDir })
 
     // checkout main branch
     child_process.execSync('git checkout main', { cwd: workingDir })

@@ -64,6 +64,11 @@ export default class BranchStore {
      */
     infoOnly: Array<string>
 
+    /**
+     * Map of branch name to last commit timestamp (seconds since epoch)
+     */
+    branchLastCommitTimes: Map<string, number>
+
     noConnection: boolean
 
     constructor(ops: { remote: string }) {
@@ -83,6 +88,7 @@ export default class BranchStore {
         this.safeToDelete = []
         this.requiresForce = []
         this.infoOnly = []
+        this.branchLastCommitTimes = new Map()
         this.noConnection = false
     }
 
@@ -92,16 +98,7 @@ export default class BranchStore {
     }
 
     async preprocess() {
-        // Auto-prune: fetch and prune from remote
-        const spinner = ora('Fetching from remote...').start()
-        try {
-            await stdout(`git fetch ${this.remote} --prune`)
-            spinner.succeed('Fetched from remote')
-        } catch (err) {
-            spinner.warn('Could not fetch from remote (will use cached data)')
-        }
-
-        // Reset all arrays
+        // Reset all arrays at the start
         this.remoteBranches = []
         this.localOrphanedBranches = []
         this.staleBranches = []
@@ -114,16 +111,28 @@ export default class BranchStore {
         this.infoOnly = []
         this.noConnection = false
 
+        // Auto-prune: fetch and prune from remote
+        const spinner = ora('Fetching from remote...').start()
+        try {
+            await stdout(`git fetch ${this.remote} --prune`)
+            spinner.succeed('Fetched from remote')
+        } catch (err) {
+            spinner.warn('Could not fetch from remote (will use cached data)')
+            this.noConnection = true
+        }
+
         // Gather all the information
+        // Run potentially conflicting git operations in a controlled order to avoid lock contention
+        await this.findCurrentBranch()
         await Promise.all([
-            this.findCurrentBranch(),
             this.findLiveBranches(),
-            this.findLocalOrphanedBranches(),
             this.findUnmergedBranches(),
             this.findRemoteBranches(),
-            this.findNeverPushedBranches(),
             this.findMergedBranches(),
+            this.findBranchLastCommitTimes(),
         ])
+        await this.findLocalOrphanedBranches()
+        await this.findNeverPushedBranches()
 
         // Calculate stale branches (must be done AFTER finding local orphaned and remote branches)
         this.staleBranches = this.localOrphanedBranches
@@ -290,6 +299,19 @@ export default class BranchStore {
         })
     }
 
+    async findBranchLastCommitTimes() {
+        // Get all local branches with their last commit timestamps in one efficient command
+        const out = await stdout('git for-each-ref --format="%(refname:short)|%(committerdate:unix)" refs/heads/')
+        const lines = split(out)
+
+        lines.forEach((line) => {
+            const [branchName, timestamp] = line.split('|')
+            if (branchName && timestamp) {
+                this.branchLastCommitTimes.set(branchName, parseInt(timestamp, 10))
+            }
+        })
+    }
+
     classifyBranches() {
         // Group 1: Safe to delete (pre-selected)
         const safeToDelete = [
@@ -297,9 +319,8 @@ export default class BranchStore {
             ...this.staleBranches.filter((b) => !this.unmergedBranches.includes(b)),
 
             // Local merged branches never pushed to remote
-            ...this.mergedBranches.filter(
-                (b) => this.neverPushedBranches.includes(b) && !this.unmergedBranches.includes(b),
-            ),
+            // (mergedBranches and unmergedBranches are mutually exclusive from git)
+            ...this.mergedBranches.filter((b) => this.neverPushedBranches.includes(b)),
         ]
             // Remove duplicates, current branch, and protected branches
             .filter(
@@ -338,6 +359,86 @@ export default class BranchStore {
         this.safeToDelete = safeToDelete
         this.requiresForce = requiresForce
         this.infoOnly = infoOnly
+    }
+
+    /**
+     * Format a time ago string from a timestamp
+     */
+    private formatTimeAgo(timestamp: number): string {
+        const now = Math.floor(Date.now() / 1000)
+        const diff = now - timestamp
+
+        const minute = 60
+        const hour = minute * 60
+        const day = hour * 24
+        const week = day * 7
+        const month = day * 30
+        const year = day * 365
+
+        if (diff < minute) return 'just now'
+        if (diff < hour) {
+            const mins = Math.floor(diff / minute)
+            return `${mins}m ago`
+        }
+        if (diff < day) {
+            const hours = Math.floor(diff / hour)
+            return `${hours}h ago`
+        }
+        if (diff < week) {
+            const days = Math.floor(diff / day)
+            return `${days}d ago`
+        }
+        if (diff < month) {
+            const weeks = Math.floor(diff / week)
+            return `${weeks}w ago`
+        }
+        if (diff < year) {
+            const months = Math.floor(diff / month)
+            return `${months}mo ago`
+        }
+        const years = Math.floor(diff / year)
+        return `${years}y ago`
+    }
+
+    /**
+     * Get a short reason why a branch is in the safe-to-delete category
+     */
+    getSafeToDeleteReason(branch: string): string {
+        const timestamp = this.branchLastCommitTimes.get(branch)
+        const timeAgo = timestamp ? `; last commit ${this.formatTimeAgo(timestamp)}` : ''
+
+        if (this.staleBranches.includes(branch)) {
+            return `merged, remote deleted${timeAgo}`
+        }
+        if (this.neverPushedBranches.includes(branch)) {
+            return `merged, local only${timeAgo}`
+        }
+        return `merged${timeAgo}`
+    }
+
+    /**
+     * Get a short reason why a branch requires force delete
+     */
+    getRequiresForceReason(branch: string): string {
+        const timestamp = this.branchLastCommitTimes.get(branch)
+        const timeAgo = timestamp ? `; last commit ${this.formatTimeAgo(timestamp)}` : ''
+
+        if (this.staleBranches.includes(branch)) {
+            return `unmerged, remote deleted${timeAgo}`
+        }
+        if (this.neverPushedBranches.includes(branch)) {
+            return `unmerged, local only${timeAgo}`
+        }
+        return `unmerged${timeAgo}`
+    }
+
+    /**
+     * Get a short reason why a branch is info-only
+     */
+    getInfoOnlyReason(branch: string): string {
+        const timestamp = this.branchLastCommitTimes.get(branch)
+        const timeAgo = timestamp ? `; last commit ${this.formatTimeAgo(timestamp)}` : ''
+        return `renamed locally${timeAgo}`
     }
 
     async findStaleBranches() {

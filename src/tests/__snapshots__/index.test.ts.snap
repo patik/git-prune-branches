@@ -2,22 +2,29 @@
 
 exports[`git-prune-branches > interactive grouped checkbox mode (end-to-end) > should display complete UI snapshot with all elements > grouped-checkbox-clean-output 1`] = `
 "? Select branches to remove
-
-✅ Safe to delete (4/4)
-❯ ◉ #567--echo--special-chars--pushed-then-deleted-from-remote--no-commits
-  ◉ alpha/pushed-then-deleted-from-remote--no-commits
-  ◉ foxtrot/local-name-different--removed--can-be-soft-removed
-  ◉ bravo/local-merged--never-on-remote
-
-⚠️ Requires force delete — cannot be undone (0/2)
-  ◯ delta/with-commits--remote-deleted--needs-force
-  ◯ charlie/local-never-pushed
-
-ℹ️ ℹ️ Info only - renamed branches still on remote (0/0)
-  ◯ golf/renamed-locally--not-deleted-on-remote--not-offered-for-deletion
+❯ ◉ ✅ Safe to delete (7/7)
+    ◉ #567--echo--special-chars--pushed-then-deleted-from-remote--no-commits
+[merged, remote deleted; last commit just now]
+    ◉ alpha/pushed-then-deleted-from-remote--no-commits [merged, remote deleted;
+ last commit just now]
+    ◉ feature/team/auth/oauth-refresh-token [merged, remote deleted; last commit
+ just now]
+    ◉ foxtrot/local-name-different--removed--can-be-soft-removed [merged, remote
+ deleted; last commit just now]
+    ◉ juliet/pr-merged-on-github [merged, remote deleted; last commit just now]
+    ◉ release/v2.0.0 [merged, remote deleted; last commit just now]
+    ◉ bravo/local-merged--never-on-remote [merged, local only; last commit just
+now]
+  ◯ ⚠️ Requires force delete — cannot be undone (0/2)
+    ◯ delta/with-commits--remote-deleted--needs-force [unmerged, remote deleted;
+ last commit just now]
+    ◯ charlie/local-never-pushed [unmerged, local only; last commit just now]
+  ◯ ℹ️ Info only - renamed branches still on remote (0/0)
+    ◯ golf/renamed-locally--not-deleted-on-remote--not-offered-for-deletion
+[renamed locally; last commit just now]
 (space: select, ctrl+a: toggle all, ctrl+i: invert, type to search)
 
-👋 until next time!
+👋 No branches were deleted.
 - Fetching from remote...
 ✔ Fetched from remote
 "

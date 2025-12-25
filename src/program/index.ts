@@ -32,7 +32,7 @@ export default async function program() {
                 process.stderr.write(`ERROR: ${err.message} \r\n`)
             } else if ('stack' in err) {
                 if (err instanceof Error && err.name === 'ExitPromptError') {
-                    console.log('\r\n👋 until next time!')
+                    console.log('\r\n👋 No branches were deleted.')
                     exit(0)
                 }
 

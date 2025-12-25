@@ -310,6 +310,7 @@ upstream-branch`
             const findRemoteBranchesSpy = vi.spyOn(branchStore, 'findRemoteBranches').mockResolvedValue()
             const findNeverPushedBranchesSpy = vi.spyOn(branchStore, 'findNeverPushedBranches').mockResolvedValue()
             const findMergedBranchesSpy = vi.spyOn(branchStore, 'findMergedBranches').mockResolvedValue()
+            const findBranchLastCommitTimesSpy = vi.spyOn(branchStore, 'findBranchLastCommitTimes').mockResolvedValue()
             const classifyBranchesSpy = vi.spyOn(branchStore, 'classifyBranches').mockImplementation(() => {})
 
             await branchStore.preprocess()
@@ -335,6 +336,7 @@ upstream-branch`
             expect(findRemoteBranchesSpy).toHaveBeenCalled()
             expect(findNeverPushedBranchesSpy).toHaveBeenCalled()
             expect(findMergedBranchesSpy).toHaveBeenCalled()
+            expect(findBranchLastCommitTimesSpy).toHaveBeenCalled()
             expect(classifyBranchesSpy).toHaveBeenCalled()
         })
     })
@@ -498,6 +500,12 @@ feature/old`
                 if (command === 'git branch -r') {
                     return `  origin/main
   origin/develop`
+                }
+                if (command === 'git for-each-ref --format="%(refname:short)|%(committerdate:unix)" refs/heads/') {
+                    const now = Math.floor(Date.now() / 1000)
+                    return `main|${now}
+develop|${now}
+feature/old|${now - 86400}` // 1 day ago
                 }
                 return ''
             })

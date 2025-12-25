@@ -116,10 +116,13 @@ pnpm test:once # run all tests once
 
 #### Manual testing
 
-You can also create a test git repo in a temporary folder.
+You can also create a test git repo in a temporary folder and run the tool against it.
 
-- Scripts can call `src/tests/manual/setup.ts` to set up the repo, e.g. for automated testing; it will return the temp directory
-- Devs can run `npx tsx src/tests/manual/run.ts` to set up the repo and run the app in it
+```sh
+pnpm run test:manual
+```
+
+The test repo's branches are defined in `src/tests/manual/setup.ts`, but before editing, keep in mind that this file is also used by the automated tests.
 
 ### Building
 
