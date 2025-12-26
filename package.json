@@ -60,7 +60,6 @@
         "@eslint/js": "^9.39.2",
         "@types/minimist": "^1.2.5",
         "@types/node": "^24.10.4",
-        "@vitest/ui": "^3.2.4",
         "clipboardy": "^5.0.2",
         "eslint": "^9.39.2",
         "eslint-config-prettier": "^10.1.8",
