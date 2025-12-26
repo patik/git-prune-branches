@@ -7,7 +7,7 @@ export async function confirmDeletion(safe: string[], force: string[]): Promise<
         return false
     }
 
-    console.log('\n' + bold('The following commands will be executed:') + '\n')
+    console.log(`\n${bold('The following commands will be executed:')}\n`)
 
     if (safe.length > 0) {
         console.log(green(`Safe deletes (${safe.length} branch${safe.length === 1 ? '' : 'es'}):`))

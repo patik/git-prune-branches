@@ -26,8 +26,8 @@ vi.mock('inquirer-grouped-checkbox', () => ({
     default: vi.fn(),
 }))
 
-// Mock easy-stdout for git operations
-vi.mock('easy-stdout', () => ({
+// Mock simple-stdout for git operations
+vi.mock('simple-stdout', () => ({
     default: vi.fn(),
 }))
 

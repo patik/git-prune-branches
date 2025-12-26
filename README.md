@@ -1,21 +1,13 @@
 # git-prune-branches
 
-List or remove local tracked branches, which are deleted from the remote.
+Review and delete stale branches using an interactive prompt
 
-It's a fork of [git-removed-branches](https://github.com/nemisj/git-removed-branches) with an interactive prompt, and the ability to retry deleting branches with `--force`
+<img src="https://github.com/user-attachments/assets/ccd2aefd-9bae-47e4-9989-be8f0ab2442d" width="720" alt="">
 
-<img src="https://github.com/user-attachments/assets/ac1a3823-a04c-4f83-960e-036788949fb7" width="720" alt="">
-
-<!-- <img src="https://github.com/user-attachments/assets/944bc691-2c0f-4047-8d83-35c13b1f9d82" width="821" alt="">-->
-<!-- <img src="https://github.com/user-attachments/assets/ce5d0e53-6d42-4cfe-b920-0a268d87dd06" width="1043" alt=""> -->
-<!-- https://github.com/user-attachments/assets/e4502861-bd7d-47b7-aee7-e39154bc769c -->
-
-Addresses questions, like:
+Addresses common questions, like:
 
 - [Remove tracking branches no longer on remote](https://stackoverflow.com/questions/7726949/remove-tracking-branches-no-longer-on-remote)
 - [How to prune local tracking branches that do not exist on remote anymore?](https://stackoverflow.com/questions/13064613/how-to-prune-local-tracking-branches-that-do-not-exist-on-remote-anymore/30494276#30494276)
-
-![Demo](https://github.com/patik/git-prune-branches/blob/master/usage.gif)
 
 ## What does it do?
 
@@ -31,27 +23,25 @@ The tool automatically fetches and prunes from your remote before showing branch
 
 ## Installation
 
-### NPM
-
 ```bash
 npm install -g git-prune-branches
 ```
 
-Please install a package globally with -g flag so that you can use it directly as a sub command of git, like this:
+Recommened: install the package globally with `-g` flag so that you can use it directly as a sub command of git, like this:
 
 ```bash
 git prune-branches
 ```
 
-### NPX
+## Usage
 
-It's also possible to use package through `npx` without installing:
+It's possible to use the package via `npx` without installing:
 
 ```bash
 npx git-prune-branches
 ```
 
-## Usage
+Or if you install it with `npm install -g git-prune-branches`, you can use this git alias:
 
 ```bash
 git prune-branches
@@ -130,13 +120,6 @@ Build the TypeScript source:
 
 ```bash
 pnpm build
-```
-
-### Linting and Formatting
-
-```bash
-pnpm lint
-pnpm format
 ```
 
 ## Credit

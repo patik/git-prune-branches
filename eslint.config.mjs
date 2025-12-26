@@ -1,14 +1,13 @@
 // @ts-check
 
-import pluginJs from '@eslint/js'
-import tseslint from 'typescript-eslint'
+import { default as js } from '@eslint/js'
 import eslintPluginPrettier from 'eslint-plugin-prettier/recommended'
+import tseslint from 'typescript-eslint'
 
 export default [
     { files: ['src/**/*.{ts}'] },
     { ignores: ['node_modules/**', 'dist/**'] },
-    pluginJs.configs.recommended,
-    ...tseslint.configs.recommended,
+    ...tseslint.config(js.configs.recommended, ...tseslint.configs.recommended),
     eslintPluginPrettier,
     {
         rules: {
@@ -18,6 +17,16 @@ export default [
                     caughtErrors: 'none',
                 },
             ],
+            curly: 'error',
+            eqeqeq: ['error', 'always'],
+            'no-var': 'error',
+            'prefer-const': 'error',
+            'no-throw-literal': 'error',
+            'no-return-await': 'error',
+            'no-lonely-if': 'error',
+            'no-else-return': 'error',
+            'object-shorthand': 'error',
+            'prefer-template': 'error',
         },
     },
 ]

@@ -1,4 +1,4 @@
-import stdout from 'easy-stdout'
+import stdout from 'simple-stdout'
 import ora from 'ora'
 import split from './split.js'
 
@@ -375,7 +375,9 @@ export default class BranchStore {
         const month = day * 30
         const year = day * 365
 
-        if (diff < minute) return 'just now'
+        if (diff < minute) {
+            return 'just now'
+        }
         if (diff < hour) {
             const mins = Math.floor(diff / minute)
             return `${mins}m ago`

@@ -20,14 +20,14 @@ export const testSetup = () => {
 
     if (!tempdir) {
         const tmp = os.tmpdir()
-        tempdir = mkdtempSync(tmp + path.sep + 'git-prune-branches-')
+        tempdir = mkdtempSync(`${tmp + path.sep}git-prune-branches-`)
     } else {
         // In CI, ensure the temp directory exists and create our subdirectory
-        tempdir = mkdtempSync(tempdir + path.sep + 'git-prune-branches-')
+        tempdir = mkdtempSync(`${tempdir + path.sep}git-prune-branches-`)
     }
 
-    const bareDir = tempdir + path.sep + 'bare'
-    workingDir = tempdir + path.sep + 'working'
+    const bareDir = `${tempdir + path.sep}bare`
+    workingDir = `${tempdir + path.sep}working`
 
     const file = `${workingDir}${path.sep}lolipop`
 

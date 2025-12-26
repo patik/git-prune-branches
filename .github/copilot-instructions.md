@@ -22,4 +22,4 @@ The tool is written in TypeScript and uses the Inquirer.js library for the inter
 The owner of this repo (@patik) also maintains the following Node modules. While working on this repo, if you (the agent) discover a bug in one of these packages, or feel that a package could be improved in some way that would benefit this repo, please consider suggesting that the package be modified.
 
 - inquirer-grouped-checkbox
-- easy-stdout
+- simple-stdout

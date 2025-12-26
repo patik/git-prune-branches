@@ -36,7 +36,7 @@ export default async function program() {
                     exit(0)
                 }
 
-                process.stderr.write((err.stack || err) + '\r\n')
+                process.stderr.write(`${err.stack || err}\r\n`)
             }
         }
 

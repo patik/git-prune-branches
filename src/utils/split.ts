@@ -7,7 +7,7 @@ const split = (stdout: string) => {
             .split('\n')
             .map((line) => line.trim())
             // remove empty
-            .filter((line) => line != '')
+            .filter((line) => line !== '')
     )
 }
 

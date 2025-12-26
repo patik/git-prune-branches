@@ -30,8 +30,13 @@ export async function executeDeletions(safe: string[], force: string[]) {
         const numSafe = safe.filter((b) => results.success.includes(b)).length
         const numForce = force.filter((b) => results.success.includes(b)).length
 
-        if (numSafe > 0) console.info(`   • ${numSafe} safe deletion${numSafe === 1 ? '' : 's'}`)
-        if (numForce > 0) console.info(`   • ${numForce} force deletion${numForce === 1 ? '' : 's'}`)
+        if (numSafe > 0) {
+            console.info(`   • ${numSafe} safe deletion${numSafe === 1 ? '' : 's'}`)
+        }
+
+        if (numForce > 0) {
+            console.info(`   • ${numForce} force deletion${numForce === 1 ? '' : 's'}`)
+        }
 
         console.log('')
         console.info(red(`❌ Failed to delete:`))
