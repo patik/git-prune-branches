@@ -365,41 +365,65 @@ export default class BranchStore {
      * Format a time ago string from a timestamp
      */
     private formatTimeAgo(timestamp: number): string {
-        const now = Math.floor(Date.now() / 1000)
-        const diff = now - timestamp
+        const nowDate = new Date()
+        const pastDate = new Date(timestamp * 1000)
+
+        const diffMs = nowDate.getTime() - pastDate.getTime()
+        const diffSeconds = Math.floor(diffMs / 1000)
 
         const minute = 60
         const hour = minute * 60
         const day = hour * 24
         const week = day * 7
-        const month = day * 30
-        const year = day * 365
 
-        if (diff < minute) {
+        if (diffSeconds < minute) {
             return 'just now'
         }
-        if (diff < hour) {
-            const mins = Math.floor(diff / minute)
+        if (diffSeconds < hour) {
+            const mins = Math.floor(diffSeconds / minute)
             return `${mins}m ago`
         }
-        if (diff < day) {
-            const hours = Math.floor(diff / hour)
+        if (diffSeconds < day) {
+            const hours = Math.floor(diffSeconds / hour)
             return `${hours}h ago`
         }
-        if (diff < week) {
-            const days = Math.floor(diff / day)
+        if (diffSeconds < week) {
+            const days = Math.floor(diffSeconds / day)
             return `${days}d ago`
         }
-        if (diff < month) {
-            const weeks = Math.floor(diff / week)
-            return `${weeks}w ago`
+
+        // For weeks, we can safely use fixed 7-day intervals
+        const weeks = Math.floor(diffSeconds / week)
+
+        // Compute calendar-based years difference
+        const nowYear = nowDate.getFullYear()
+        const pastYear = pastDate.getFullYear()
+        const nowMonth = nowDate.getMonth()
+        const pastMonth = pastDate.getMonth()
+        const nowDay = nowDate.getDate()
+        const pastDay = pastDate.getDate()
+
+        let years = nowYear - pastYear
+        if (nowMonth < pastMonth || (nowMonth === pastMonth && nowDay < pastDay)) {
+            years -= 1
         }
-        if (diff < year) {
-            const months = Math.floor(diff / month)
+
+        if (years >= 1) {
+            return `${years}y ago`
+        }
+
+        // Compute calendar-based months difference (less than a year)
+        let months = (nowYear - pastYear) * 12 + (nowMonth - pastMonth)
+        if (nowDay < pastDay) {
+            months -= 1
+        }
+
+        if (months >= 1) {
             return `${months}mo ago`
         }
-        const years = Math.floor(diff / year)
-        return `${years}y ago`
+
+        // If less than one full calendar month has elapsed, fall back to weeks
+        return `${weeks}w ago`
     }
 
     /**
