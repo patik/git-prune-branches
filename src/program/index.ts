@@ -4,25 +4,37 @@ import './side-effects/handle-control-c.js'
 
 // Program imports
 import { exit } from 'node:process'
-import { confirmDeletion } from './confirm-deletion.js'
+import { confirmDeletion, type ConfirmResult } from './confirm-deletion.js'
 import { executeDeletions } from './execute-deletions.js'
-import { selectBranches } from './select-branches.js'
+import { selectBranches, type PreviousSelection } from './select-branches.js'
 
 export default async function program() {
     try {
-        // Screen 1: Select branches
-        const { safe, force } = await selectBranches()
+        let previousSelection: PreviousSelection | undefined
+        let confirmResult: ConfirmResult
 
-        // Screen 2: Confirm with command preview
-        const confirmed = await confirmDeletion(safe, force)
+        // Loop between selection and confirmation screens
+        // until user confirms, cancels, or exits
+        do {
+            // Screen 1: Select branches (restore previous selection if going back)
+            const { safe, force } = await selectBranches(previousSelection)
 
-        if (!confirmed) {
-            console.info('👋 No branches were removed.')
-            exit(0)
-        }
+            // Save current selection in case user goes back
+            previousSelection = { safe, force }
+
+            // Screen 2: Confirm with command preview
+            confirmResult = await confirmDeletion(safe, force)
+
+            if (confirmResult === 'cancel') {
+                console.info('👋 No branches were removed.')
+                exit(0)
+            }
+
+            // If 'back', loop continues and shows selection screen again
+        } while (confirmResult === 'back')
 
         // Screen 3: Execute and show results (auto-exit)
-        const exitCode = await executeDeletions(safe, force)
+        const exitCode = await executeDeletions(previousSelection.safe, previousSelection.force)
         exit(exitCode)
     } catch (err: unknown) {
         if (typeof err === 'object' && err) {

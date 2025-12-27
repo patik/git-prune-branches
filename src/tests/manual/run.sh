@@ -31,4 +31,6 @@ cd "$WORKING_DIR"
 npx tsx "$REPO_DIR/src/index.ts"
 
 echo ""
-echo "Done! Test directory: $WORKING_DIR"
+echo ""
+echo "Done! Removed test directory: $WORKING_DIR"
+rm -rf "$WORKING_DIR"

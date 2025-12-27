@@ -1,5 +1,8 @@
-import { confirm } from '@inquirer/prompts'
-import { dim, green, red } from '../utils/colors.js'
+import { createPrompt, isEnterKey, useKeypress, useState } from '@inquirer/core'
+import { dim, gray, green, red } from '../utils/colors.js'
+
+/** Result of the confirmation prompt */
+export type ConfirmResult = 'confirm' | 'cancel' | 'back'
 
 /**
  * Ensure that the displayed command is something the user could copy-paste into their terminal.
@@ -14,10 +17,44 @@ function displayBranchName(branch: string): string {
     return branch
 }
 
-export async function confirmDeletion(safe: string[], force: string[]): Promise<boolean> {
+/**
+ * Custom confirm prompt that supports Escape key to go back.
+ * Returns 'confirm' for yes, 'cancel' for no, 'back' for escape.
+ */
+const confirmWithEscape = createPrompt<ConfirmResult, { message: string }>((config, done) => {
+    const [status, setStatus] = useState<'pending' | 'done'>('pending')
+
+    useKeypress((key) => {
+        if (key.name === 'escape') {
+            setStatus('done')
+            done('back')
+        } else if (key.name === 'y') {
+            setStatus('done')
+            done('confirm')
+        } else if (key.name === 'n' || isEnterKey(key)) {
+            // Default to 'no' on Enter or explicit 'n'
+            setStatus('done')
+            done('cancel')
+        }
+    })
+
+    const hint = gray('(y/N, Esc to go back)')
+
+    if (status === 'done') {
+        return ''
+    }
+
+    return `? ${config.message} ${hint} `
+})
+
+/**
+ * Display a confirmation screen showing the commands that will be executed.
+ * Returns 'confirm' if user confirms, 'cancel' if they decline, or 'back' if they press Escape.
+ */
+export async function confirmDeletion(safe: string[], force: string[]): Promise<ConfirmResult> {
     if (safe.length === 0 && force.length === 0) {
         console.info('👋 No branches selected')
-        return false
+        return 'cancel'
     }
 
     console.log(`\nThe following commands will be executed:\n`)
@@ -35,10 +72,8 @@ export async function confirmDeletion(safe: string[], force: string[]): Promise<
     }
 
     const total = safe.length + force.length
-    const answer = await confirm({
-        message: `Delete ${total} branch${total === 1 ? '' : 'es'}?`,
-        default: false,
-    })
 
-    return answer
+    return confirmWithEscape({
+        message: `Delete ${total} branch${total === 1 ? '' : 'es'}?`,
+    })
 }

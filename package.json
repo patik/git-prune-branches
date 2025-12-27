@@ -50,6 +50,7 @@
         "tool"
     ],
     "dependencies": {
+        "@inquirer/core": "^11.1.0",
         "@inquirer/prompts": "^8.1.0",
         "inquirer-grouped-checkbox": "^0.5.0",
         "minimist": "^1.2.8",

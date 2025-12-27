@@ -1,7 +1,6 @@
-import { confirm } from '@inquirer/prompts'
 import groupedCheckbox from 'inquirer-grouped-checkbox'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { confirmDeletion } from '../program/confirm-deletion.js'
+import { confirmDeletion, type ConfirmResult } from '../program/confirm-deletion.js'
 import { executeDeletions } from '../program/execute-deletions.js'
 import { selectBranches } from '../program/select-branches.js'
 import store from '../program/store.js'
@@ -17,9 +16,15 @@ vi.mock('node:process', async () => {
     }
 })
 
-// Mock inquirer modules
-vi.mock('@inquirer/prompts', () => ({
-    confirm: vi.fn(),
+// Store the mock result for the custom confirm prompt
+let mockConfirmResult: ConfirmResult = 'cancel'
+
+// Mock @inquirer/core's createPrompt to return our controlled result
+vi.mock('@inquirer/core', () => ({
+    createPrompt: () => async () => mockConfirmResult,
+    useState: vi.fn(() => ['pending', vi.fn()]),
+    useKeypress: vi.fn(),
+    isEnterKey: vi.fn(),
 }))
 
 vi.mock('inquirer-grouped-checkbox', () => ({
@@ -43,7 +48,13 @@ vi.mock('ora', () => ({
 }))
 
 const mockGroupedCheckbox = vi.mocked(groupedCheckbox)
-const mockConfirm = vi.mocked(confirm)
+
+/**
+ * Set the mock result for confirmDeletion
+ */
+function setMockConfirmResult(result: ConfirmResult) {
+    mockConfirmResult = result
+}
 
 // Get mock exit after import
 let mockExit: ReturnType<typeof vi.fn>
@@ -64,9 +75,9 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
         // Reset mocks
         mockExit.mockClear()
         mockGroupedCheckbox.mockClear()
-        mockConfirm.mockClear()
         consoleLogSpy.mockClear()
         consoleInfoSpy.mockClear()
+        mockConfirmResult = 'cancel' // Reset to default
 
         // Reset store state
         store.staleBranches = []
@@ -196,7 +207,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
 
     describe('confirmDeletion - command preview', () => {
         it('should show git commands for both safe and force deletions', async () => {
-            mockConfirm.mockResolvedValueOnce(true)
+            setMockConfirmResult('confirm')
 
             await confirmDeletion(['safe1', 'safe2'], ['force1'])
 
@@ -210,34 +221,36 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             expect(consoleLogSpy).toHaveBeenCalledWith('  git branch -D force1')
         })
 
-        it('should return false when no branches selected', async () => {
+        it('should return cancel when no branches selected', async () => {
             const result = await confirmDeletion([], [])
 
-            expect(result).toBe(false)
+            expect(result).toBe('cancel')
             expect(consoleInfoSpy).toHaveBeenCalledWith('👋 No branches selected')
-            expect(mockConfirm).not.toHaveBeenCalled()
+            // The custom prompt should not be shown when no branches are selected
         })
 
-        it('should show correct message for single branch', async () => {
-            mockConfirm.mockResolvedValueOnce(true)
+        it('should return confirm when user confirms', async () => {
+            setMockConfirmResult('confirm')
 
-            await confirmDeletion(['single'], [])
+            const result = await confirmDeletion(['single'], [])
 
-            expect(mockConfirm).toHaveBeenCalledWith({
-                message: 'Delete 1 branch?',
-                default: false,
-            })
+            expect(result).toBe('confirm')
         })
 
-        it('should show correct message for multiple branches', async () => {
-            mockConfirm.mockResolvedValueOnce(true)
+        it('should return cancel when user declines', async () => {
+            setMockConfirmResult('cancel')
 
-            await confirmDeletion(['b1', 'b2'], ['b3'])
+            const result = await confirmDeletion(['b1', 'b2'], ['b3'])
 
-            expect(mockConfirm).toHaveBeenCalledWith({
-                message: 'Delete 3 branches?',
-                default: false,
-            })
+            expect(result).toBe('cancel')
+        })
+
+        it('should return back when user presses Escape', async () => {
+            setMockConfirmResult('back')
+
+            const result = await confirmDeletion(['b1'], [])
+
+            expect(result).toBe('back')
         })
     })
 
@@ -334,7 +347,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             })
 
             // User confirms
-            mockConfirm.mockResolvedValueOnce(true)
+            setMockConfirmResult('confirm')
 
             // Mock successful deletions
             vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
@@ -345,8 +358,8 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
 
             // Execute flow
             const { safe, force } = await selectBranches()
-            const confirmed = await confirmDeletion(safe, force)
-            expect(confirmed).toBe(true)
+            const result = await confirmDeletion(safe, force)
+            expect(result).toBe('confirm')
 
             const exitCode = await executeDeletions(safe, force)
 
@@ -363,14 +376,35 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             store.infoOnly = []
 
             mockGroupedCheckbox.mockResolvedValueOnce({ safe: ['branch1'], force: [], info: [] })
-            mockConfirm.mockResolvedValueOnce(false) // User cancels
+            setMockConfirmResult('cancel') // User cancels
 
             vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
 
             const { safe, force } = await selectBranches()
-            const confirmed = await confirmDeletion(safe, force)
+            const result = await confirmDeletion(safe, force)
 
-            expect(confirmed).toBe(false)
+            expect(result).toBe('cancel')
+            expect(safe).toEqual(['branch1'])
+        })
+
+        it('should return back when user presses Escape', async () => {
+            store.safeToDelete = ['branch1']
+            store.requiresForce = []
+            store.infoOnly = []
+
+            mockGroupedCheckbox.mockResolvedValueOnce({ safe: ['branch1'], force: [], info: [] })
+
+            // Simulate ExitPromptError when user presses Escape
+            const exitPromptError = new Error('User pressed Escape')
+            exitPromptError.name = 'ExitPromptError'
+            setMockConfirmResult('back')
+
+            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
+
+            const { safe, force } = await selectBranches()
+            const result = await confirmDeletion(safe, force)
+
+            expect(result).toBe('back')
             expect(safe).toEqual(['branch1'])
         })
     })

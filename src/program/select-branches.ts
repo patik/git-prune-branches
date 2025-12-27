@@ -3,7 +3,17 @@ import { exit } from 'node:process'
 import { gray, yellow } from '../utils/colors.js'
 import store from './store.js'
 
-export async function selectBranches(): Promise<{
+/** Previous selection state to restore when returning from confirmation screen */
+export interface PreviousSelection {
+    safe: string[]
+    force: string[]
+}
+
+/**
+ * Display the branch selection screen with grouped checkboxes.
+ * @param previousSelection - Optional previous selection to restore (e.g., when going back from confirmation)
+ */
+export async function selectBranches(previousSelection?: PreviousSelection): Promise<{
     safe: string[]
     force: string[]
 }> {
@@ -35,7 +45,8 @@ export async function selectBranches(): Promise<{
             choices: store.safeToDelete.map((branch) => ({
                 value: branch,
                 name: `${branch} ${gray(`[${store.getSafeToDeleteReason(branch)}]`)}`,
-                checked: true, // Pre-selected
+                // Restore previous selection if available, otherwise default to pre-selected
+                checked: previousSelection ? previousSelection.safe.includes(branch) : true,
             })),
         })
     }
@@ -49,7 +60,8 @@ export async function selectBranches(): Promise<{
             choices: store.requiresForce.map((branch) => ({
                 value: branch,
                 name: `${branch} ${gray(`[${store.getRequiresForceReason(branch)}]`)}`,
-                checked: false, // NOT pre-selected
+                // Restore previous selection if available, otherwise default to NOT pre-selected
+                checked: previousSelection ? previousSelection.force.includes(branch) : false,
             })),
         })
     }
