@@ -1,5 +1,6 @@
-import stdout from 'simple-stdout'
+import { execFileSync, execSync } from 'node:child_process'
 import ora from 'ora'
+import stdout from 'simple-stdout'
 import split from './split.js'
 
 export default class BranchStore {
@@ -114,7 +115,7 @@ export default class BranchStore {
         // Auto-prune: fetch and prune from remote
         const spinner = ora('Fetching from remote...').start()
         try {
-            await stdout(`git fetch ${this.remote} --prune`)
+            execSync(`git fetch ${this.remote} --prune`)
             spinner.succeed('Fetched from remote')
         } catch (err) {
             spinner.warn('Could not fetch from remote (will use cached data)')
@@ -465,7 +466,6 @@ export default class BranchStore {
 
     async findStaleBranches() {
         await this.preprocess()
-        // staleBranches is now populated in preprocess()
         return this.staleBranches
     }
 
@@ -482,8 +482,7 @@ export default class BranchStore {
             const spinner = ora(`Removing branch ${branchName}`).start()
             try {
                 spinner.color = 'yellow'
-                const command = `git branch -d "${branchName}"`
-                await stdout(command)
+                execFileSync('git', ['branch', '-d', branchName])
                 spinner.succeed(`Removed branch ${branchName}`)
                 success.push(branchName)
             } catch (err) {
@@ -498,8 +497,7 @@ export default class BranchStore {
             const spinner = ora(`Force removing branch ${branchName}`).start()
             try {
                 spinner.color = 'red'
-                const command = `git branch -D "${branchName}"`
-                await stdout(command)
+                execFileSync('git', ['branch', '-D', branchName])
                 spinner.succeed(`Force removed branch ${branchName}`)
                 success.push(branchName)
             } catch (err) {
