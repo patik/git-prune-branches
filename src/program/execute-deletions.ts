@@ -9,6 +9,7 @@ export async function executeDeletions(safe: string[], force: string[]) {
     const totalSuccess = results.success.length
     const totalFailed = results.failed.length
     const totalAttempted = totalSuccess + totalFailed
+    const successes = new Set(results.success)
 
     console.log('') // Empty line
 
@@ -16,8 +17,8 @@ export async function executeDeletions(safe: string[], force: string[]) {
         // All succeeded
         console.info(green(`✅ Successfully deleted ${totalSuccess} branch${totalSuccess === 1 ? '' : 'es'}`))
 
-        const numSafe = safe.filter((b) => results.success.includes(b)).length
-        const numForce = force.filter((b) => results.success.includes(b)).length
+        const numSafe = safe.filter((b) => successes.has(b)).length
+        const numForce = force.filter((b) => successes.has(b)).length
 
         if (numSafe > 0 && numForce > 0) {
             console.info(`   • ${numSafe} safe deletion${numSafe === 1 ? '' : 's'}`)
@@ -27,8 +28,8 @@ export async function executeDeletions(safe: string[], force: string[]) {
         // Some succeeded, some failed
         console.info(yellow(`⚠️ Deleted ${totalSuccess} of ${totalAttempted} branches`))
 
-        const numSafe = safe.filter((b) => results.success.includes(b)).length
-        const numForce = force.filter((b) => results.success.includes(b)).length
+        const numSafe = safe.filter((b) => successes.has(b)).length
+        const numForce = force.filter((b) => successes.has(b)).length
 
         if (numSafe > 0) {
             console.info(`   • ${numSafe} safe deletion${numSafe === 1 ? '' : 's'}`)

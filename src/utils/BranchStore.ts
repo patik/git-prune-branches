@@ -313,6 +313,8 @@ export default class BranchStore {
     }
 
     classifyBranches() {
+        const protectedBranchesSet = new Set(this.protectedBranches)
+
         // Group 1: Safe to delete (pre-selected)
         const safeToDelete = [
             // Stale branches that are merged (deleted from remote, no force needed)
@@ -323,9 +325,7 @@ export default class BranchStore {
             ...this.mergedBranches.filter((b) => this.neverPushedBranches.includes(b)),
         ]
             // Remove duplicates, current branch, and protected branches
-            .filter(
-                (b, i, arr) => arr.indexOf(b) === i && b !== this.currentBranch && !this.protectedBranches.includes(b),
-            )
+            .filter((b, i, arr) => arr.indexOf(b) === i && b !== this.currentBranch && !protectedBranchesSet.has(b))
 
         // Group 2: Requires force (NOT pre-selected)
         const requiresForce = [
@@ -336,9 +336,7 @@ export default class BranchStore {
             ...this.neverPushedBranches.filter((b) => this.unmergedBranches.includes(b)),
         ]
             // Remove duplicates, current branch, and protected branches
-            .filter(
-                (b, i, arr) => arr.indexOf(b) === i && b !== this.currentBranch && !this.protectedBranches.includes(b),
-            )
+            .filter((b, i, arr) => arr.indexOf(b) === i && b !== this.currentBranch && !protectedBranchesSet.has(b))
 
         // Group 3: Info only (disabled)
         const infoOnly = [
@@ -352,9 +350,7 @@ export default class BranchStore {
                 .map(({ localBranch }) => localBranch),
         ]
             // Remove duplicates, current branch, and protected branches
-            .filter(
-                (b, i, arr) => arr.indexOf(b) === i && b !== this.currentBranch && !this.protectedBranches.includes(b),
-            )
+            .filter((b, i, arr) => arr.indexOf(b) === i && b !== this.currentBranch && !protectedBranchesSet.has(b))
 
         this.safeToDelete = safeToDelete
         this.requiresForce = requiresForce

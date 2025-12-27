@@ -1,6 +1,19 @@
 import { confirm } from '@inquirer/prompts'
 import { bold, green, red } from '../utils/colors.js'
 
+/**
+ * Ensure that the displayed command is something the user could copy-paste into their terminal.
+ * Note that this is not the same algorithm that we use to sanitize branch names for actual execution.
+ */
+function displayBranchName(branch: string): string {
+    // If branch name contains special characters or spaces, wrap it in quotes
+    if (/[\s"'`\\]/.test(branch)) {
+        return `"${branch.replace(/(["\\$`])/g, '\\$1')}"`
+    }
+
+    return branch
+}
+
 export async function confirmDeletion(safe: string[], force: string[]): Promise<boolean> {
     if (safe.length === 0 && force.length === 0) {
         console.info('👋 No branches selected')
@@ -11,13 +24,13 @@ export async function confirmDeletion(safe: string[], force: string[]): Promise<
 
     if (safe.length > 0) {
         console.log(green(`Safe deletes (${safe.length} branch${safe.length === 1 ? '' : 'es'}):`))
-        safe.forEach((branch) => console.log(`  git branch -d ${branch}`))
+        safe.forEach((branch) => console.log(`  git branch -d ${displayBranchName(branch)}`))
         console.log('')
     }
 
     if (force.length > 0) {
         console.log(red(`Force deletes (${force.length} branch${force.length === 1 ? '' : 'es'}):`))
-        force.forEach((branch) => console.log(`  git branch -D ${branch}`))
+        force.forEach((branch) => console.log(`  git branch -D ${displayBranchName(branch)}`))
         console.log('')
     }
 
