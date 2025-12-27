@@ -75,7 +75,7 @@ git prune-branches --version
 
 ## Troubleshooting
 
-If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too many branches (more then 3382—see [discussion](https://github.com/nemisj/git-removed-branches/issues/11)).
+If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too many branches (more than 3382—see [discussion](https://github.com/nemisj/git-removed-branches/issues/11)).
 
 You can fix this by specifying NODE_MAX_BUFFER environment variable. For example:
 
