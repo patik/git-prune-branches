@@ -90,7 +90,7 @@ NODE_MAX_BUFFER=1048576 git prune-branches
 Run the source code using `tsx`, e.g. to test it on another local repo
 
 ```sh
-npx tsx ~/code/git-prune-branches/src/index.ts
+pnpx tsx ~/code/git-prune-branches/src/index.ts
 ```
 
 You can also run the app against a fake git repo in a temporary folder

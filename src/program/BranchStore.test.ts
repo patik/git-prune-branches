@@ -185,7 +185,7 @@ describe('BranchStore', () => {
         it('should find local branches tracking remote branches', async () => {
             const store = new BranchStore({ remote: 'origin' })
             await store.findAllBranches()
-            await store.findLocalOrphanedBranches()
+            store.findLocalOrphanedBranches()
 
             // These branches were pushed to origin and track it
             const localBranchNames = store.localOrphanedBranches.map((b) => b.localBranch)
@@ -203,7 +203,7 @@ describe('BranchStore', () => {
         it('should extract correct remote branch names', async () => {
             const store = new BranchStore({ remote: 'origin' })
             await store.findAllBranches()
-            await store.findLocalOrphanedBranches()
+            store.findLocalOrphanedBranches()
 
             // Find bugfix/cache-invalidation which tracks hotfix/cache-fix
             const renamedBranch = store.localOrphanedBranches.find((b) => b.localBranch === 'bugfix/cache-invalidation')
@@ -214,7 +214,7 @@ describe('BranchStore', () => {
         it('should handle branches with same local and remote name', async () => {
             const store = new BranchStore({ remote: 'origin' })
             await store.findAllBranches()
-            await store.findLocalOrphanedBranches()
+            store.findLocalOrphanedBranches()
 
             const mainBranch = store.localOrphanedBranches.find((b) => b.localBranch === 'main')
             expect(mainBranch).toBeDefined()
@@ -224,7 +224,7 @@ describe('BranchStore', () => {
         it('should skip branches tracking different remotes', async () => {
             const store = new BranchStore({ remote: 'upstream' })
             await store.findAllBranches()
-            await store.findLocalOrphanedBranches()
+            store.findLocalOrphanedBranches()
 
             // No branches track 'upstream' in our test setup
             expect(store.localOrphanedBranches).toEqual([])
@@ -233,7 +233,7 @@ describe('BranchStore', () => {
         it('should handle branches with special characters in name', async () => {
             const store = new BranchStore({ remote: 'origin' })
             await store.findAllBranches()
-            await store.findLocalOrphanedBranches()
+            store.findLocalOrphanedBranches()
 
             const specialBranch = store.localOrphanedBranches.find((b) => b.localBranch === 'fix/#432-modal-close')
             expect(specialBranch).toBeDefined()
@@ -242,7 +242,7 @@ describe('BranchStore', () => {
         it('should handle deeply nested branch names', async () => {
             const store = new BranchStore({ remote: 'origin' })
             await store.findAllBranches()
-            await store.findLocalOrphanedBranches()
+            store.findLocalOrphanedBranches()
 
             const nestedBranch = store.localOrphanedBranches.find(
                 (b) => b.localBranch === 'feature/payments/stripe/webhooks',
@@ -358,7 +358,7 @@ describe('BranchStore', () => {
         it('should find branches with no upstream tracking', async () => {
             const store = new BranchStore({ remote: 'origin' })
             await store.findAllBranches()
-            await store.findNeverPushedBranches()
+            store.findNeverPushedBranches()
 
             // These were never pushed (created with -b, no -u)
             expect(store.neverPushedBranches).toContain('wip/settings-redesign')
@@ -372,7 +372,7 @@ describe('BranchStore', () => {
         it('should handle branches with special characters', async () => {
             const store = new BranchStore({ remote: 'origin' })
             await store.findAllBranches()
-            await store.findNeverPushedBranches()
+            store.findNeverPushedBranches()
 
             // fix/#432-modal-close was pushed, so should not be in neverPushed
             expect(store.neverPushedBranches).not.toContain('fix/#432-modal-close')

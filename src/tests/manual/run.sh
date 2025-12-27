@@ -13,7 +13,7 @@ echo "Setting up test repository..."
 
 # Run setup and capture the working directory path
 # Use inline TypeScript to call testSetup() and output just the path
-WORKING_DIR=$(cd "$SCRIPT_DIR" && npx tsx -e "import { testSetup } from './setup.js'; console.log(testSetup())" 2>&1 | tail -1)
+WORKING_DIR=$(cd "$SCRIPT_DIR" && pnpx tsx -e "import { testSetup } from './setup.js'; console.log(testSetup())" 2>&1 | tail -1)
 
 if [ -z "$WORKING_DIR" ] || [ ! -d "$WORKING_DIR" ]; then
     echo "Error: Failed to create test repository"
@@ -28,7 +28,7 @@ echo ""
 
 # Change to the working directory and run the app
 cd "$WORKING_DIR"
-npx tsx "$REPO_DIR/src/index.ts"
+pnpx tsx "$REPO_DIR/src/index.ts"
 
 echo ""
 echo ""
