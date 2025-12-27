@@ -118,7 +118,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
 
         // Reset store state
         store.staleBranches = []
-        store.unmergedBranches = []
+        store.unmergedBranches = new Set()
         store.queuedForDeletion = []
         store.queuedForForceDeletion = []
         store.failedToDelete = []
@@ -144,7 +144,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
                 info: [],
             })
 
-            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
+            vi.spyOn(store, 'getDeletableBranches').mockImplementation(async () => [])
 
             await selectBranches()
 
@@ -189,7 +189,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             store.staleBranches = ['branch1', 'branch2']
 
             mockGroupedCheckbox.mockResolvedValueOnce({ safe: ['branch1', 'branch2'], force: [], info: [] })
-            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
+            vi.spyOn(store, 'getDeletableBranches').mockImplementation(async () => [])
 
             await selectBranches()
 
@@ -209,7 +209,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             store.staleBranches = ['unmerged1', 'unmerged2']
 
             mockGroupedCheckbox.mockResolvedValueOnce({ safe: [], force: [], info: [] })
-            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
+            vi.spyOn(store, 'getDeletableBranches').mockImplementation(async () => [])
 
             await selectBranches()
 
@@ -229,7 +229,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             store.staleBranches = ['safe-branch']
 
             mockGroupedCheckbox.mockResolvedValueOnce({ safe: [], force: [], info: [] })
-            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
+            vi.spyOn(store, 'getDeletableBranches').mockImplementation(async () => [])
 
             await selectBranches()
 
@@ -332,7 +332,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             store.requiresForce = []
             store.infoOnly = []
 
-            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => {
+            vi.spyOn(store, 'getDeletableBranches').mockImplementation(async () => {
                 // Branches already set above
                 return []
             })
@@ -353,7 +353,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             store.requiresForce = []
             store.infoOnly = ['renamed1', 'renamed2']
 
-            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
+            vi.spyOn(store, 'getDeletableBranches').mockImplementation(async () => [])
 
             try {
                 await selectBranches()
@@ -387,7 +387,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             setMockConfirmResult('confirm')
 
             // Mock successful deletions
-            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
+            vi.spyOn(store, 'getDeletableBranches').mockImplementation(async () => [])
             vi.spyOn(store, 'deleteBranches').mockResolvedValueOnce({
                 success: ['safe1', 'force1'],
                 failed: [],
@@ -415,7 +415,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             mockGroupedCheckbox.mockResolvedValueOnce({ safe: ['branch1'], force: [], info: [] })
             setMockConfirmResult('cancel') // User cancels
 
-            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
+            vi.spyOn(store, 'getDeletableBranches').mockImplementation(async () => [])
 
             const { safe, force } = await selectBranches()
             const result = await confirmDeletion(safe, force)
@@ -436,7 +436,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             exitPromptError.name = 'ExitPromptError'
             setMockConfirmResult('back')
 
-            vi.spyOn(store, 'findStaleBranches').mockImplementation(async () => [])
+            vi.spyOn(store, 'getDeletableBranches').mockImplementation(async () => [])
 
             const { safe, force } = await selectBranches()
             const result = await confirmDeletion(safe, force)

@@ -20,12 +20,12 @@ export default class BranchStore {
     /**
      * Branches that are still in use; will never be deleted
      */
-    liveBranches: Array<string>
+    liveBranches: Set<string>
 
     /**
      * Should be offered for deletion, will need force
      */
-    unmergedBranches: Array<string>
+    unmergedBranches: Set<string>
 
     /**
      * Current branch (cannot be deleted)
@@ -35,12 +35,12 @@ export default class BranchStore {
     /**
      * Protected branches that should never be deleted
      */
-    protectedBranches: Array<string>
+    protectedBranches: Set<string>
 
     /**
      * Branches that have never been pushed to remote
      */
-    neverPushedBranches: Array<string>
+    neverPushedBranches: Set<string>
 
     /**
      * Branches that are merged into current branch
@@ -91,11 +91,11 @@ export default class BranchStore {
         this.queuedForDeletion = []
         this.queuedForForceDeletion = []
         this.failedToDelete = []
-        this.liveBranches = []
-        this.unmergedBranches = []
+        this.liveBranches = new Set()
+        this.unmergedBranches = new Set()
         this.currentBranch = ''
-        this.protectedBranches = ['main', 'master', 'develop', 'development']
-        this.neverPushedBranches = []
+        this.protectedBranches = new Set(['main', 'master', 'develop', 'development'])
+        this.neverPushedBranches = new Set()
         this.mergedBranches = []
         this.safeToDelete = []
         this.requiresForce = []
@@ -111,39 +111,32 @@ export default class BranchStore {
     }
 
     async preprocess() {
-        // Reset all arrays at the start
+        // Reset all lists at the start
         this.remoteBranches = []
         this.localOrphanedBranches = []
         this.staleBranches = []
-        this.liveBranches = []
-        this.unmergedBranches = []
-        this.neverPushedBranches = []
+        this.liveBranches = new Set()
+        this.unmergedBranches = new Set()
+        this.neverPushedBranches = new Set()
         this.mergedBranches = []
         this.safeToDelete = []
         this.requiresForce = []
         this.infoOnly = []
         this.noConnection = false
 
-        // Auto-prune: fetch and prune from remote
-        const spinner = ora('Fetching from remote...').start()
-        try {
-            execFileSync('git', ['fetch', this.remote, '--prune'])
-            spinner.succeed('Fetched from remote')
-        } catch (err) {
-            spinner.warn('Could not fetch from remote, using cached data instead')
-            this.noConnection = true
-        }
-
         // Gather all the information
         // Run potentially conflicting git operations in a controlled order to avoid lock contention
+        await this.fetchRemote()
         await this.getCurrentBranch()
         await this.findAllBranches()
+
+        // Sift through the branches in parallel and categorize them
         await Promise.all([
             this.findLiveBranches(),
             this.findUnmergedBranches(),
             this.findRemoteBranches(),
-            this.findMergedBranches(),
-            this.findBranchLastCommitTimes(),
+            this.lookupMergedBranches(),
+            this.lookupLastCommitTimes(),
             this.findLocalOrphanedBranches(),
             this.findNeverPushedBranches(),
         ])
@@ -155,6 +148,19 @@ export default class BranchStore {
 
         // Classify branches into the 3 groups
         this.classifyBranches()
+    }
+
+    private async fetchRemote() {
+        const spinner = ora('Fetching from remote...').start()
+
+        try {
+            // Auto-prune: fetch and prune from remote
+            execFileSync('git', ['fetch', this.remote, '--prune'])
+            spinner.succeed('Fetched from remote')
+        } catch (err) {
+            spinner.warn('Could not fetch from remote, using cached data instead')
+            this.noConnection = true
+        }
     }
 
     /**
@@ -189,12 +195,12 @@ export default class BranchStore {
             lines.forEach((line) => {
                 const group = line.match(/refs\/heads\/([^\s]*)/)
                 if (group && group[1]) {
-                    this.liveBranches.push(group[1])
+                    this.liveBranches.add(group[1])
                 }
             })
         } catch (err) {
             // reset branches
-            this.liveBranches = []
+            this.liveBranches.clear()
 
             if (err && typeof err === 'object' && 'code' in err && err.code && String(err.code) === '128') {
                 // error 128 means there is no connection currently to the remote
@@ -241,7 +247,7 @@ export default class BranchStore {
         lines.forEach((line) => {
             const branchName = line.trim()
             if (branchName) {
-                this.unmergedBranches.push(branchName)
+                this.unmergedBranches.add(branchName)
             }
         })
     }
@@ -281,13 +287,13 @@ export default class BranchStore {
             if (line.endsWith('@{}')) {
                 const branchName = line.slice(0, -3) // Remove "@{}"
                 if (branchName) {
-                    this.neverPushedBranches.push(branchName)
+                    this.neverPushedBranches.add(branchName)
                 }
             }
         })
     }
 
-    async findMergedBranches() {
+    async lookupMergedBranches() {
         // Get all merged branches
         const out = await stdout('git branch --format="%(refname:short)" --merged')
         const lines = split(out)
@@ -300,7 +306,7 @@ export default class BranchStore {
         })
     }
 
-    async findBranchLastCommitTimes() {
+    async lookupLastCommitTimes() {
         // Get all local branches with their last commit timestamps in one efficient command
         const out = await stdout('git for-each-ref --format="%(refname:short)|%(committerdate:unix)" refs/heads/')
         const lines = split(out)
@@ -314,97 +320,94 @@ export default class BranchStore {
     }
 
     private classifyBranches() {
-        const protectedBranchesSet = new Set(this.protectedBranches)
-        const unmergedBranchesSet = new Set(this.unmergedBranches)
-
         // Group 1: Safe to delete (pre-selected)
         const seen1 = new Set<string>()
-        const safeToDelete = [
+        this.safeToDelete = [
             // Stale branches that are merged (deleted from remote, no force needed)
-            ...this.staleBranches.filter((b) => !unmergedBranchesSet.has(b)),
+            ...this.staleBranches.filter((b) => !this.unmergedBranches.has(b)),
 
             // Local merged branches never pushed to remote
             // (mergedBranches and unmergedBranches are mutually exclusive from git)
-            ...this.mergedBranches.filter((b) => this.neverPushedBranches.includes(b)),
+            ...this.mergedBranches.filter((b) => this.neverPushedBranches.has(b)),
         ]
             // Remove duplicates, current branch, and protected branches
-            .filter((b) => !seen1.has(b) && seen1.add(b) && b !== this.currentBranch && !protectedBranchesSet.has(b))
+            .filter((b) => !seen1.has(b) && seen1.add(b) && b !== this.currentBranch && !this.protectedBranches.has(b))
 
         // Group 2: Requires force (NOT pre-selected)
         const seen2 = new Set<string>()
-        const requiresForce = [
+        this.requiresForce = [
             // Stale branches that are unmerged
-            ...this.staleBranches.filter((b) => unmergedBranchesSet.has(b)),
+            ...this.staleBranches.filter((b) => this.unmergedBranches.has(b)),
 
             // Never pushed branches that are unmerged
-            ...this.neverPushedBranches.filter((b) => unmergedBranchesSet.has(b)),
+            ...[...this.neverPushedBranches].filter((b) => this.unmergedBranches.has(b)),
         ]
             // Remove duplicates, current branch, and protected branches
-            .filter((b) => !seen2.has(b) && seen2.add(b) && b !== this.currentBranch && !protectedBranchesSet.has(b))
+            .filter((b) => !seen2.has(b) && seen2.add(b) && b !== this.currentBranch && !this.protectedBranches.has(b))
 
         // Group 3: Info only (disabled)
-        const liveBranchesSet = new Set(this.liveBranches)
         const seen3 = new Set<string>()
-        const infoOnly = [
+        this.infoOnly = [
             // Local branches with different names tracking active remote branches
             // (renamed locally, original still exists on remote)
             ...this.localOrphanedBranches
                 .filter(
                     ({ remoteBranch, localBranch }) =>
-                        remoteBranch !== localBranch && liveBranchesSet.has(remoteBranch),
+                        remoteBranch !== localBranch && this.liveBranches.has(remoteBranch),
                 )
                 .map(({ localBranch }) => localBranch),
         ]
             // Remove duplicates, current branch, and protected branches
-            .filter((b) => !seen3.has(b) && seen3.add(b) && b !== this.currentBranch && !protectedBranchesSet.has(b))
-
-        this.safeToDelete = safeToDelete
-        this.requiresForce = requiresForce
-        this.infoOnly = infoOnly
+            .filter((b) => !seen3.has(b) && seen3.add(b) && b !== this.currentBranch && !this.protectedBranches.has(b))
     }
 
     /**
      * Get a short reason why a branch is in the safe-to-delete category
      */
-    getSafeToDeleteReason(branch: string): string {
+    public getSafeToDeleteReason(branch: string): string {
         const timestamp = this.branchLastCommitTimes.get(branch)
         const timeAgo = timestamp ? `; last commit ${formatTimeAgo(timestamp)}` : ''
 
         if (this.staleBranches.includes(branch)) {
             return `merged, remote deleted${timeAgo}`
         }
-        if (this.neverPushedBranches.includes(branch)) {
+
+        if (this.neverPushedBranches.has(branch)) {
             return `merged, local only${timeAgo}`
         }
+
         return `merged${timeAgo}`
     }
 
     /**
      * Get a short reason why a branch requires force delete
      */
-    getRequiresForceReason(branch: string): string {
+    public getRequiresForceReason(branch: string): string {
         const timestamp = this.branchLastCommitTimes.get(branch)
         const timeAgo = timestamp ? `; last commit ${formatTimeAgo(timestamp)}` : ''
 
         if (this.staleBranches.includes(branch)) {
             return `unmerged, remote deleted${timeAgo}`
         }
-        if (this.neverPushedBranches.includes(branch)) {
+
+        if (this.neverPushedBranches.has(branch)) {
             return `unmerged, local only${timeAgo}`
         }
+
         return `unmerged${timeAgo}`
     }
 
     /**
      * Get a short reason why a branch is info-only
      */
-    getInfoOnlyReason(branch: string): string {
+    public getInfoOnlyReason(branch: string): string {
         const timestamp = this.branchLastCommitTimes.get(branch)
         const timeAgo = timestamp ? `; last commit ${formatTimeAgo(timestamp)}` : ''
+
         return `renamed locally${timeAgo}`
     }
 
-    async findStaleBranches() {
+    async getDeletableBranches() {
         await this.preprocess()
         return this.staleBranches
     }

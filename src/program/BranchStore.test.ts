@@ -179,10 +179,10 @@ describe('BranchStore', () => {
         })
     })
 
-    describe('findMergedBranches (real git)', () => {
+    describe('lookupMergedBranches (real git)', () => {
         it('should find branches merged into current branch', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findMergedBranches()
+            await store.lookupMergedBranches()
 
             // These were merged into main
             expect(store.mergedBranches).toContain('chore/update-deps')
@@ -195,10 +195,10 @@ describe('BranchStore', () => {
         })
     })
 
-    describe('findBranchLastCommitTimes (real git)', () => {
+    describe('lookupLastCommitTimes (real git)', () => {
         it('should get commit timestamps for all local branches', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findBranchLastCommitTimes()
+            await store.lookupLastCommitTimes()
 
             // Should have timestamps for all branches
             expect(store.branchLastCommitTimes.size).toBeGreaterThan(0)
@@ -212,10 +212,10 @@ describe('BranchStore', () => {
         })
     })
 
-    describe('findStaleBranches (real git - full integration)', () => {
+    describe('getDeletableBranches (real git - full integration)', () => {
         it('should identify branches deleted from remote as stale', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            const staleBranches = await store.findStaleBranches()
+            const staleBranches = await store.getDeletableBranches()
 
             // These were pushed then deleted from remote
             expect(staleBranches).toContain('feature/user-avatars')
@@ -235,7 +235,7 @@ describe('BranchStore', () => {
     describe('classifyBranches (real git - full integration)', () => {
         it('should correctly classify branches into groups', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findStaleBranches()
+            await store.getDeletableBranches()
 
             // Safe to delete: merged branches that can be deleted without force
             expect(store.safeToDelete).toContain('feature/user-avatars')
@@ -260,7 +260,7 @@ describe('BranchStore', () => {
 
         it('should exclude current branch from all groups', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findStaleBranches()
+            await store.getDeletableBranches()
 
             expect(store.currentBranch).toBe('main')
             expect(store.safeToDelete).not.toContain('main')
@@ -272,7 +272,7 @@ describe('BranchStore', () => {
     describe('reason methods', () => {
         it('should provide reasons for safe-to-delete branches', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findStaleBranches()
+            await store.getDeletableBranches()
 
             // Stale branch (was on remote, now deleted)
             const staleReason = store.getSafeToDeleteReason('feature/user-avatars')
@@ -287,7 +287,7 @@ describe('BranchStore', () => {
 
         it('should provide reasons for requires-force branches', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findStaleBranches()
+            await store.getDeletableBranches()
 
             // Stale but unmerged
             const staleReason = store.getRequiresForceReason('experiment/graphql-api')
@@ -302,7 +302,7 @@ describe('BranchStore', () => {
 
         it('should provide reasons for info-only branches', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findStaleBranches()
+            await store.getDeletableBranches()
 
             const reason = store.getInfoOnlyReason('bugfix/cache-invalidation')
             expect(reason).toContain('renamed locally')
@@ -344,7 +344,7 @@ describe('BranchStore - deletion tests (isolated repo)', () => {
 
     it('should delete safe branches with -d flag', async () => {
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         // Queue a known safe branch
         store.setQueuedForDeletion(['feature/user-avatars'], [])
@@ -357,7 +357,7 @@ describe('BranchStore - deletion tests (isolated repo)', () => {
 
     it('should delete force branches with -D flag', async () => {
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         // Queue a branch that requires force
         store.setQueuedForDeletion([], ['wip/settings-redesign'])
@@ -370,7 +370,7 @@ describe('BranchStore - deletion tests (isolated repo)', () => {
 
     it('should handle branches with special characters', async () => {
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         // Queue branch with special chars
         store.setQueuedForDeletion(['fix/#432-modal-close'], [])

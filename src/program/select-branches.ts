@@ -17,7 +17,7 @@ export async function selectBranches(previousSelection?: PreviousSelection): Pro
     safe: string[]
     force: string[]
 }> {
-    await store.findStaleBranches()
+    await store.getDeletableBranches()
 
     // Check if any branches to delete
     const totalDeletable = store.safeToDelete.length + store.requiresForce.length
