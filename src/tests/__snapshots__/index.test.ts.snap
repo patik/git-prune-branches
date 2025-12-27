@@ -3,25 +3,19 @@
 exports[`git-prune-branches > interactive grouped checkbox mode (end-to-end) > should display complete UI snapshot with all elements > grouped-checkbox-clean-output 1`] = `
 "? Select branches to remove
 ❯ ◉ ✅ Safe to delete (7/7)
-    ◉ #567--echo--special-chars--pushed-then-deleted-from-remote--no-commits
-[merged, remote deleted; last commit just now]
-    ◉ alpha/pushed-then-deleted-from-remote--no-commits [merged, remote deleted;
- last commit just now]
-    ◉ feature/team/auth/oauth-refresh-token [merged, remote deleted; last commit
- just now]
-    ◉ foxtrot/local-name-different--removed--can-be-soft-removed [merged, remote
- deleted; last commit just now]
-    ◉ juliet/pr-merged-on-github [merged, remote deleted; last commit just now]
-    ◉ release/v2.0.0 [merged, remote deleted; last commit just now]
-    ◉ bravo/local-merged--never-on-remote [merged, local only; last commit just
-now]
+    ◉ feature/dark-mode [merged, remote deleted; last commit just now]
+    ◉ feature/payments/stripe/webhooks [merged, remote deleted; last commit just
+ now]
+    ◉ feature/search-filters [merged, remote deleted; last commit just now]
+    ◉ feature/user-avatars [merged, remote deleted; last commit just now]
+    ◉ fix/#432-modal-close [merged, remote deleted; last commit just now]
+    ◉ release/v2.1.0 [merged, remote deleted; last commit just now]
+    ◉ chore/update-deps [merged, local only; last commit just now]
   ◯ ⚠️ Requires force delete — cannot be undone (0/2)
-    ◯ delta/with-commits--remote-deleted--needs-force [unmerged, remote deleted;
- last commit just now]
-    ◯ charlie/local-never-pushed [unmerged, local only; last commit just now]
+    ◯ experiment/graphql-api [unmerged, remote deleted; last commit just now]
+    ◯ wip/settings-redesign [unmerged, local only; last commit just now]
   ◯ ℹ️ Info only - renamed branches still on remote (0/0)
-    ◯ golf/renamed-locally--not-deleted-on-remote--not-offered-for-deletion
-[renamed locally; last commit just now]
+    ◯ bugfix/cache-invalidation [renamed locally; last commit just now]
 (space: select, ctrl+a: toggle all, ctrl+i: invert, type to search)
 
 👋 No branches were deleted.

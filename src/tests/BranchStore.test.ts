@@ -105,12 +105,12 @@ describe('BranchStore', () => {
 
             // Should include branches that were pushed to origin
             expect(localBranchNames).toContain('main')
-            expect(localBranchNames).toContain('alpha/pushed-then-deleted-from-remote--no-commits')
-            expect(localBranchNames).toContain('delta/with-commits--remote-deleted--needs-force')
+            expect(localBranchNames).toContain('feature/user-avatars')
+            expect(localBranchNames).toContain('experiment/graphql-api')
 
             // Should NOT include branches that were never pushed (no upstream)
-            expect(localBranchNames).not.toContain('charlie/local-never-pushed')
-            expect(localBranchNames).not.toContain('bravo/local-merged--never-on-remote')
+            expect(localBranchNames).not.toContain('wip/settings-redesign')
+            expect(localBranchNames).not.toContain('chore/update-deps')
         })
     })
 
@@ -128,11 +128,11 @@ describe('BranchStore', () => {
 
             // These branches still exist on remote (were not deleted)
             expect(store.liveBranches).toContain('main')
-            expect(store.liveBranches).toContain('india/remote-name-diff--not-deleted')
+            expect(store.liveBranches).toContain('hotfix/cache-fix')
 
             // These were deleted from remote by testSetup()
-            expect(store.liveBranches).not.toContain('alpha/pushed-then-deleted-from-remote--no-commits')
-            expect(store.liveBranches).not.toContain('delta/with-commits--remote-deleted--needs-force')
+            expect(store.liveBranches).not.toContain('feature/user-avatars')
+            expect(store.liveBranches).not.toContain('experiment/graphql-api')
         })
     })
 
@@ -142,12 +142,12 @@ describe('BranchStore', () => {
             await store.findUnmergedBranches()
 
             // These branches have commits not merged into main
-            expect(store.unmergedBranches).toContain('delta/with-commits--remote-deleted--needs-force')
-            expect(store.unmergedBranches).toContain('charlie/local-never-pushed')
+            expect(store.unmergedBranches).toContain('experiment/graphql-api')
+            expect(store.unmergedBranches).toContain('wip/settings-redesign')
 
             // These were merged into main
-            expect(store.unmergedBranches).not.toContain('bravo/local-merged--never-on-remote')
-            expect(store.unmergedBranches).not.toContain('juliet/pr-merged-on-github')
+            expect(store.unmergedBranches).not.toContain('chore/update-deps')
+            expect(store.unmergedBranches).not.toContain('feature/search-filters')
         })
     })
 
@@ -158,7 +158,7 @@ describe('BranchStore', () => {
 
             // These exist in git's remote-tracking refs
             expect(store.remoteBranches).toContain('main')
-            expect(store.remoteBranches).toContain('india/remote-name-diff--not-deleted')
+            expect(store.remoteBranches).toContain('hotfix/cache-fix')
         })
     })
 
@@ -168,12 +168,12 @@ describe('BranchStore', () => {
             await store.findNeverPushedBranches()
 
             // These were never pushed (created with -b, no -u)
-            expect(store.neverPushedBranches).toContain('charlie/local-never-pushed')
-            expect(store.neverPushedBranches).toContain('bravo/local-merged--never-on-remote')
+            expect(store.neverPushedBranches).toContain('wip/settings-redesign')
+            expect(store.neverPushedBranches).toContain('chore/update-deps')
 
             // These have upstream tracking
             expect(store.neverPushedBranches).not.toContain('main')
-            expect(store.neverPushedBranches).not.toContain('alpha/pushed-then-deleted-from-remote--no-commits')
+            expect(store.neverPushedBranches).not.toContain('feature/user-avatars')
         })
     })
 
@@ -183,13 +183,13 @@ describe('BranchStore', () => {
             await store.findMergedBranches()
 
             // These were merged into main
-            expect(store.mergedBranches).toContain('bravo/local-merged--never-on-remote')
-            expect(store.mergedBranches).toContain('juliet/pr-merged-on-github')
+            expect(store.mergedBranches).toContain('chore/update-deps')
+            expect(store.mergedBranches).toContain('feature/search-filters')
             expect(store.mergedBranches).toContain('main')
 
             // These have unmerged commits
-            expect(store.mergedBranches).not.toContain('charlie/local-never-pushed')
-            expect(store.mergedBranches).not.toContain('delta/with-commits--remote-deleted--needs-force')
+            expect(store.mergedBranches).not.toContain('wip/settings-redesign')
+            expect(store.mergedBranches).not.toContain('experiment/graphql-api')
         })
     })
 
@@ -216,14 +216,14 @@ describe('BranchStore', () => {
             const staleBranches = await store.findStaleBranches()
 
             // These were pushed then deleted from remote
-            expect(staleBranches).toContain('alpha/pushed-then-deleted-from-remote--no-commits')
-            expect(staleBranches).toContain('delta/with-commits--remote-deleted--needs-force')
-            expect(staleBranches).toContain('#567--echo--special-chars--pushed-then-deleted-from-remote--no-commits')
-            expect(staleBranches).toContain('juliet/pr-merged-on-github')
+            expect(staleBranches).toContain('feature/user-avatars')
+            expect(staleBranches).toContain('experiment/graphql-api')
+            expect(staleBranches).toContain('fix/#432-modal-close')
+            expect(staleBranches).toContain('feature/search-filters')
 
             // This was never pushed, so it's not "stale" (orphaned from remote)
-            expect(staleBranches).not.toContain('charlie/local-never-pushed')
-            expect(staleBranches).not.toContain('bravo/local-merged--never-on-remote')
+            expect(staleBranches).not.toContain('wip/settings-redesign')
+            expect(staleBranches).not.toContain('chore/update-deps')
 
             // Main still exists on remote
             expect(staleBranches).not.toContain('main')
@@ -236,20 +236,18 @@ describe('BranchStore', () => {
             await store.findStaleBranches()
 
             // Safe to delete: merged branches that can be deleted without force
-            expect(store.safeToDelete).toContain('alpha/pushed-then-deleted-from-remote--no-commits')
-            expect(store.safeToDelete).toContain(
-                '#567--echo--special-chars--pushed-then-deleted-from-remote--no-commits',
-            )
-            expect(store.safeToDelete).toContain('juliet/pr-merged-on-github')
-            expect(store.safeToDelete).toContain('bravo/local-merged--never-on-remote')
-            expect(store.safeToDelete).toContain('foxtrot/local-name-different--removed--can-be-soft-removed')
+            expect(store.safeToDelete).toContain('feature/user-avatars')
+            expect(store.safeToDelete).toContain('fix/#432-modal-close')
+            expect(store.safeToDelete).toContain('feature/search-filters')
+            expect(store.safeToDelete).toContain('chore/update-deps')
+            expect(store.safeToDelete).toContain('feature/dark-mode')
 
             // Requires force: unmerged branches
-            expect(store.requiresForce).toContain('delta/with-commits--remote-deleted--needs-force')
-            expect(store.requiresForce).toContain('charlie/local-never-pushed')
+            expect(store.requiresForce).toContain('experiment/graphql-api')
+            expect(store.requiresForce).toContain('wip/settings-redesign')
 
             // Info only: renamed locally but remote still exists
-            expect(store.infoOnly).toContain('golf/renamed-locally--not-deleted-on-remote--not-offered-for-deletion')
+            expect(store.infoOnly).toContain('bugfix/cache-invalidation')
 
             // Protected branches should not appear in any group
             expect(store.safeToDelete).not.toContain('main')
@@ -275,12 +273,12 @@ describe('BranchStore', () => {
             await store.findStaleBranches()
 
             // Stale branch (was on remote, now deleted)
-            const staleReason = store.getSafeToDeleteReason('alpha/pushed-then-deleted-from-remote--no-commits')
+            const staleReason = store.getSafeToDeleteReason('feature/user-avatars')
             expect(staleReason).toContain('merged')
             expect(staleReason).toContain('remote deleted')
 
             // Local-only merged branch
-            const localReason = store.getSafeToDeleteReason('bravo/local-merged--never-on-remote')
+            const localReason = store.getSafeToDeleteReason('chore/update-deps')
             expect(localReason).toContain('merged')
             expect(localReason).toContain('local only')
         })
@@ -290,12 +288,12 @@ describe('BranchStore', () => {
             await store.findStaleBranches()
 
             // Stale but unmerged
-            const staleReason = store.getRequiresForceReason('delta/with-commits--remote-deleted--needs-force')
+            const staleReason = store.getRequiresForceReason('experiment/graphql-api')
             expect(staleReason).toContain('unmerged')
             expect(staleReason).toContain('remote deleted')
 
             // Local only unmerged
-            const localReason = store.getRequiresForceReason('charlie/local-never-pushed')
+            const localReason = store.getRequiresForceReason('wip/settings-redesign')
             expect(localReason).toContain('unmerged')
             expect(localReason).toContain('local only')
         })
@@ -304,9 +302,7 @@ describe('BranchStore', () => {
             const store = new BranchStore({ remote: 'origin' })
             await store.findStaleBranches()
 
-            const reason = store.getInfoOnlyReason(
-                'golf/renamed-locally--not-deleted-on-remote--not-offered-for-deletion',
-            )
+            const reason = store.getInfoOnlyReason('bugfix/cache-invalidation')
             expect(reason).toContain('renamed locally')
         })
     })
@@ -349,11 +345,11 @@ describe('BranchStore - deletion tests (isolated repo)', () => {
         await store.findStaleBranches()
 
         // Queue a known safe branch
-        store.setQueuedForDeletion(['alpha/pushed-then-deleted-from-remote--no-commits'], [])
+        store.setQueuedForDeletion(['feature/user-avatars'], [])
 
         const result = await store.deleteBranches()
 
-        expect(result.success).toContain('alpha/pushed-then-deleted-from-remote--no-commits')
+        expect(result.success).toContain('feature/user-avatars')
         expect(result.failed).toEqual([])
     })
 
@@ -362,11 +358,11 @@ describe('BranchStore - deletion tests (isolated repo)', () => {
         await store.findStaleBranches()
 
         // Queue a branch that requires force
-        store.setQueuedForDeletion([], ['charlie/local-never-pushed'])
+        store.setQueuedForDeletion([], ['wip/settings-redesign'])
 
         const result = await store.deleteBranches()
 
-        expect(result.success).toContain('charlie/local-never-pushed')
+        expect(result.success).toContain('wip/settings-redesign')
         expect(result.failed).toEqual([])
     })
 
@@ -375,11 +371,11 @@ describe('BranchStore - deletion tests (isolated repo)', () => {
         await store.findStaleBranches()
 
         // Queue branch with special chars
-        store.setQueuedForDeletion(['#567--echo--special-chars--pushed-then-deleted-from-remote--no-commits'], [])
+        store.setQueuedForDeletion(['fix/#432-modal-close'], [])
 
         const result = await store.deleteBranches()
 
-        expect(result.success).toContain('#567--echo--special-chars--pushed-then-deleted-from-remote--no-commits')
+        expect(result.success).toContain('fix/#432-modal-close')
         expect(result.failed).toEqual([])
     })
 

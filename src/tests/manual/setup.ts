@@ -46,111 +46,85 @@ export const testSetup = () => {
     child_process.execSync('git add lolipop', { cwd: workingDir })
     child_process.execSync('git commit -m "initial commit"', { cwd: workingDir })
 
-    // create new branch, which will be deleted by -d flag
-    child_process.execSync('git branch alpha/pushed-then-deleted-from-remote--no-commits', { cwd: workingDir })
+    // Simple feature branch - merged, remote deleted
+    child_process.execSync('git branch feature/user-avatars', { cwd: workingDir })
 
-    // create branch with deep nested path (tests multiple slashes in branch name)
-    child_process.execSync('git branch feature/team/auth/oauth-refresh-token', { cwd: workingDir })
+    // Deep nested path (tests multiple slashes in branch name)
+    child_process.execSync('git branch feature/payments/stripe/webhooks', { cwd: workingDir })
 
-    // create branch with version-like name (dots are common in release branches)
-    child_process.execSync('git branch release/v2.0.0', { cwd: workingDir })
-    // create another branch with special character
-    child_process.execSync('git branch "#567--echo--special-chars--pushed-then-deleted-from-remote--no-commits"', {
-        cwd: workingDir,
-    })
-    // create branch with renamed name, which is deleted on remote
-    child_process.execSync('git branch foxtrot/local-name-different--removed--can-be-soft-removed', { cwd: workingDir })
-    // create branch with renamed name, which is NOT deleted on remote
-    child_process.execSync('git branch golf/renamed-locally--not-deleted-on-remote--not-offered-for-deletion', {
-        cwd: workingDir,
-    })
-    // create new branch, which can be deleted only with -D flag
-    child_process.execSync('git branch delta/with-commits--remote-deleted--needs-force', { cwd: workingDir })
+    // Release branch with version (dots are common)
+    child_process.execSync('git branch release/v2.1.0', { cwd: workingDir })
 
-    // checkout working branch
-    child_process.execSync('git checkout delta/with-commits--remote-deleted--needs-force', { cwd: workingDir })
+    // Branch with special character (issue number)
+    child_process.execSync('git branch "fix/#432-modal-close"', { cwd: workingDir })
+
+    // Branch with different local/remote name - remote deleted (can be soft removed)
+    child_process.execSync('git branch feature/dark-mode', { cwd: workingDir })
+
+    // Branch with different local/remote name - remote NOT deleted (info only)
+    child_process.execSync('git branch bugfix/cache-invalidation', { cwd: workingDir })
+
+    // Unmerged branch with commits - needs force delete
+    child_process.execSync('git branch experiment/graphql-api', { cwd: workingDir })
+
+    // checkout working branch for unmerged commits
+    child_process.execSync('git checkout experiment/graphql-api', { cwd: workingDir })
 
     // update file content
     writeFileSync(file, 'lolipop content changed')
     child_process.execSync('git commit -a -m "second commit"', { cwd: workingDir })
 
-    // Create local-only branch, with commits, that is not merged into main
-    child_process.execSync('git checkout -b charlie/local-never-pushed', { cwd: workingDir })
+    // Local-only branch with commits, not merged (needs force)
+    child_process.execSync('git checkout -b wip/settings-redesign', { cwd: workingDir })
     writeFileSync(file, 'local only branch content')
     child_process.execSync('git commit -a -m "local only commit"', { cwd: workingDir })
 
-    // Create local-only branch, with commits, that is merged into main
+    // Local-only branch that IS merged into main (safe to delete)
     child_process.execSync('git checkout main', { cwd: workingDir })
-    child_process.execSync('git checkout -b bravo/local-merged--never-on-remote', { cwd: workingDir })
+    child_process.execSync('git checkout -b chore/update-deps', { cwd: workingDir })
     writeFileSync(file, 'local merged branch content')
     child_process.execSync('git commit -a -m "local merged commit"', { cwd: workingDir })
     child_process.execSync('git checkout main', { cwd: workingDir })
-    child_process.execSync('git merge bravo/local-merged--never-on-remote', { cwd: workingDir })
+    child_process.execSync('git merge chore/update-deps', { cwd: workingDir })
 
-    // Create a branch that simulates PR merge workflow:
-    // 1. Create branch with commits
-    // 2. Push to remote
-    // 3. Merge to main (simulating GitHub PR merge)
-    // 4. Delete remote branch
-    // This is the most common real-world scenario
-    child_process.execSync('git checkout -b juliet/pr-merged-on-github', { cwd: workingDir })
+    // Typical PR workflow: create, push, merge via GitHub, remote deleted
+    child_process.execSync('git checkout -b feature/search-filters', { cwd: workingDir })
     writeFileSync(file, 'PR branch content')
     child_process.execSync('git commit -a -m "PR commit"', { cwd: workingDir })
     child_process.execSync('git checkout main', { cwd: workingDir })
-    child_process.execSync('git merge juliet/pr-merged-on-github', { cwd: workingDir })
+    child_process.execSync('git merge feature/search-filters', { cwd: workingDir })
 
-    // Create a protected branch (develop) that would otherwise be deletable
-    // This tests that protected branches are excluded from deletion
+    // Protected branch (develop) - should be excluded from deletion
     child_process.execSync('git checkout -b develop', { cwd: workingDir })
     writeFileSync(file, 'develop branch content')
     child_process.execSync('git commit -a -m "develop commit"', { cwd: workingDir })
     child_process.execSync('git checkout main', { cwd: workingDir })
     child_process.execSync('git merge develop', { cwd: workingDir })
 
-    // push all the branches to the remote and update config
+    // Push all branches to remote
     child_process.execSync('git push origin -u main', { cwd: workingDir })
-    child_process.execSync('git push origin -u alpha/pushed-then-deleted-from-remote--no-commits', { cwd: workingDir })
-    child_process.execSync('git push origin -u feature/team/auth/oauth-refresh-token', { cwd: workingDir })
-    child_process.execSync('git push origin -u release/v2.0.0', { cwd: workingDir })
-    child_process.execSync(
-        'git push origin -u "#567--echo--special-chars--pushed-then-deleted-from-remote--no-commits"',
-        {
-            cwd: workingDir,
-        },
-    )
-    child_process.execSync(
-        'git push origin -u foxtrot/local-name-different--removed--can-be-soft-removed:hotel/remote-for-foxtrot-but-diff-name--deleted-from-remote',
-        { cwd: workingDir },
-    )
-    child_process.execSync(
-        'git push origin -u golf/renamed-locally--not-deleted-on-remote--not-offered-for-deletion:india/remote-name-diff--not-deleted',
-        {
-            cwd: workingDir,
-        },
-    )
-    child_process.execSync('git push origin -u delta/with-commits--remote-deleted--needs-force', { cwd: workingDir })
-    child_process.execSync('git push origin -u juliet/pr-merged-on-github', { cwd: workingDir })
+    child_process.execSync('git push origin -u feature/user-avatars', { cwd: workingDir })
+    child_process.execSync('git push origin -u feature/payments/stripe/webhooks', { cwd: workingDir })
+    child_process.execSync('git push origin -u release/v2.1.0', { cwd: workingDir })
+    child_process.execSync('git push origin -u "fix/#432-modal-close"', { cwd: workingDir })
+    // Push with different remote name
+    child_process.execSync('git push origin -u feature/dark-mode:feature/ui-dark-theme', { cwd: workingDir })
+    child_process.execSync('git push origin -u bugfix/cache-invalidation:hotfix/cache-fix', { cwd: workingDir })
+    child_process.execSync('git push origin -u experiment/graphql-api', { cwd: workingDir })
+    child_process.execSync('git push origin -u feature/search-filters', { cwd: workingDir })
     child_process.execSync('git push origin -u develop', { cwd: workingDir })
 
-    // For juliet/pr-merged-on-github: merge to main on remote first (simulating GitHub PR merge)
-    // Then delete the branch - this is the typical PR workflow
-    child_process.execSync('git push origin main', { cwd: workingDir }) // Push the merged main
+    // Push merged main (simulating GitHub PR merge)
+    child_process.execSync('git push origin main', { cwd: workingDir })
 
-    // remove all the branches from the remote, except for the local-name and protected branches
-    child_process.execSync('git push origin :alpha/pushed-then-deleted-from-remote--no-commits', { cwd: workingDir })
-    child_process.execSync('git push origin :feature/team/auth/oauth-refresh-token', { cwd: workingDir })
-    child_process.execSync('git push origin :release/v2.0.0', { cwd: workingDir })
-    child_process.execSync('git push origin :delta/with-commits--remote-deleted--needs-force', { cwd: workingDir })
-    child_process.execSync(
-        'git push origin :"#567--echo--special-chars--pushed-then-deleted-from-remote--no-commits"',
-        {
-            cwd: workingDir,
-        },
-    )
-    child_process.execSync('git push origin :hotel/remote-for-foxtrot-but-diff-name--deleted-from-remote', {
-        cwd: workingDir,
-    })
-    child_process.execSync('git push origin :juliet/pr-merged-on-github', { cwd: workingDir })
+    // Delete branches from remote (simulating PR merges or cleanup)
+    child_process.execSync('git push origin :feature/user-avatars', { cwd: workingDir })
+    child_process.execSync('git push origin :feature/payments/stripe/webhooks', { cwd: workingDir })
+    child_process.execSync('git push origin :release/v2.1.0', { cwd: workingDir })
+    child_process.execSync('git push origin :experiment/graphql-api', { cwd: workingDir })
+    child_process.execSync('git push origin :"fix/#432-modal-close"', { cwd: workingDir })
+    child_process.execSync('git push origin :feature/ui-dark-theme', { cwd: workingDir })
+    child_process.execSync('git push origin :feature/search-filters', { cwd: workingDir })
     child_process.execSync('git push origin :develop', { cwd: workingDir })
 
     // checkout main branch
