@@ -261,7 +261,7 @@ export default class BranchStore {
             const group = branchName.match(re)
 
             if (group) {
-                this.remoteBranches.push(group[1] || '')
+                this.remoteBranches.push(group[1])
             }
         })
     }
