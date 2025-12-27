@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import ora from 'ora'
-import stdout from 'simple-stdout'
+import stdout, { stdoutFile } from 'simple-stdout'
 import split from './split.js'
 
 export default class BranchStore {
@@ -118,7 +118,7 @@ export default class BranchStore {
             execFileSync('git', ['fetch', this.remote, '--prune'])
             spinner.succeed('Fetched from remote')
         } catch (err) {
-            spinner.warn('Could not fetch from remote (will use cached data)')
+            spinner.warn('Could not fetch from remote, using cached data instead')
             this.noConnection = true
         }
 
@@ -177,7 +177,7 @@ export default class BranchStore {
 
         try {
             // get list of remote branches from remote host
-            const out = await stdout(`git ls-remote -h ${this.remote}`)
+            const out = await stdoutFile('git', ['ls-remote', '-h', this.remote])
             const lines = split(out)
 
             // take out sha and refs/heads

@@ -21,8 +21,8 @@ importers:
         specifier: ^9.0.0
         version: 9.0.0
       simple-stdout:
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^2.1.0
+        version: 2.1.0
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: ^0.18.2
@@ -1316,9 +1316,10 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
-  simple-stdout@2.0.0:
-    resolution: {integrity: sha512-V3qVhuOqEPdCgfRubaeco5qHp775JnPsFcAN2D9q0ax9sz+Hz0WGAqN812rpPx9ftN36EYH1s6O0leUo57aWWg==}
+  simple-stdout@2.1.0:
+    resolution: {integrity: sha512-DVm1UK5N7ppECOHl2CR0O2PlOHw/7Q/dJodArG4LYLteN9c9tgM5p5SLFCyZtsw6Le2BoQBB6w0iRzhu+6Twgg==}
     engines: {node: '>=20'}
+    hasBin: true
 
   skin-tone@2.0.0:
     resolution: {integrity: sha512-kUMbT1oBJCpgrnKoSr0o6wPtvRWT9W9UKvGLwfJYO2WuahZRHOpEyL1ckyMGgMWh0UdpmaoFqKKD29WTomNEGA==}
@@ -2696,7 +2697,7 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-  simple-stdout@2.0.0: {}
+  simple-stdout@2.1.0: {}
 
   skin-tone@2.0.0:
     dependencies:

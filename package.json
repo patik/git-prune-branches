@@ -54,7 +54,7 @@
         "inquirer-grouped-checkbox": "^0.5.0",
         "minimist": "^1.2.8",
         "ora": "^9.0.0",
-        "simple-stdout": "^2.0.0"
+        "simple-stdout": "^2.1.0"
     },
     "devDependencies": {
         "@arethetypeswrong/cli": "^0.18.2",
