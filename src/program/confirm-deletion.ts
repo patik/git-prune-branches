@@ -1,5 +1,5 @@
 import { confirm } from '@inquirer/prompts'
-import { bold, green, red } from '../utils/colors.js'
+import { dim, green, red } from '../utils/colors.js'
 
 /**
  * Ensure that the displayed command is something the user could copy-paste into their terminal.
@@ -20,17 +20,17 @@ export async function confirmDeletion(safe: string[], force: string[]): Promise<
         return false
     }
 
-    console.log(`\n${bold('The following commands will be executed:')}\n`)
+    console.log(`\nThe following commands will be executed:\n`)
 
     if (safe.length > 0) {
-        console.log(green(`Safe deletes (${safe.length} branch${safe.length === 1 ? '' : 'es'}):`))
-        safe.forEach((branch) => console.log(`  git branch -d ${displayBranchName(branch)}`))
+        console.log(green(`Safely delete ${safe.length} branch${safe.length === 1 ? '' : 'es'}:`))
+        safe.forEach((branch) => console.log(dim(`  git branch -d ${displayBranchName(branch)}`)))
         console.log('')
     }
 
     if (force.length > 0) {
-        console.log(red(`Force deletes (${force.length} branch${force.length === 1 ? '' : 'es'}):`))
-        force.forEach((branch) => console.log(`  git branch -D ${displayBranchName(branch)}`))
+        console.log(red(`Force delete ${force.length} branch${force.length === 1 ? '' : 'es'}:`))
+        force.forEach((branch) => console.log(dim(`  git branch -D ${displayBranchName(branch)}`)))
         console.log('')
     }
 

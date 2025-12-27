@@ -203,10 +203,10 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             expect(consoleLogSpy).toHaveBeenCalledWith(
                 expect.stringContaining('The following commands will be executed'),
             )
-            expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Safe deletes (2 branches)'))
+            expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Safely delete 2 branches'))
             expect(consoleLogSpy).toHaveBeenCalledWith('  git branch -d safe1')
             expect(consoleLogSpy).toHaveBeenCalledWith('  git branch -d safe2')
-            expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Force deletes (1 branch)'))
+            expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Force delete 1 branch'))
             expect(consoleLogSpy).toHaveBeenCalledWith('  git branch -D force1')
         })
 
