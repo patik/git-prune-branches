@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import BranchStore from '../utils/BranchStore.js'
-import { testSetup } from './manual/setup.js'
+import { testSetup } from '../tests/manual/setup.js'
+import BranchStore from './BranchStore.js'
 
 // Only mock ora to suppress spinner output during tests
 vi.mock('ora', () => ({

@@ -1,5 +1,5 @@
-import BranchStore from '../utils/BranchStore.js'
 import { establishArgs } from '../utils/establish-args.js'
+import BranchStore from './BranchStore.js'
 
 const argv = establishArgs()
 

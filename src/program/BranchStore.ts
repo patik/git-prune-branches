@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import ora from 'ora'
 import stdout, { stdoutFile } from 'simple-stdout'
-import split from './split.js'
+import split from '../utils/split.js'
 
 class RemoteError extends Error {
     code = 1984
