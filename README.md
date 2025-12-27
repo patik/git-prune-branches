@@ -2,7 +2,7 @@
 
 Review and delete stale branches using an interactive prompt
 
-<img src="https://github.com/user-attachments/assets/ccd2aefd-9bae-47e4-9989-be8f0ab2442d" width="720" alt="">
+<img src="https://github.com/user-attachments/assets/eb468d62-a842-4d43-8645-fed82c5ebdcf" width="600" alt="">
 
 Addresses common questions, like:
 
@@ -93,26 +93,20 @@ Run the source code using `tsx`, e.g. to test it on another local repo
 npx tsx ~/code/git-prune-branches/src/index.ts
 ```
 
-### Testing
-
-This project uses [Vitest](https://vitest.dev/) for testing. The tests create a temporary git repository and verify the behavior of the tool in different scenarios.
-
-#### Run tests in watch mode
-
-```bash
-pnpm test # watch mode
-pnpm test:once # run all tests once
-```
-
-#### Manual testing
-
-You can also create a test git repo in a temporary folder and run the tool against it.
+You can also run the app against a fake git repo in a temporary folder
 
 ```sh
 pnpm run test:manual
 ```
 
-The test repo's branches are defined in `src/tests/manual/setup.ts`, but before editing, keep in mind that this file is also used by the automated tests.
+### Testing
+
+This project uses [Vitest](https://vitest.dev/) for testing. The tests create a temporary git repository and verify the behavior of the tool in different scenarios.
+
+```bash
+pnpm test # watch mode
+pnpm test:once # run all tests once
+```
 
 ### Building
 
