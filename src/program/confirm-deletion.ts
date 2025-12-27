@@ -90,10 +90,9 @@ async function confirmWithEscape(message: string, linesToClear: number): Promise
             }
         }
 
-        process.stdin.on('keypress', handler)
-
         // Emit keypress events
         readline.emitKeypressEvents(process.stdin, rl)
+        process.stdin.on('keypress', handler)
     })
 }
 
