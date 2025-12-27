@@ -11,6 +11,10 @@ on:
 jobs:
     publish:
         runs-on: ubuntu-latest
+        # Required for OIDC trusted publishing
+        permissions:
+            contents: read
+            id-token: write
 
         steps:
             - name: Checkout code
@@ -19,11 +23,15 @@ jobs:
             - name: Use Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: '24'
+                  node-version: '22'
                   registry-url: 'https://registry.npmjs.org/'
 
             - name: Install pnpm
               run: npm install -g pnpm
+
+            # npm 11.5+ required for OIDC trusted publishing
+            - name: Update npm
+              run: npm install -g npm@latest
 
             - name: Install dependencies
               run: pnpm install
@@ -32,6 +40,4 @@ jobs:
               run: pnpm run ci
 
             - name: Publish to NPM
-              run: npm publish --access public --no-git-checks
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+              run: npm publish --access public --no-git-checks --provenance

@@ -167,9 +167,8 @@ export default class BranchStore {
         const remotesStr = await stdout('git remote -v')
         const hasRemote = split(remotesStr).some((line) => {
             const re = new RegExp(`^${this.remote}\\s`)
-            if (re.test(line)) {
-                return true
-            }
+
+            return re.test(line)
         })
 
         if (!hasRemote) {
@@ -195,8 +194,8 @@ export default class BranchStore {
         } catch (err) {
             // reset branches
             this.liveBranches = []
-            // @ts-expect-error - this is a custom error code
-            if (err.code && err.code === 128) {
+
+            if (err && typeof err === 'object' && 'code' in err && err.code && String(err.code) === '128') {
                 // error 128 means there is no connection currently to the remote
                 // skip this step then
                 this.noConnection = true
@@ -260,7 +259,7 @@ export default class BranchStore {
         branches.forEach((branchName) => {
             const group = branchName.match(re)
 
-            if (group) {
+            if (group && group[1]) {
                 this.remoteBranches.push(group[1])
             }
         })
