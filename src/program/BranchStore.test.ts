@@ -58,9 +58,9 @@ describe('BranchStore', () => {
             expect(store.queuedForDeletion).toEqual([])
             expect(store.queuedForForceDeletion).toEqual([])
             expect(store.failedToDelete).toEqual([])
-            expect(store.liveBranches).toEqual([])
-            expect(store.unmergedBranches).toEqual([])
-            expect(store.neverPushedBranches).toEqual([])
+            expect(store.liveBranches.size).toBe(0)
+            expect(store.unmergedBranches.size).toBe(0)
+            expect(store.neverPushedBranches.size).toBe(0)
             expect(store.mergedBranches).toEqual([])
             expect(store.safeToDelete).toEqual([])
             expect(store.requiresForce).toEqual([])
@@ -70,7 +70,7 @@ describe('BranchStore', () => {
 
         it('should initialize protected branches with defaults', () => {
             const store = new BranchStore({ remote: 'origin' })
-            expect(store.protectedBranches).toEqual(['main', 'master', 'develop', 'development'])
+            expect(Array.from(store.protectedBranches)).toEqual(['main', 'master', 'develop', 'development'])
         })
 
         it('should initialize currentBranch as empty string', () => {
@@ -278,12 +278,12 @@ describe('BranchStore', () => {
             await store.findLiveBranches()
 
             expect(store.noConnection).toBe(true)
-            expect(store.liveBranches).toEqual([])
+            expect(store.liveBranches.size).toBe(0)
         })
 
         it('should append to liveBranches (reset handled by preprocess)', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            store.liveBranches = ['old-branch']
+            store.liveBranches = new Set(['old-branch'])
 
             await store.findLiveBranches()
 
@@ -396,7 +396,7 @@ describe('BranchStore', () => {
 
         it('should include the current branch itself', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findMergedBranches()
+            await store.lookupMergedBranches()
 
             // Current branch (main) is always merged into itself
             expect(store.mergedBranches).toContain('main')
@@ -421,7 +421,7 @@ describe('BranchStore', () => {
 
         it('should have timestamps for all local branches', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findBranchLastCommitTimes()
+            await store.lookupLastCommitTimes()
 
             expect(store.branchLastCommitTimes.has('wip/settings-redesign')).toBe(true)
             expect(store.branchLastCommitTimes.has('experiment/graphql-api')).toBe(true)
@@ -430,7 +430,7 @@ describe('BranchStore', () => {
 
         it('should return valid unix timestamps', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findBranchLastCommitTimes()
+            await store.lookupLastCommitTimes()
 
             for (const [, timestamp] of store.branchLastCommitTimes) {
                 expect(Number.isInteger(timestamp)).toBe(true)
@@ -462,7 +462,7 @@ describe('BranchStore', () => {
 
         it('should not include branches whose remote still exists', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findStaleBranches()
+            await store.getDeletableBranches()
 
             // hotfix/cache-fix still exists on remote
             expect(store.staleBranches).not.toContain('bugfix/cache-invalidation')
@@ -507,7 +507,7 @@ describe('BranchStore', () => {
 
         it('should exclude all protected branches', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findStaleBranches()
+            await store.getDeletableBranches()
 
             for (const protectedBranch of store.protectedBranches) {
                 expect(store.safeToDelete).not.toContain(protectedBranch)
@@ -518,7 +518,7 @@ describe('BranchStore', () => {
 
         it('should not have duplicates in any group', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findStaleBranches()
+            await store.getDeletableBranches()
 
             const safeSet = new Set(store.safeToDelete)
             expect(safeSet.size).toBe(store.safeToDelete.length)
@@ -532,7 +532,7 @@ describe('BranchStore', () => {
 
         it('should have no overlap between groups', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findStaleBranches()
+            await store.getDeletableBranches()
 
             const forceSet = new Set(store.requiresForce)
             const infoSet = new Set(store.infoOnly)
@@ -595,7 +595,7 @@ describe('BranchStore', () => {
 
         it('should include time ago for all reason types', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findStaleBranches()
+            await store.getDeletableBranches()
 
             const safeReason = store.getSafeToDeleteReason('feature/user-avatars')
             expect(safeReason).toContain('last commit')
@@ -609,7 +609,7 @@ describe('BranchStore', () => {
 
         it('should handle branches not in staleBranches or neverPushed (fallback)', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findStaleBranches()
+            await store.getDeletableBranches()
 
             // A branch not in staleBranches or neverPushedBranches should return generic reason
             const reason = store.getSafeToDeleteReason('nonexistent-branch')
@@ -620,7 +620,7 @@ describe('BranchStore', () => {
 
         it('should handle missing timestamp gracefully', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findStaleBranches()
+            await store.getDeletableBranches()
 
             // Test with a branch that doesn't have a timestamp
             store.branchLastCommitTimes.delete('feature/user-avatars')
@@ -665,7 +665,7 @@ describe('BranchStore - formatTimeAgo (via reason methods)', () => {
 
     it('should format "just now" for timestamps less than 60 seconds ago', async () => {
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         const now = Math.floor(Date.now() / 1000)
         store.branchLastCommitTimes.set('test-branch', now - 30) // 30 seconds ago
@@ -677,7 +677,7 @@ describe('BranchStore - formatTimeAgo (via reason methods)', () => {
 
     it('should format minutes for timestamps 1-59 minutes ago', async () => {
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         const now = Math.floor(Date.now() / 1000)
         store.branchLastCommitTimes.set('test-branch', now - 5 * 60) // 5 minutes ago
@@ -689,7 +689,7 @@ describe('BranchStore - formatTimeAgo (via reason methods)', () => {
 
     it('should format hours for timestamps 1-23 hours ago', async () => {
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         const now = Math.floor(Date.now() / 1000)
         store.branchLastCommitTimes.set('test-branch', now - 3 * 60 * 60) // 3 hours ago
@@ -701,7 +701,7 @@ describe('BranchStore - formatTimeAgo (via reason methods)', () => {
 
     it('should format days for timestamps 1-6 days ago', async () => {
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         const now = Math.floor(Date.now() / 1000)
         store.branchLastCommitTimes.set('test-branch', now - 4 * 24 * 60 * 60) // 4 days ago
@@ -713,7 +713,7 @@ describe('BranchStore - formatTimeAgo (via reason methods)', () => {
 
     it('should format weeks for timestamps 1-4 weeks ago', async () => {
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         const now = Math.floor(Date.now() / 1000)
         store.branchLastCommitTimes.set('test-branch', now - 2 * 7 * 24 * 60 * 60) // 2 weeks ago
@@ -725,7 +725,7 @@ describe('BranchStore - formatTimeAgo (via reason methods)', () => {
 
     it('should format months for timestamps 1-11 months ago', async () => {
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         const now = Math.floor(Date.now() / 1000)
         // Approximately 3 months ago
@@ -738,7 +738,7 @@ describe('BranchStore - formatTimeAgo (via reason methods)', () => {
 
     it('should format years for timestamps 1+ years ago', async () => {
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         const now = Math.floor(Date.now() / 1000)
         // Approximately 2 years ago
@@ -751,7 +751,7 @@ describe('BranchStore - formatTimeAgo (via reason methods)', () => {
 
     it('should handle edge case at exactly 1 minute', async () => {
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         const now = Math.floor(Date.now() / 1000)
         store.branchLastCommitTimes.set('test-branch', now - 60) // exactly 1 minute
@@ -763,7 +763,7 @@ describe('BranchStore - formatTimeAgo (via reason methods)', () => {
 
     it('should handle edge case at exactly 1 hour', async () => {
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         const now = Math.floor(Date.now() / 1000)
         store.branchLastCommitTimes.set('test-branch', now - 60 * 60) // exactly 1 hour
@@ -775,7 +775,7 @@ describe('BranchStore - formatTimeAgo (via reason methods)', () => {
 
     it('should handle edge case at exactly 1 day', async () => {
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         const now = Math.floor(Date.now() / 1000)
         store.branchLastCommitTimes.set('test-branch', now - 24 * 60 * 60) // exactly 1 day
@@ -787,7 +787,7 @@ describe('BranchStore - formatTimeAgo (via reason methods)', () => {
 
     it('should handle edge case at exactly 1 week', async () => {
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         const now = Math.floor(Date.now() / 1000)
         store.branchLastCommitTimes.set('test-branch', now - 7 * 24 * 60 * 60) // exactly 1 week
@@ -871,7 +871,7 @@ describe('BranchStore - deletion tests (isolated repo)', () => {
 
     it('should handle deletion of deeply nested branch names', async () => {
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         store.setQueuedForDeletion(['feature/payments/stripe/webhooks'], [])
 
@@ -887,7 +887,7 @@ describe('BranchStore - deletion tests (isolated repo)', () => {
         process.chdir(freshWorkingDir)
 
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         // Queue both safe and force branches
         store.setQueuedForDeletion(['feature/user-avatars', 'feature/search-filters'], ['experiment/graphql-api'])
@@ -905,7 +905,7 @@ describe('BranchStore - deletion tests (isolated repo)', () => {
         process.chdir(freshWorkingDir)
 
         const store = new BranchStore({ remote: 'origin' })
-        await store.findStaleBranches()
+        await store.getDeletableBranches()
 
         // Mix valid and invalid branches
         store.setQueuedForDeletion(
@@ -966,9 +966,9 @@ describe('BranchStore - preprocess integration', () => {
         store.remoteBranches = ['old-remote']
         store.localOrphanedBranches = [{ localBranch: 'old', remoteBranch: 'old' }]
         store.staleBranches = ['old-stale']
-        store.liveBranches = ['old-live']
-        store.unmergedBranches = ['old-unmerged']
-        store.neverPushedBranches = ['old-never']
+        store.liveBranches = new Set(['old-live'])
+        store.unmergedBranches = new Set(['old-unmerged'])
+        store.neverPushedBranches = new Set(['old-never'])
         store.mergedBranches = ['old-merged']
         store.safeToDelete = ['old-safe']
         store.requiresForce = ['old-force']
@@ -998,7 +998,7 @@ describe('BranchStore - preprocess integration', () => {
         expect(store.currentBranch).toBe('main')
         expect(store.allBranches.length).toBeGreaterThan(0)
         expect(store.remoteBranches.length).toBeGreaterThan(0)
-        expect(store.liveBranches.length).toBeGreaterThan(0)
+        expect(store.liveBranches.size).toBeGreaterThan(0)
         expect(store.branchLastCommitTimes.size).toBeGreaterThan(0)
     })
 
@@ -1058,10 +1058,10 @@ describe('BranchStore - edge cases and boundary conditions', () => {
             // Manually set up empty state
             store.staleBranches = []
             store.mergedBranches = []
-            store.unmergedBranches = []
-            store.neverPushedBranches = []
+            store.unmergedBranches = new Set()
+            store.neverPushedBranches = new Set()
             store.localOrphanedBranches = []
-            store.liveBranches = []
+            store.liveBranches = new Set()
             store.currentBranch = 'main'
 
             // Should not throw
@@ -1078,10 +1078,10 @@ describe('BranchStore - edge cases and boundary conditions', () => {
             store.currentBranch = 'feature-branch'
             store.staleBranches = ['feature-branch']
             store.mergedBranches = ['feature-branch']
-            store.unmergedBranches = []
-            store.neverPushedBranches = ['feature-branch']
+            store.unmergedBranches = new Set([])
+            store.neverPushedBranches = new Set(['feature-branch'])
             store.localOrphanedBranches = [{ localBranch: 'feature-branch', remoteBranch: 'other' }]
-            store.liveBranches = ['other']
+            store.liveBranches = new Set(['other'])
 
             store.classifyBranches()
 
@@ -1096,10 +1096,10 @@ describe('BranchStore - edge cases and boundary conditions', () => {
             store.currentBranch = 'other'
             store.staleBranches = ['main', 'master', 'develop', 'development']
             store.mergedBranches = ['main', 'master', 'develop', 'development']
-            store.unmergedBranches = []
-            store.neverPushedBranches = []
+            store.unmergedBranches = new Set([])
+            store.neverPushedBranches = new Set([])
             store.localOrphanedBranches = []
-            store.liveBranches = []
+            store.liveBranches = new Set([])
 
             store.classifyBranches()
 
@@ -1115,11 +1115,11 @@ describe('BranchStore - edge cases and boundary conditions', () => {
             store.currentBranch = 'main'
             // This shouldn't happen in reality, but test deduplication
             store.staleBranches = ['duplicate-branch']
-            store.neverPushedBranches = ['duplicate-branch']
+            store.neverPushedBranches = new Set(['duplicate-branch'])
             store.mergedBranches = ['duplicate-branch']
-            store.unmergedBranches = []
+            store.unmergedBranches = new Set([])
             store.localOrphanedBranches = []
-            store.liveBranches = []
+            store.liveBranches = new Set([])
 
             store.classifyBranches()
 
@@ -1174,7 +1174,7 @@ describe('BranchStore - edge cases and boundary conditions', () => {
 
             store.findNeverPushedBranches()
 
-            expect(store.neverPushedBranches).toEqual([])
+            expect(store.neverPushedBranches.size).toBe(0)
         })
 
         it('should handle only tracked branches', () => {
@@ -1183,7 +1183,7 @@ describe('BranchStore - edge cases and boundary conditions', () => {
 
             store.findNeverPushedBranches()
 
-            expect(store.neverPushedBranches).toEqual([])
+            expect(store.neverPushedBranches.size).toBe(0)
         })
 
         it('should handle only untracked branches', () => {
@@ -1203,7 +1203,7 @@ describe('BranchStore - edge cases and boundary conditions', () => {
             store.findNeverPushedBranches()
 
             // Empty branch name should be skipped
-            expect(store.neverPushedBranches).toEqual([])
+            expect(store.neverPushedBranches.size).toBe(0)
         })
     })
 
@@ -1211,7 +1211,7 @@ describe('BranchStore - edge cases and boundary conditions', () => {
         it('should handle branch with no timestamp in branchLastCommitTimes', async () => {
             const store = new BranchStore({ remote: 'origin' })
             store.staleBranches = ['no-timestamp-branch']
-            store.neverPushedBranches = []
+            store.neverPushedBranches = new Set([])
             store.branchLastCommitTimes = new Map()
 
             const reason = store.getSafeToDeleteReason('no-timestamp-branch')
@@ -1222,7 +1222,7 @@ describe('BranchStore - edge cases and boundary conditions', () => {
         it('should prefer staleBranches over neverPushedBranches for reason', () => {
             const store = new BranchStore({ remote: 'origin' })
             store.staleBranches = ['both-branch']
-            store.neverPushedBranches = ['both-branch']
+            store.neverPushedBranches = new Set(['both-branch'])
             store.branchLastCommitTimes = new Map()
 
             const reason = store.getSafeToDeleteReason('both-branch')
@@ -1232,7 +1232,7 @@ describe('BranchStore - edge cases and boundary conditions', () => {
         it('should return generic merged for unknown branch', () => {
             const store = new BranchStore({ remote: 'origin' })
             store.staleBranches = []
-            store.neverPushedBranches = []
+            store.neverPushedBranches = new Set([])
             store.branchLastCommitTimes = new Map()
 
             const reason = store.getSafeToDeleteReason('unknown-branch')
@@ -1242,7 +1242,7 @@ describe('BranchStore - edge cases and boundary conditions', () => {
         it('should return generic unmerged for unknown force branch', () => {
             const store = new BranchStore({ remote: 'origin' })
             store.staleBranches = []
-            store.neverPushedBranches = []
+            store.neverPushedBranches = new Set([])
             store.branchLastCommitTimes = new Map()
 
             const reason = store.getRequiresForceReason('unknown-branch')
@@ -1276,10 +1276,10 @@ describe('BranchStore - comprehensive classifyBranches scenarios', () => {
         store.currentBranch = 'main'
         store.staleBranches = ['stale-merged']
         store.mergedBranches = ['stale-merged', 'main']
-        store.unmergedBranches = []
-        store.neverPushedBranches = []
+        store.unmergedBranches = new Set([])
+        store.neverPushedBranches = new Set([])
         store.localOrphanedBranches = []
-        store.liveBranches = []
+        store.liveBranches = new Set([])
 
         store.classifyBranches()
 
@@ -1293,10 +1293,10 @@ describe('BranchStore - comprehensive classifyBranches scenarios', () => {
         store.currentBranch = 'main'
         store.staleBranches = ['stale-unmerged']
         store.mergedBranches = ['main']
-        store.unmergedBranches = ['stale-unmerged']
-        store.neverPushedBranches = []
+        store.unmergedBranches = new Set(['stale-unmerged'])
+        store.neverPushedBranches = new Set([])
         store.localOrphanedBranches = []
-        store.liveBranches = []
+        store.liveBranches = new Set([])
 
         store.classifyBranches()
 
@@ -1310,10 +1310,10 @@ describe('BranchStore - comprehensive classifyBranches scenarios', () => {
         store.currentBranch = 'main'
         store.staleBranches = []
         store.mergedBranches = ['local-merged', 'main']
-        store.unmergedBranches = []
-        store.neverPushedBranches = ['local-merged']
+        store.unmergedBranches = new Set([])
+        store.neverPushedBranches = new Set(['local-merged'])
         store.localOrphanedBranches = []
-        store.liveBranches = []
+        store.liveBranches = new Set([])
 
         store.classifyBranches()
 
@@ -1327,10 +1327,10 @@ describe('BranchStore - comprehensive classifyBranches scenarios', () => {
         store.currentBranch = 'main'
         store.staleBranches = []
         store.mergedBranches = ['main']
-        store.unmergedBranches = ['local-unmerged']
-        store.neverPushedBranches = ['local-unmerged']
+        store.unmergedBranches = new Set(['local-unmerged'])
+        store.neverPushedBranches = new Set(['local-unmerged'])
         store.localOrphanedBranches = []
-        store.liveBranches = []
+        store.liveBranches = new Set([])
 
         store.classifyBranches()
 
@@ -1344,10 +1344,10 @@ describe('BranchStore - comprehensive classifyBranches scenarios', () => {
         store.currentBranch = 'main'
         store.staleBranches = []
         store.mergedBranches = ['main']
-        store.unmergedBranches = []
-        store.neverPushedBranches = []
+        store.unmergedBranches = new Set([])
+        store.neverPushedBranches = new Set([])
         store.localOrphanedBranches = [{ localBranch: 'local-name', remoteBranch: 'remote-name' }]
-        store.liveBranches = ['remote-name']
+        store.liveBranches = new Set(['remote-name'])
 
         store.classifyBranches()
 
@@ -1362,10 +1362,10 @@ describe('BranchStore - comprehensive classifyBranches scenarios', () => {
         store.currentBranch = 'main'
         store.staleBranches = []
         store.mergedBranches = ['main', 'same-name']
-        store.unmergedBranches = []
-        store.neverPushedBranches = []
+        store.unmergedBranches = new Set([])
+        store.neverPushedBranches = new Set([])
         store.localOrphanedBranches = [{ localBranch: 'same-name', remoteBranch: 'same-name' }]
-        store.liveBranches = ['same-name']
+        store.liveBranches = new Set(['same-name'])
 
         store.classifyBranches()
 
@@ -1378,10 +1378,10 @@ describe('BranchStore - comprehensive classifyBranches scenarios', () => {
         store.currentBranch = 'main'
         store.staleBranches = ['main']
         store.mergedBranches = ['main']
-        store.unmergedBranches = []
-        store.neverPushedBranches = []
+        store.unmergedBranches = new Set([])
+        store.neverPushedBranches = new Set([])
         store.localOrphanedBranches = []
-        store.liveBranches = []
+        store.liveBranches = new Set([])
 
         store.classifyBranches()
 
@@ -1396,10 +1396,10 @@ describe('BranchStore - comprehensive classifyBranches scenarios', () => {
         store.currentBranch = 'other'
         store.staleBranches = ['master']
         store.mergedBranches = ['master', 'other']
-        store.unmergedBranches = []
-        store.neverPushedBranches = []
+        store.unmergedBranches = new Set([])
+        store.neverPushedBranches = new Set([])
         store.localOrphanedBranches = []
-        store.liveBranches = []
+        store.liveBranches = new Set([])
 
         store.classifyBranches()
 
@@ -1414,13 +1414,13 @@ describe('BranchStore - comprehensive classifyBranches scenarios', () => {
         store.currentBranch = 'main'
         store.staleBranches = ['stale1', 'stale2', 'stale3']
         store.mergedBranches = ['main', 'stale1', 'stale2', 'local1']
-        store.unmergedBranches = ['stale3', 'local2']
-        store.neverPushedBranches = ['local1', 'local2']
+        store.unmergedBranches = new Set(['stale3', 'local2'])
+        store.neverPushedBranches = new Set(['local1', 'local2'])
         store.localOrphanedBranches = [
             { localBranch: 'renamed1', remoteBranch: 'live1' },
             { localBranch: 'renamed2', remoteBranch: 'live2' },
         ]
-        store.liveBranches = ['live1', 'live2']
+        store.liveBranches = new Set(['live1', 'live2'])
 
         store.classifyBranches()
 
@@ -1500,7 +1500,7 @@ describe('BranchStore - error handling', () => {
     })
 })
 
-describe('BranchStore - findStaleBranches return value', () => {
+describe('BranchStore - getDeletableBranches return value', () => {
     let originalCwd: string
 
     beforeAll(() => {
@@ -1519,7 +1519,7 @@ describe('BranchStore - findStaleBranches return value', () => {
         process.chdir(workingDir)
 
         const store = new BranchStore({ remote: 'origin' })
-        const result = await store.findStaleBranches()
+        const result = await store.getDeletableBranches()
 
         expect(Array.isArray(result)).toBe(true)
         expect(result).toBe(store.staleBranches)
@@ -1533,7 +1533,7 @@ describe('BranchStore - findStaleBranches return value', () => {
 
         // With a nonexistent remote, we can't get stale branches properly
         // but the function should still return an array
-        const result = await store.findStaleBranches()
+        const result = await store.getDeletableBranches()
 
         expect(Array.isArray(result)).toBe(true)
     })
@@ -1571,13 +1571,13 @@ describe('BranchStore - concurrent operations safety', () => {
         expect(firstStaleBranches.sort()).toEqual(secondStaleBranches.sort())
     })
 
-    it('should handle multiple findStaleBranches calls', async () => {
+    it('should handle multiple getDeletableBranches calls', async () => {
         const workingDir = testSetup()
         process.chdir(workingDir)
 
         const store = new BranchStore({ remote: 'origin' })
 
-        const results = await Promise.all([store.findStaleBranches(), store.findStaleBranches()])
+        const results = await Promise.all([store.getDeletableBranches(), store.getDeletableBranches()])
 
         // Both calls should complete (though state may be inconsistent due to races)
         expect(Array.isArray(results[0])).toBe(true)

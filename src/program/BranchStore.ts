@@ -319,7 +319,7 @@ export default class BranchStore {
         })
     }
 
-    private classifyBranches() {
+    classifyBranches() {
         // Group 1: Safe to delete (pre-selected)
         const seen1 = new Set<string>()
         this.safeToDelete = [
