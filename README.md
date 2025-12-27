@@ -27,7 +27,7 @@ The tool automatically fetches and prunes from your remote before showing branch
 npm install -g git-prune-branches
 ```
 
-Recommened: install the package globally with `-g` flag so that you can use it directly as a sub command of git, like this:
+Recommended: install the package globally with `-g` flag so that you can use it directly as a sub command of git, like this:
 
 ```bash
 git prune-branches
