@@ -44,7 +44,7 @@ export const testSetup = () => {
     // create initial commit
     writeFileSync(file, 'lolipop content')
     child_process.execSync('git add lolipop', { cwd: workingDir })
-    child_process.execSync('git commit -m "inital commit"', { cwd: workingDir })
+    child_process.execSync('git commit -m "initial commit"', { cwd: workingDir })
 
     // create new branch, which will be deleted by -d flag
     child_process.execSync('git branch alpha/pushed-then-deleted-from-remote--no-commits', { cwd: workingDir })
