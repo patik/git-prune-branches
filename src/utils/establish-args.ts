@@ -1,8 +1,9 @@
 import minimist, { ParsedArgs } from 'minimist'
 import { exit } from 'node:process'
 import pkg from '../../package.json' with { type: 'json' }
+import { defaultProtectedBranches, defaultRemote } from '../program/constants.js'
 
-const options = ['version', 'remote', 'r', '_']
+const options = ['version', 'remote', 'r', '_', 'protected']
 
 export function establishArgs(): ParsedArgs {
     const argv = minimist(process.argv, {
@@ -10,7 +11,8 @@ export function establishArgs(): ParsedArgs {
         boolean: ['version'],
         alias: { r: 'remote' },
         default: {
-            remote: 'origin',
+            remote: defaultRemote,
+            protected: defaultProtectedBranches,
         },
     })
 

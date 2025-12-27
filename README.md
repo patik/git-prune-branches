@@ -11,13 +11,15 @@ Addresses common questions, like:
 
 ## What does it do?
 
-This command will automatically run `git fetch --prune` to sync with your remote, then compare your local branches and show you an interactive list of branches organized into three categories:
+This command will automatically fetch and prune from your remote, then display an interactive selection of branches to delete organized into three groups:
 
-- **Safe to delete**: Branches that are merged and can be safely removed without `--force`
-- **Requires force delete**: Unmerged branches that need `--force` to delete (not pre-selected for safety)
-- **Info only**: Renamed branches that still exist on remote (shown for context)
+1. **Safe to delete** (pre-selected) - Merged branches that were deleted from remote, or local merged branches that were never pushed
+2. **Requires force delete** (not pre-selected) - Unmerged branches with commits that need `--force` to delete
+3. **Info only** - Renamed branches that still exist on remote (shown for context, cannot be deleted)
 
-<img width="449" alt="Prompt with list of branches, allowing arbitrary selection" src="https://github.com/user-attachments/assets/705d10ff-733e-449d-832a-94cef66e08c6" />
+After selecting branches, you'll see a preview of the exact git commands that will be executed before confirming the deletion.
+
+<img width="938" height="504" alt="" src="https://github.com/user-attachments/assets/c35fe088-0368-4d2b-9a68-2970ccc43a14" />
 
 The tool automatically fetches and prunes from your remote before showing branches, ensuring you always have up-to-date information. A working network connection to your remote is required. If no connection can be established, cached local information will be used instead.
 
@@ -41,21 +43,11 @@ It's possible to use the package via `npx` without installing:
 npx git-prune-branches
 ```
 
-Or if you install it with `npm install -g git-prune-branches`, you can use this git alias:
+When installed globally with `npm install -g git-prune-branches`, you can use this git alias:
 
 ```bash
 git prune-branches
 ```
-
-This command will automatically fetch and prune from your remote, then display an interactive selection of branches to delete organized into three groups:
-
-1. **Safe to delete** (pre-selected) - Merged branches that were deleted from remote, or local merged branches that were never pushed
-2. **Requires force delete** (not pre-selected) - Unmerged branches with commits that need `--force` to delete
-3. **Info only** - Renamed branches that still exist on remote (shown for context, cannot be deleted)
-
-After selecting branches, you'll see a preview of the exact git commands that will be executed before confirming the deletion.
-
-<img width="1222" alt="Confirmation prompt" src="https://github.com/user-attachments/assets/0cf75cb7-af8d-43c6-81a1-3160ab7f48f3" />
 
 ### Custom remote
 
@@ -64,6 +56,16 @@ If you have configured remote alias to something different than **'origin'**, yo
 ```bash
 git prune-branches --remote upstream
 ```
+
+### Custom protected branches
+
+If you want to completely avoid deleting certain branches, you can define the branch names using the `--protected` flag. For example, to skip the `develop` and `release` branches, you can use:
+
+```bash
+git prune-branches --protected develop,release
+```
+
+If `--protected` is not specified, `git-prune-branches` will assume that branches named `main`, `master`, `develop`, and `development` should be protected.
 
 ## Version
 
@@ -84,6 +86,8 @@ NODE_MAX_BUFFER=1048576 git prune-branches
 ```
 
 ## Development
+
+Note that `pnpm` is recommended for development since some scripts us `pnpx` internally.
 
 ### Running
 
@@ -121,7 +125,7 @@ pnpm build
 ### Version 2.0.0
 
 - Removed flags: `--dry-run`, `--prune-all`, `--force`, and `--yes`
-    - This is a visual, interactive app. If you're looking for automation, consider another package such as [git-removed-branches](https://github.com/nemisj/git-removed-branches)
+    - `git-prune-branches` is meant to be a visual, interactive app. If you're looking for automation, consider another package such as [git-removed-branches](https://github.com/nemisj/git-removed-branches)
 
 ## Credit
 

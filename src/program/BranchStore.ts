@@ -3,6 +3,7 @@ import ora from 'ora'
 import stdout, { stdoutFile } from 'simple-stdout'
 import { formatTimeAgo } from '../utils/formatTimeAgo.js'
 import split from '../utils/split.js'
+import { defaultProtectedBranches, defaultRemote } from './constants.js'
 
 class RemoteError extends Error {
     code = 1984
@@ -65,7 +66,7 @@ export default class BranchStore {
     /**
      * Map of branch name to last commit timestamp (seconds since epoch)
      */
-    branchLastCommitTimes: Map<string, number>
+    lastCommitTimes: Map<string, number>
 
     /**
      * These are the branches that the app will offer to delete
@@ -83,8 +84,8 @@ export default class BranchStore {
 
     noConnection: boolean
 
-    constructor(ops: { remote: string }) {
-        this.remote = ops.remote
+    constructor(ops: { remote?: string; protected?: string } = {}) {
+        this.remote = ops.remote ?? defaultRemote
         this.remoteBranches = []
         this.localOrphanedBranches = []
         this.staleBranches = []
@@ -94,13 +95,13 @@ export default class BranchStore {
         this.liveBranches = new Set()
         this.unmergedBranches = new Set()
         this.currentBranch = ''
-        this.protectedBranches = new Set(['main', 'master', 'develop', 'development'])
+        this.protectedBranches = new Set((ops.protected ?? defaultProtectedBranches).split(',').map((b) => b.trim()))
         this.neverPushedBranches = new Set()
         this.mergedBranches = []
         this.safeToDelete = []
         this.requiresForce = []
         this.infoOnly = []
-        this.branchLastCommitTimes = new Map()
+        this.lastCommitTimes = new Map()
         this.noConnection = false
         this.allBranches = []
     }
@@ -125,7 +126,9 @@ export default class BranchStore {
         this.noConnection = false
 
         // Gather all the information
-        // Run potentially conflicting git operations in a controlled order to avoid lock contention
+
+        // Run potentially conflicting git operations in a controlled fashion to avoid lock contention
+        // The order isn't too important, but they shouldn't run simultaneously
         await this.fetchRemote()
         await this.getCurrentBranch()
         await this.findAllBranches()
@@ -314,7 +317,7 @@ export default class BranchStore {
         lines.forEach((line) => {
             const [branchName, timestamp] = line.split('|')
             if (branchName && timestamp) {
-                this.branchLastCommitTimes.set(branchName, parseInt(timestamp, 10))
+                this.lastCommitTimes.set(branchName, parseInt(timestamp, 10))
             }
         })
     }
@@ -365,7 +368,7 @@ export default class BranchStore {
      * Get a short reason why a branch is in the safe-to-delete category
      */
     public getSafeToDeleteReason(branch: string): string {
-        const timestamp = this.branchLastCommitTimes.get(branch)
+        const timestamp = this.lastCommitTimes.get(branch)
         const timeAgo = timestamp ? `; last commit ${formatTimeAgo(timestamp)}` : ''
 
         if (this.staleBranches.includes(branch)) {
@@ -383,7 +386,7 @@ export default class BranchStore {
      * Get a short reason why a branch requires force delete
      */
     public getRequiresForceReason(branch: string): string {
-        const timestamp = this.branchLastCommitTimes.get(branch)
+        const timestamp = this.lastCommitTimes.get(branch)
         const timeAgo = timestamp ? `; last commit ${formatTimeAgo(timestamp)}` : ''
 
         if (this.staleBranches.includes(branch)) {
@@ -401,7 +404,7 @@ export default class BranchStore {
      * Get a short reason why a branch is info-only
      */
     public getInfoOnlyReason(branch: string): string {
-        const timestamp = this.branchLastCommitTimes.get(branch)
+        const timestamp = this.lastCommitTimes.get(branch)
         const timeAgo = timestamp ? `; last commit ${formatTimeAgo(timestamp)}` : ''
 
         return `renamed locally${timeAgo}`

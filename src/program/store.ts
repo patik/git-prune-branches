@@ -5,4 +5,5 @@ const argv = establishArgs()
 
 export default new BranchStore({
     remote: argv.remote,
+    protected: argv.protected,
 })
