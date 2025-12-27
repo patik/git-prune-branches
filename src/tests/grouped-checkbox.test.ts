@@ -1,5 +1,5 @@
 import groupedCheckbox from 'inquirer-grouped-checkbox'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { confirmDeletion, type ConfirmResult } from '../program/confirm-deletion.js'
 import { executeDeletions } from '../program/execute-deletions.js'
 import { selectBranches } from '../program/select-branches.js'
@@ -18,14 +18,51 @@ vi.mock('node:process', async () => {
 
 // Store the mock result for the custom confirm prompt
 let mockConfirmResult: ConfirmResult = 'cancel'
+let mockKeypressHandler: ((str: string | undefined, key: { name: string; ctrl?: boolean }) => void) | null = null
 
-// Mock @inquirer/core's createPrompt to return our controlled result
-vi.mock('@inquirer/core', () => ({
-    createPrompt: () => async () => mockConfirmResult,
-    useState: vi.fn(() => ['pending', vi.fn()]),
-    useKeypress: vi.fn(),
-    isEnterKey: vi.fn(),
-}))
+// Mock node:readline to control keypress events
+vi.mock('node:readline', async () => {
+    const actual = await vi.importActual('node:readline')
+    return {
+        ...actual,
+        createInterface: vi.fn(() => ({
+            close: vi.fn(),
+        })),
+        emitKeypressEvents: vi.fn(),
+    }
+})
+
+// Mock process.stdin to capture keypress handler and simulate keypresses
+const originalStdin = process.stdin
+beforeAll(() => {
+    // @ts-expect-error - mocking stdin methods
+    process.stdin.on = vi.fn((event: string, handler: typeof mockKeypressHandler) => {
+        if (event === 'keypress') {
+            mockKeypressHandler = handler
+            // Simulate the keypress based on mockConfirmResult
+            setImmediate(() => {
+                if (mockKeypressHandler) {
+                    if (mockConfirmResult === 'confirm') {
+                        mockKeypressHandler(undefined, { name: 'y' })
+                    } else if (mockConfirmResult === 'cancel') {
+                        mockKeypressHandler(undefined, { name: 'n' })
+                    } else if (mockConfirmResult === 'back') {
+                        mockKeypressHandler(undefined, { name: 'escape' })
+                    }
+                }
+            })
+        }
+        return process.stdin
+    })
+    process.stdin.removeListener = vi.fn(() => process.stdin) as typeof process.stdin.removeListener
+    process.stdin.setRawMode = vi.fn(() => process.stdin) as typeof process.stdin.setRawMode
+    Object.defineProperty(process.stdin, 'isTTY', { value: true, writable: true })
+})
+
+afterAll(() => {
+    process.stdin.on = originalStdin.on
+    process.stdin.removeListener = originalStdin.removeListener
+})
 
 vi.mock('inquirer-grouped-checkbox', () => ({
     default: vi.fn(),

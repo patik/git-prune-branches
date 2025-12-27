@@ -1,4 +1,4 @@
-import { createPrompt, isEnterKey, useKeypress, useState } from '@inquirer/core'
+import * as readline from 'node:readline'
 import { dim, gray, green, red } from '../utils/colors.js'
 
 /** Result of the confirmation prompt */
@@ -19,33 +19,64 @@ function displayBranchName(branch: string): string {
 
 /**
  * Custom confirm prompt that supports Escape key to go back.
- * Returns 'confirm' for yes, 'cancel' for no, 'back' for escape.
+ * Uses a low escapeCodeTimeout for responsive Escape key handling.
  */
-const confirmWithEscape = createPrompt<ConfirmResult, { message: string }>((config, done) => {
-    const [status, setStatus] = useState<'pending' | 'done'>('pending')
-
-    useKeypress((key) => {
-        if (key.name === 'escape') {
-            setStatus('done')
-            done('back')
-        } else if (key.name === 'y') {
-            setStatus('done')
-            done('confirm')
-        } else if (key.name === 'n' || isEnterKey(key)) {
-            // Default to 'no' on Enter or explicit 'n'
-            setStatus('done')
-            done('cancel')
-        }
-    })
-
+async function confirmWithEscape(message: string): Promise<ConfirmResult> {
     const hint = gray('(y/N, Esc to go back)')
+    process.stdout.write(`? ${message} ${hint} `)
 
-    if (status === 'done') {
-        return ''
-    }
+    return new Promise((resolve) => {
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+            terminal: true,
+            escapeCodeTimeout: 50, // Low timeout for fast Escape key response
+        })
 
-    return `? ${config.message} ${hint} `
-})
+        // Enable raw mode to get individual keypresses
+        if (process.stdin.isTTY) {
+            process.stdin.setRawMode(true)
+        }
+
+        const cleanup = () => {
+            if (process.stdin.isTTY) {
+                process.stdin.setRawMode(false)
+            }
+            rl.close()
+            process.stdout.write('\n')
+        }
+
+        const handler = (_str: string | undefined, key: readline.Key | undefined) => {
+            if (!key) {
+                return
+            }
+
+            if (key.name === 'escape') {
+                process.stdin.removeListener('keypress', handler)
+                cleanup()
+                resolve('back')
+            } else if (key.name === 'y') {
+                process.stdin.removeListener('keypress', handler)
+                cleanup()
+                resolve('confirm')
+            } else if (key.name === 'n' || key.name === 'return') {
+                process.stdin.removeListener('keypress', handler)
+                cleanup()
+                resolve('cancel')
+            } else if (key.name === 'c' && key.ctrl) {
+                // Handle Ctrl+C
+                process.stdin.removeListener('keypress', handler)
+                cleanup()
+                process.exit(0)
+            }
+        }
+
+        process.stdin.on('keypress', handler)
+
+        // Emit keypress events
+        readline.emitKeypressEvents(process.stdin, rl)
+    })
+}
 
 /**
  * Display a confirmation screen showing the commands that will be executed.
@@ -73,7 +104,5 @@ export async function confirmDeletion(safe: string[], force: string[]): Promise<
 
     const total = safe.length + force.length
 
-    return confirmWithEscape({
-        message: `Delete ${total} branch${total === 1 ? '' : 'es'}?`,
-    })
+    return confirmWithEscape(`Delete ${total} branch${total === 1 ? '' : 'es'}?`)
 }
