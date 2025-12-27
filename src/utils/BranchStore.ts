@@ -1,4 +1,4 @@
-import { execFileSync, execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import ora from 'ora'
 import stdout from 'simple-stdout'
 import split from './split.js'
@@ -115,7 +115,7 @@ export default class BranchStore {
         // Auto-prune: fetch and prune from remote
         const spinner = ora('Fetching from remote...').start()
         try {
-            execSync(`git fetch ${this.remote} --prune`)
+            execFileSync('git', ['fetch', this.remote, '--prune'])
             spinner.succeed('Fetched from remote')
         } catch (err) {
             spinner.warn('Could not fetch from remote (will use cached data)')
