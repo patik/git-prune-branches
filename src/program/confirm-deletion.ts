@@ -18,10 +18,22 @@ function displayBranchName(branch: string): string {
 }
 
 /**
+ * Clear N lines from the terminal by moving cursor up and clearing each line.
+ */
+function clearLines(count: number): void {
+    for (let i = 0; i < count; i++) {
+        // Move cursor up one line and clear the entire line
+        process.stdout.write('\x1b[1A\x1b[2K')
+    }
+}
+
+/**
  * Custom confirm prompt that supports Escape key to go back.
  * Uses a low escapeCodeTimeout for responsive Escape key handling.
+ * @param message - The confirmation message to display
+ * @param linesToClear - Number of lines to clear if user goes back
  */
-async function confirmWithEscape(message: string): Promise<ConfirmResult> {
+async function confirmWithEscape(message: string, linesToClear: number): Promise<ConfirmResult> {
     const hint = gray('(y/N, Esc to go back)')
     process.stdout.write(`? ${message} ${hint} `)
 
@@ -38,12 +50,19 @@ async function confirmWithEscape(message: string): Promise<ConfirmResult> {
             process.stdin.setRawMode(true)
         }
 
-        const cleanup = () => {
+        const cleanup = (clearOutput: boolean = false) => {
             if (process.stdin.isTTY) {
                 process.stdin.setRawMode(false)
             }
             rl.close()
-            process.stdout.write('\n')
+
+            if (clearOutput) {
+                // Clear the prompt line first, then all the output lines
+                process.stdout.write('\x1b[2K\r') // Clear current line
+                clearLines(linesToClear)
+            } else {
+                process.stdout.write('\n')
+            }
         }
 
         const handler = (_str: string | undefined, key: readline.Key | undefined) => {
@@ -53,7 +72,7 @@ async function confirmWithEscape(message: string): Promise<ConfirmResult> {
 
             if (key.name === 'escape') {
                 process.stdin.removeListener('keypress', handler)
-                cleanup()
+                cleanup(true) // Clear output when going back
                 resolve('back')
             } else if (key.name === 'y') {
                 process.stdin.removeListener('keypress', handler)
@@ -88,21 +107,36 @@ export async function confirmDeletion(safe: string[], force: string[]): Promise<
         return 'cancel'
     }
 
+    // Count lines as we print them (for clearing on 'back')
+    let lineCount = 0
+
+    // Header: "\n" + text + "\n" = 3 lines
     console.log(`\nThe following commands will be executed:\n`)
+    lineCount += 3
 
     if (safe.length > 0) {
         console.log(green(`Safely delete ${safe.length} branch${safe.length === 1 ? '' : 'es'}:`))
-        safe.forEach((branch) => console.log(dim(`  git branch -d ${displayBranchName(branch)}`)))
+        lineCount += 1
+        safe.forEach((branch) => {
+            console.log(dim(`  git branch -d ${displayBranchName(branch)}`))
+            lineCount += 1
+        })
         console.log('')
+        lineCount += 1
     }
 
     if (force.length > 0) {
         console.log(red(`Force delete ${force.length} branch${force.length === 1 ? '' : 'es'}:`))
-        force.forEach((branch) => console.log(dim(`  git branch -D ${displayBranchName(branch)}`)))
+        lineCount += 1
+        force.forEach((branch) => {
+            console.log(dim(`  git branch -D ${displayBranchName(branch)}`))
+            lineCount += 1
+        })
         console.log('')
+        lineCount += 1
     }
 
     const total = safe.length + force.length
 
-    return confirmWithEscape(`Delete ${total} branch${total === 1 ? '' : 'es'}?`)
+    return confirmWithEscape(`Delete ${total} branch${total === 1 ? '' : 'es'}?`, lineCount)
 }
