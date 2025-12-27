@@ -3,11 +3,11 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import stripAnsi from 'strip-ansi'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { testSetup } from './manual/setup.js'
+import { testSetup } from './tests/manual/setup.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const bin = path.join(__dirname, '../../dist/index.js')
+const bin = path.join(__dirname, '../dist/index.js')
 
 /**
  * Helper to run interactive CLI tests with simulated user input

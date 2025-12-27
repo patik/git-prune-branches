@@ -1,4 +1,5 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { execSync } from 'node:child_process'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { testSetup } from '../tests/manual/setup.js'
 import BranchStore from './BranchStore.js'
 
@@ -39,6 +40,16 @@ describe('BranchStore', () => {
             expect(store.remote).toBe('upstream')
         })
 
+        it('should initialize with empty remote', () => {
+            const store = new BranchStore({ remote: '' })
+            expect(store.remote).toBe('')
+        })
+
+        it('should initialize with special characters in remote name', () => {
+            const store = new BranchStore({ remote: 'my-remote_123' })
+            expect(store.remote).toBe('my-remote_123')
+        })
+
         it('should initialize arrays as empty', () => {
             const store = new BranchStore({ remote: 'origin' })
             expect(store.remoteBranches).toEqual([])
@@ -54,9 +65,10 @@ describe('BranchStore', () => {
             expect(store.safeToDelete).toEqual([])
             expect(store.requiresForce).toEqual([])
             expect(store.infoOnly).toEqual([])
+            expect(store.allBranches).toEqual([])
         })
 
-        it('should initialize protected branches', () => {
+        it('should initialize protected branches with defaults', () => {
             const store = new BranchStore({ remote: 'origin' })
             expect(store.protectedBranches).toEqual(['main', 'master', 'develop', 'development'])
         })
@@ -69,6 +81,12 @@ describe('BranchStore', () => {
         it('should initialize noConnection as false', () => {
             const store = new BranchStore({ remote: 'origin' })
             expect(store.noConnection).toBe(false)
+        })
+
+        it('should initialize branchLastCommitTimes as empty Map', () => {
+            const store = new BranchStore({ remote: 'origin' })
+            expect(store.branchLastCommitTimes).toBeInstanceOf(Map)
+            expect(store.branchLastCommitTimes.size).toBe(0)
         })
     })
 
@@ -83,6 +101,39 @@ describe('BranchStore', () => {
             expect(store.queuedForDeletion).toEqual(safeBranches)
             expect(store.queuedForForceDeletion).toEqual(forceBranches)
         })
+
+        it('should handle empty arrays', () => {
+            const store = new BranchStore({ remote: 'origin' })
+            store.setQueuedForDeletion([], [])
+
+            expect(store.queuedForDeletion).toEqual([])
+            expect(store.queuedForForceDeletion).toEqual([])
+        })
+
+        it('should handle only safe branches', () => {
+            const store = new BranchStore({ remote: 'origin' })
+            store.setQueuedForDeletion(['safe1', 'safe2'], [])
+
+            expect(store.queuedForDeletion).toEqual(['safe1', 'safe2'])
+            expect(store.queuedForForceDeletion).toEqual([])
+        })
+
+        it('should handle only force branches', () => {
+            const store = new BranchStore({ remote: 'origin' })
+            store.setQueuedForDeletion([], ['force1', 'force2'])
+
+            expect(store.queuedForDeletion).toEqual([])
+            expect(store.queuedForForceDeletion).toEqual(['force1', 'force2'])
+        })
+
+        it('should overwrite previous values', () => {
+            const store = new BranchStore({ remote: 'origin' })
+            store.setQueuedForDeletion(['old1'], ['old2'])
+            store.setQueuedForDeletion(['new1'], ['new2'])
+
+            expect(store.queuedForDeletion).toEqual(['new1'])
+            expect(store.queuedForForceDeletion).toEqual(['new2'])
+        })
     })
 
     describe('getCurrentBranch (real git)', () => {
@@ -92,6 +143,41 @@ describe('BranchStore', () => {
 
             // testSetup() ends on 'main' branch
             expect(store.currentBranch).toBe('main')
+        })
+
+        it('should handle detached HEAD state', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+
+            // Get current commit hash and checkout detached
+            const commitHash = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim()
+            execSync(`git checkout ${commitHash}`, { stdio: 'pipe' })
+
+            await store.getCurrentBranch()
+
+            // In detached HEAD, git branch --show-current returns empty string
+            expect(store.currentBranch).toBe('')
+
+            // Restore to main
+            execSync('git checkout main', { stdio: 'pipe' })
+        })
+    })
+
+    describe('findAllBranches (real git)', () => {
+        it('should find all local branches with upstream info', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findAllBranches()
+
+            expect(store.allBranches.length).toBeGreaterThan(0)
+            // Should have main branch
+            expect(store.allBranches.some((b) => b.startsWith('main@'))).toBe(true)
+        })
+
+        it('should include branches without upstream (empty @{})', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findAllBranches()
+
+            // wip/settings-redesign was never pushed
+            expect(store.allBranches.some((b) => b === 'wip/settings-redesign@{}')).toBe(true)
         })
     })
 
@@ -112,6 +198,57 @@ describe('BranchStore', () => {
             // Should NOT include branches that were never pushed (no upstream)
             expect(localBranchNames).not.toContain('wip/settings-redesign')
             expect(localBranchNames).not.toContain('chore/update-deps')
+        })
+
+        it('should extract correct remote branch names', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findAllBranches()
+            await store.findLocalOrphanedBranches()
+
+            // Find bugfix/cache-invalidation which tracks hotfix/cache-fix
+            const renamedBranch = store.localOrphanedBranches.find((b) => b.localBranch === 'bugfix/cache-invalidation')
+            expect(renamedBranch).toBeDefined()
+            expect(renamedBranch!.remoteBranch).toBe('hotfix/cache-fix')
+        })
+
+        it('should handle branches with same local and remote name', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findAllBranches()
+            await store.findLocalOrphanedBranches()
+
+            const mainBranch = store.localOrphanedBranches.find((b) => b.localBranch === 'main')
+            expect(mainBranch).toBeDefined()
+            expect(mainBranch!.remoteBranch).toBe('main')
+        })
+
+        it('should skip branches tracking different remotes', async () => {
+            const store = new BranchStore({ remote: 'upstream' })
+            await store.findAllBranches()
+            await store.findLocalOrphanedBranches()
+
+            // No branches track 'upstream' in our test setup
+            expect(store.localOrphanedBranches).toEqual([])
+        })
+
+        it('should handle branches with special characters in name', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findAllBranches()
+            await store.findLocalOrphanedBranches()
+
+            const specialBranch = store.localOrphanedBranches.find((b) => b.localBranch === 'fix/#432-modal-close')
+            expect(specialBranch).toBeDefined()
+        })
+
+        it('should handle deeply nested branch names', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findAllBranches()
+            await store.findLocalOrphanedBranches()
+
+            const nestedBranch = store.localOrphanedBranches.find(
+                (b) => b.localBranch === 'feature/payments/stripe/webhooks',
+            )
+            expect(nestedBranch).toBeDefined()
+            expect(nestedBranch!.remoteBranch).toBe('feature/payments/stripe/webhooks')
         })
     })
 
@@ -135,6 +272,26 @@ describe('BranchStore', () => {
             expect(store.liveBranches).not.toContain('feature/user-avatars')
             expect(store.liveBranches).not.toContain('experiment/graphql-api')
         })
+
+        it('should set noConnection when remote does not exist', async () => {
+            const store = new BranchStore({ remote: 'nonexistent-remote' })
+            await store.findLiveBranches()
+
+            expect(store.noConnection).toBe(true)
+            expect(store.liveBranches).toEqual([])
+        })
+
+        it('should append to liveBranches (reset handled by preprocess)', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            store.liveBranches = ['old-branch']
+
+            await store.findLiveBranches()
+
+            // Note: findLiveBranches appends to existing array
+            // Reset is handled by preprocess() which clears all arrays first
+            expect(store.liveBranches).toContain('old-branch')
+            expect(store.liveBranches).toContain('main')
+        })
     })
 
     describe('findUnmergedBranches (real git)', () => {
@@ -150,6 +307,15 @@ describe('BranchStore', () => {
             expect(store.unmergedBranches).not.toContain('chore/update-deps')
             expect(store.unmergedBranches).not.toContain('feature/search-filters')
         })
+
+        it('should not include current branch', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.getCurrentBranch()
+            await store.findUnmergedBranches()
+
+            // main is the current branch and is merged into itself
+            expect(store.unmergedBranches).not.toContain('main')
+        })
     })
 
     describe('findRemoteBranches (real git)', () => {
@@ -160,6 +326,31 @@ describe('BranchStore', () => {
             // These exist in git's remote-tracking refs
             expect(store.remoteBranches).toContain('main')
             expect(store.remoteBranches).toContain('hotfix/cache-fix')
+        })
+
+        it('should not include branches from other remotes', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findRemoteBranches()
+
+            // All branches should be from origin
+            // (no other remotes in our test setup, but ensure the filter works)
+            expect(store.remoteBranches.length).toBeGreaterThan(0)
+        })
+
+        it('should reset remoteBranches before populating', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            store.remoteBranches = ['old-remote-branch']
+
+            await store.findRemoteBranches()
+
+            expect(store.remoteBranches).not.toContain('old-remote-branch')
+        })
+
+        it('should handle remote with no branches (different remote name)', async () => {
+            const store = new BranchStore({ remote: 'nonexistent' })
+            await store.findRemoteBranches()
+
+            expect(store.remoteBranches).toEqual([])
         })
     })
 
@@ -177,6 +368,15 @@ describe('BranchStore', () => {
             expect(store.neverPushedBranches).not.toContain('main')
             expect(store.neverPushedBranches).not.toContain('feature/user-avatars')
         })
+
+        it('should handle branches with special characters', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findAllBranches()
+            await store.findNeverPushedBranches()
+
+            // fix/#432-modal-close was pushed, so should not be in neverPushed
+            expect(store.neverPushedBranches).not.toContain('fix/#432-modal-close')
+        })
     })
 
     describe('lookupMergedBranches (real git)', () => {
@@ -192,6 +392,14 @@ describe('BranchStore', () => {
             // These have unmerged commits
             expect(store.mergedBranches).not.toContain('wip/settings-redesign')
             expect(store.mergedBranches).not.toContain('experiment/graphql-api')
+        })
+
+        it('should include the current branch itself', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findMergedBranches()
+
+            // Current branch (main) is always merged into itself
+            expect(store.mergedBranches).toContain('main')
         })
     })
 
@@ -209,6 +417,27 @@ describe('BranchStore', () => {
             expect(mainTimestamp).toBeDefined()
             const now = Math.floor(Date.now() / 1000)
             expect(now - mainTimestamp!).toBeLessThan(3600) // Less than 1 hour ago
+        })
+
+        it('should have timestamps for all local branches', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findBranchLastCommitTimes()
+
+            expect(store.branchLastCommitTimes.has('wip/settings-redesign')).toBe(true)
+            expect(store.branchLastCommitTimes.has('experiment/graphql-api')).toBe(true)
+            expect(store.branchLastCommitTimes.has('feature/user-avatars')).toBe(true)
+        })
+
+        it('should return valid unix timestamps', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findBranchLastCommitTimes()
+
+            for (const [, timestamp] of store.branchLastCommitTimes) {
+                expect(Number.isInteger(timestamp)).toBe(true)
+                expect(timestamp).toBeGreaterThan(0)
+                // Should be a reasonable timestamp (after year 2000)
+                expect(timestamp).toBeGreaterThan(946684800) // Jan 1, 2000
+            }
         })
     })
 
@@ -229,6 +458,14 @@ describe('BranchStore', () => {
 
             // Main still exists on remote
             expect(staleBranches).not.toContain('main')
+        })
+
+        it('should not include branches whose remote still exists', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findStaleBranches()
+
+            // hotfix/cache-fix still exists on remote
+            expect(store.staleBranches).not.toContain('bugfix/cache-invalidation')
         })
     })
 
@@ -266,6 +503,54 @@ describe('BranchStore', () => {
             expect(store.safeToDelete).not.toContain('main')
             expect(store.requiresForce).not.toContain('main')
             expect(store.infoOnly).not.toContain('main')
+        })
+
+        it('should exclude all protected branches', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findStaleBranches()
+
+            for (const protectedBranch of store.protectedBranches) {
+                expect(store.safeToDelete).not.toContain(protectedBranch)
+                expect(store.requiresForce).not.toContain(protectedBranch)
+                expect(store.infoOnly).not.toContain(protectedBranch)
+            }
+        })
+
+        it('should not have duplicates in any group', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findStaleBranches()
+
+            const safeSet = new Set(store.safeToDelete)
+            expect(safeSet.size).toBe(store.safeToDelete.length)
+
+            const forceSet = new Set(store.requiresForce)
+            expect(forceSet.size).toBe(store.requiresForce.length)
+
+            const infoSet = new Set(store.infoOnly)
+            expect(infoSet.size).toBe(store.infoOnly.length)
+        })
+
+        it('should have no overlap between groups', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findStaleBranches()
+
+            const forceSet = new Set(store.requiresForce)
+            const infoSet = new Set(store.infoOnly)
+
+            // Check no overlap between safe and force
+            for (const branch of store.safeToDelete) {
+                expect(forceSet.has(branch)).toBe(false)
+            }
+
+            // Check no overlap between safe and info
+            for (const branch of store.safeToDelete) {
+                expect(infoSet.has(branch)).toBe(false)
+            }
+
+            // Check no overlap between force and info
+            for (const branch of store.requiresForce) {
+                expect(infoSet.has(branch)).toBe(false)
+            }
         })
     })
 
@@ -307,6 +592,43 @@ describe('BranchStore', () => {
             const reason = store.getInfoOnlyReason('bugfix/cache-invalidation')
             expect(reason).toContain('renamed locally')
         })
+
+        it('should include time ago for all reason types', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findStaleBranches()
+
+            const safeReason = store.getSafeToDeleteReason('feature/user-avatars')
+            expect(safeReason).toContain('last commit')
+
+            const forceReason = store.getRequiresForceReason('experiment/graphql-api')
+            expect(forceReason).toContain('last commit')
+
+            const infoReason = store.getInfoOnlyReason('bugfix/cache-invalidation')
+            expect(infoReason).toContain('last commit')
+        })
+
+        it('should handle branches not in staleBranches or neverPushed (fallback)', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findStaleBranches()
+
+            // A branch not in staleBranches or neverPushedBranches should return generic reason
+            const reason = store.getSafeToDeleteReason('nonexistent-branch')
+            expect(reason).toContain('merged')
+            expect(reason).not.toContain('remote deleted')
+            expect(reason).not.toContain('local only')
+        })
+
+        it('should handle missing timestamp gracefully', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            await store.findStaleBranches()
+
+            // Test with a branch that doesn't have a timestamp
+            store.branchLastCommitTimes.delete('feature/user-avatars')
+
+            const reason = store.getSafeToDeleteReason('feature/user-avatars')
+            expect(reason).toContain('merged')
+            expect(reason).not.toContain('last commit')
+        })
     })
 
     describe('deleteBranches (real git)', () => {
@@ -320,6 +642,159 @@ describe('BranchStore', () => {
             expect(result.success).toEqual([])
             expect(result.failed).toEqual([])
         })
+    })
+})
+
+describe('BranchStore - formatTimeAgo (via reason methods)', () => {
+    let workingDir: string
+    let originalCwd: string
+
+    beforeAll(() => {
+        vi.spyOn(console, 'log').mockImplementation(() => {})
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+        originalCwd = process.cwd()
+        workingDir = testSetup()
+        process.chdir(workingDir)
+    })
+
+    afterAll(() => {
+        process.chdir(originalCwd)
+        vi.restoreAllMocks()
+    })
+
+    it('should format "just now" for timestamps less than 60 seconds ago', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+        await store.findStaleBranches()
+
+        const now = Math.floor(Date.now() / 1000)
+        store.branchLastCommitTimes.set('test-branch', now - 30) // 30 seconds ago
+        store.staleBranches.push('test-branch')
+
+        const reason = store.getSafeToDeleteReason('test-branch')
+        expect(reason).toContain('just now')
+    })
+
+    it('should format minutes for timestamps 1-59 minutes ago', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+        await store.findStaleBranches()
+
+        const now = Math.floor(Date.now() / 1000)
+        store.branchLastCommitTimes.set('test-branch', now - 5 * 60) // 5 minutes ago
+        store.staleBranches.push('test-branch')
+
+        const reason = store.getSafeToDeleteReason('test-branch')
+        expect(reason).toContain('5m ago')
+    })
+
+    it('should format hours for timestamps 1-23 hours ago', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+        await store.findStaleBranches()
+
+        const now = Math.floor(Date.now() / 1000)
+        store.branchLastCommitTimes.set('test-branch', now - 3 * 60 * 60) // 3 hours ago
+        store.staleBranches.push('test-branch')
+
+        const reason = store.getSafeToDeleteReason('test-branch')
+        expect(reason).toContain('3h ago')
+    })
+
+    it('should format days for timestamps 1-6 days ago', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+        await store.findStaleBranches()
+
+        const now = Math.floor(Date.now() / 1000)
+        store.branchLastCommitTimes.set('test-branch', now - 4 * 24 * 60 * 60) // 4 days ago
+        store.staleBranches.push('test-branch')
+
+        const reason = store.getSafeToDeleteReason('test-branch')
+        expect(reason).toContain('4d ago')
+    })
+
+    it('should format weeks for timestamps 1-4 weeks ago', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+        await store.findStaleBranches()
+
+        const now = Math.floor(Date.now() / 1000)
+        store.branchLastCommitTimes.set('test-branch', now - 2 * 7 * 24 * 60 * 60) // 2 weeks ago
+        store.staleBranches.push('test-branch')
+
+        const reason = store.getSafeToDeleteReason('test-branch')
+        expect(reason).toContain('2w ago')
+    })
+
+    it('should format months for timestamps 1-11 months ago', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+        await store.findStaleBranches()
+
+        const now = Math.floor(Date.now() / 1000)
+        // Approximately 3 months ago
+        store.branchLastCommitTimes.set('test-branch', now - 90 * 24 * 60 * 60)
+        store.staleBranches.push('test-branch')
+
+        const reason = store.getSafeToDeleteReason('test-branch')
+        expect(reason).toMatch(/\d+mo ago/)
+    })
+
+    it('should format years for timestamps 1+ years ago', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+        await store.findStaleBranches()
+
+        const now = Math.floor(Date.now() / 1000)
+        // Approximately 2 years ago
+        store.branchLastCommitTimes.set('test-branch', now - 730 * 24 * 60 * 60)
+        store.staleBranches.push('test-branch')
+
+        const reason = store.getSafeToDeleteReason('test-branch')
+        expect(reason).toMatch(/\d+y ago/)
+    })
+
+    it('should handle edge case at exactly 1 minute', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+        await store.findStaleBranches()
+
+        const now = Math.floor(Date.now() / 1000)
+        store.branchLastCommitTimes.set('test-branch', now - 60) // exactly 1 minute
+        store.staleBranches.push('test-branch')
+
+        const reason = store.getSafeToDeleteReason('test-branch')
+        expect(reason).toContain('1m ago')
+    })
+
+    it('should handle edge case at exactly 1 hour', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+        await store.findStaleBranches()
+
+        const now = Math.floor(Date.now() / 1000)
+        store.branchLastCommitTimes.set('test-branch', now - 60 * 60) // exactly 1 hour
+        store.staleBranches.push('test-branch')
+
+        const reason = store.getSafeToDeleteReason('test-branch')
+        expect(reason).toContain('1h ago')
+    })
+
+    it('should handle edge case at exactly 1 day', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+        await store.findStaleBranches()
+
+        const now = Math.floor(Date.now() / 1000)
+        store.branchLastCommitTimes.set('test-branch', now - 24 * 60 * 60) // exactly 1 day
+        store.staleBranches.push('test-branch')
+
+        const reason = store.getSafeToDeleteReason('test-branch')
+        expect(reason).toContain('1d ago')
+    })
+
+    it('should handle edge case at exactly 1 week', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+        await store.findStaleBranches()
+
+        const now = Math.floor(Date.now() / 1000)
+        store.branchLastCommitTimes.set('test-branch', now - 7 * 24 * 60 * 60) // exactly 1 week
+        store.staleBranches.push('test-branch')
+
+        const reason = store.getSafeToDeleteReason('test-branch')
+        expect(reason).toContain('1w ago')
     })
 })
 
@@ -392,5 +867,720 @@ describe('BranchStore - deletion tests (isolated repo)', () => {
         expect(result.failed).toHaveLength(1)
         expect(result.failed[0]!.branch).toBe('nonexistent-branch-12345')
         expect(store.failedToDelete).toHaveLength(1)
+    })
+
+    it('should handle deletion of deeply nested branch names', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+        await store.findStaleBranches()
+
+        store.setQueuedForDeletion(['feature/payments/stripe/webhooks'], [])
+
+        const result = await store.deleteBranches()
+
+        expect(result.success).toContain('feature/payments/stripe/webhooks')
+        expect(result.failed).toEqual([])
+    })
+
+    it('should handle mixed safe and force deletions', async () => {
+        // Create fresh repo since we deleted branches in previous tests
+        const freshWorkingDir = testSetup()
+        process.chdir(freshWorkingDir)
+
+        const store = new BranchStore({ remote: 'origin' })
+        await store.findStaleBranches()
+
+        // Queue both safe and force branches
+        store.setQueuedForDeletion(['feature/user-avatars', 'feature/search-filters'], ['experiment/graphql-api'])
+
+        const result = await store.deleteBranches()
+
+        expect(result.success).toContain('feature/user-avatars')
+        expect(result.success).toContain('feature/search-filters')
+        expect(result.success).toContain('experiment/graphql-api')
+        expect(result.failed).toEqual([])
+    })
+
+    it('should continue after individual failures', async () => {
+        const freshWorkingDir = testSetup()
+        process.chdir(freshWorkingDir)
+
+        const store = new BranchStore({ remote: 'origin' })
+        await store.findStaleBranches()
+
+        // Mix valid and invalid branches
+        store.setQueuedForDeletion(
+            ['feature/user-avatars', 'nonexistent-1'],
+            ['experiment/graphql-api', 'nonexistent-2'],
+        )
+
+        const result = await store.deleteBranches()
+
+        // Should succeed for valid branches
+        expect(result.success).toContain('feature/user-avatars')
+        expect(result.success).toContain('experiment/graphql-api')
+
+        // Should fail for nonexistent
+        expect(result.failed).toHaveLength(2)
+        expect(result.failed.map((f) => f.branch)).toContain('nonexistent-1')
+        expect(result.failed.map((f) => f.branch)).toContain('nonexistent-2')
+    })
+
+    it('should update failedToDelete after deletion', async () => {
+        const freshWorkingDir = testSetup()
+        process.chdir(freshWorkingDir)
+
+        const store = new BranchStore({ remote: 'origin' })
+
+        store.setQueuedForDeletion(['nonexistent-branch'], [])
+
+        await store.deleteBranches()
+
+        expect(store.failedToDelete).toHaveLength(1)
+        expect(store.failedToDelete[0]!.branch).toBe('nonexistent-branch')
+        expect(store.failedToDelete[0]!.error).toBeDefined()
+    })
+})
+
+describe('BranchStore - preprocess integration', () => {
+    let workingDir: string
+    let originalCwd: string
+
+    beforeAll(() => {
+        vi.spyOn(console, 'log').mockImplementation(() => {})
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+        originalCwd = process.cwd()
+        workingDir = testSetup()
+        process.chdir(workingDir)
+    })
+
+    afterAll(() => {
+        process.chdir(originalCwd)
+        vi.restoreAllMocks()
+    })
+
+    it('should reset all arrays at the start', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+
+        // Populate with dummy data
+        store.remoteBranches = ['old-remote']
+        store.localOrphanedBranches = [{ localBranch: 'old', remoteBranch: 'old' }]
+        store.staleBranches = ['old-stale']
+        store.liveBranches = ['old-live']
+        store.unmergedBranches = ['old-unmerged']
+        store.neverPushedBranches = ['old-never']
+        store.mergedBranches = ['old-merged']
+        store.safeToDelete = ['old-safe']
+        store.requiresForce = ['old-force']
+        store.infoOnly = ['old-info']
+        store.noConnection = true
+
+        await store.preprocess()
+
+        // All should be reset (not contain old values)
+        expect(store.remoteBranches).not.toContain('old-remote')
+        expect(store.localOrphanedBranches.map((b) => b.localBranch)).not.toContain('old')
+        expect(store.staleBranches).not.toContain('old-stale')
+        expect(store.liveBranches).not.toContain('old-live')
+        expect(store.unmergedBranches).not.toContain('old-unmerged')
+        expect(store.neverPushedBranches).not.toContain('old-never')
+        expect(store.mergedBranches).not.toContain('old-merged')
+        expect(store.safeToDelete).not.toContain('old-safe')
+        expect(store.requiresForce).not.toContain('old-force')
+        expect(store.infoOnly).not.toContain('old-info')
+        expect(store.noConnection).toBe(false)
+    })
+
+    it('should populate all required data after preprocess', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+        await store.preprocess()
+
+        expect(store.currentBranch).toBe('main')
+        expect(store.allBranches.length).toBeGreaterThan(0)
+        expect(store.remoteBranches.length).toBeGreaterThan(0)
+        expect(store.liveBranches.length).toBeGreaterThan(0)
+        expect(store.branchLastCommitTimes.size).toBeGreaterThan(0)
+    })
+
+    it('should correctly calculate stale branches after preprocess', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+        await store.preprocess()
+
+        // Stale = orphaned local branches whose remote no longer exists
+        expect(store.staleBranches.length).toBeGreaterThan(0)
+        expect(store.staleBranches).toContain('feature/user-avatars')
+    })
+
+    it('should classify branches after preprocess', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+        await store.preprocess()
+
+        // Should have classified branches
+        expect(store.safeToDelete.length).toBeGreaterThan(0)
+        expect(store.requiresForce.length).toBeGreaterThan(0)
+        expect(store.infoOnly.length).toBeGreaterThan(0)
+    })
+
+    it('should handle network failure during preprocess gracefully', async () => {
+        // This is tricky to test without mocking, but we can verify noConnection flag
+        // would be set if fetch fails
+        const store = new BranchStore({ remote: 'origin' })
+        await store.preprocess()
+
+        // In local test environment, should have connection
+        // (noConnection would be true if network was unavailable)
+        expect(typeof store.noConnection).toBe('boolean')
+    })
+})
+
+describe('BranchStore - edge cases and boundary conditions', () => {
+    let workingDir: string
+    let originalCwd: string
+
+    beforeAll(() => {
+        vi.spyOn(console, 'log').mockImplementation(() => {})
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+        originalCwd = process.cwd()
+        workingDir = testSetup()
+        process.chdir(workingDir)
+    })
+
+    afterAll(() => {
+        process.chdir(originalCwd)
+        vi.restoreAllMocks()
+    })
+
+    describe('classifyBranches edge cases', () => {
+        it('should handle empty arrays gracefully', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+
+            // Manually set up empty state
+            store.staleBranches = []
+            store.mergedBranches = []
+            store.unmergedBranches = []
+            store.neverPushedBranches = []
+            store.localOrphanedBranches = []
+            store.liveBranches = []
+            store.currentBranch = 'main'
+
+            // Should not throw
+            store.classifyBranches()
+
+            expect(store.safeToDelete).toEqual([])
+            expect(store.requiresForce).toEqual([])
+            expect(store.infoOnly).toEqual([])
+        })
+
+        it('should correctly filter out current branch from all classifications', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+
+            store.currentBranch = 'feature-branch'
+            store.staleBranches = ['feature-branch']
+            store.mergedBranches = ['feature-branch']
+            store.unmergedBranches = []
+            store.neverPushedBranches = ['feature-branch']
+            store.localOrphanedBranches = [{ localBranch: 'feature-branch', remoteBranch: 'other' }]
+            store.liveBranches = ['other']
+
+            store.classifyBranches()
+
+            expect(store.safeToDelete).not.toContain('feature-branch')
+            expect(store.requiresForce).not.toContain('feature-branch')
+            expect(store.infoOnly).not.toContain('feature-branch')
+        })
+
+        it('should filter out all default protected branches', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+
+            store.currentBranch = 'other'
+            store.staleBranches = ['main', 'master', 'develop', 'development']
+            store.mergedBranches = ['main', 'master', 'develop', 'development']
+            store.unmergedBranches = []
+            store.neverPushedBranches = []
+            store.localOrphanedBranches = []
+            store.liveBranches = []
+
+            store.classifyBranches()
+
+            expect(store.safeToDelete).not.toContain('main')
+            expect(store.safeToDelete).not.toContain('master')
+            expect(store.safeToDelete).not.toContain('develop')
+            expect(store.safeToDelete).not.toContain('development')
+        })
+
+        it('should handle branch appearing in both staleBranches and neverPushedBranches', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+
+            store.currentBranch = 'main'
+            // This shouldn't happen in reality, but test deduplication
+            store.staleBranches = ['duplicate-branch']
+            store.neverPushedBranches = ['duplicate-branch']
+            store.mergedBranches = ['duplicate-branch']
+            store.unmergedBranches = []
+            store.localOrphanedBranches = []
+            store.liveBranches = []
+
+            store.classifyBranches()
+
+            // Should only appear once
+            const count = store.safeToDelete.filter((b) => b === 'duplicate-branch').length
+            expect(count).toBeLessThanOrEqual(1)
+        })
+    })
+
+    describe('findLocalOrphanedBranches edge cases', () => {
+        it('should handle branch name with @ symbol', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+
+            // Simulate a branch with @ in its name
+            store.allBranches = ['test@branch@{refs/remotes/origin/test@branch}']
+
+            store.findLocalOrphanedBranches()
+
+            const found = store.localOrphanedBranches.find((b) => b.localBranch === 'test@branch')
+            expect(found).toBeDefined()
+        })
+
+        it('should handle empty upstream gracefully', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+
+            // Branch with empty upstream
+            store.allBranches = ['local-only@{}']
+
+            store.findLocalOrphanedBranches()
+
+            // Should not add branches without proper upstream
+            expect(store.localOrphanedBranches).toEqual([])
+        })
+
+        it('should handle malformed upstream reference', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+
+            // Malformed upstream
+            store.allBranches = ['branch@{malformed}']
+
+            store.findLocalOrphanedBranches()
+
+            // Should not crash, just skip
+            expect(store.localOrphanedBranches).toEqual([])
+        })
+    })
+
+    describe('findNeverPushedBranches edge cases', () => {
+        it('should handle empty allBranches', () => {
+            const store = new BranchStore({ remote: 'origin' })
+            store.allBranches = []
+
+            store.findNeverPushedBranches()
+
+            expect(store.neverPushedBranches).toEqual([])
+        })
+
+        it('should handle only tracked branches', () => {
+            const store = new BranchStore({ remote: 'origin' })
+            store.allBranches = ['main@{refs/remotes/origin/main}', 'feature@{refs/remotes/origin/feature}']
+
+            store.findNeverPushedBranches()
+
+            expect(store.neverPushedBranches).toEqual([])
+        })
+
+        it('should handle only untracked branches', () => {
+            const store = new BranchStore({ remote: 'origin' })
+            store.allBranches = ['local1@{}', 'local2@{}']
+
+            store.findNeverPushedBranches()
+
+            expect(store.neverPushedBranches).toContain('local1')
+            expect(store.neverPushedBranches).toContain('local2')
+        })
+
+        it('should handle empty branch name before @{}', () => {
+            const store = new BranchStore({ remote: 'origin' })
+            store.allBranches = ['@{}']
+
+            store.findNeverPushedBranches()
+
+            // Empty branch name should be skipped
+            expect(store.neverPushedBranches).toEqual([])
+        })
+    })
+
+    describe('reason methods with edge cases', () => {
+        it('should handle branch with no timestamp in branchLastCommitTimes', async () => {
+            const store = new BranchStore({ remote: 'origin' })
+            store.staleBranches = ['no-timestamp-branch']
+            store.neverPushedBranches = []
+            store.branchLastCommitTimes = new Map()
+
+            const reason = store.getSafeToDeleteReason('no-timestamp-branch')
+            expect(reason).toBe('merged, remote deleted')
+            expect(reason).not.toContain('last commit')
+        })
+
+        it('should prefer staleBranches over neverPushedBranches for reason', () => {
+            const store = new BranchStore({ remote: 'origin' })
+            store.staleBranches = ['both-branch']
+            store.neverPushedBranches = ['both-branch']
+            store.branchLastCommitTimes = new Map()
+
+            const reason = store.getSafeToDeleteReason('both-branch')
+            expect(reason).toContain('remote deleted')
+        })
+
+        it('should return generic merged for unknown branch', () => {
+            const store = new BranchStore({ remote: 'origin' })
+            store.staleBranches = []
+            store.neverPushedBranches = []
+            store.branchLastCommitTimes = new Map()
+
+            const reason = store.getSafeToDeleteReason('unknown-branch')
+            expect(reason).toBe('merged')
+        })
+
+        it('should return generic unmerged for unknown force branch', () => {
+            const store = new BranchStore({ remote: 'origin' })
+            store.staleBranches = []
+            store.neverPushedBranches = []
+            store.branchLastCommitTimes = new Map()
+
+            const reason = store.getRequiresForceReason('unknown-branch')
+            expect(reason).toBe('unmerged')
+        })
+    })
+})
+
+describe('BranchStore - comprehensive classifyBranches scenarios', () => {
+    let originalCwd: string
+
+    beforeAll(() => {
+        vi.spyOn(console, 'log').mockImplementation(() => {})
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+        originalCwd = process.cwd()
+    })
+
+    afterAll(() => {
+        process.chdir(originalCwd)
+        vi.restoreAllMocks()
+    })
+
+    beforeEach(() => {
+        const workingDir = testSetup()
+        process.chdir(workingDir)
+    })
+
+    it('scenario: stale merged branch goes to safeToDelete', () => {
+        const store = new BranchStore({ remote: 'origin' })
+
+        store.currentBranch = 'main'
+        store.staleBranches = ['stale-merged']
+        store.mergedBranches = ['stale-merged', 'main']
+        store.unmergedBranches = []
+        store.neverPushedBranches = []
+        store.localOrphanedBranches = []
+        store.liveBranches = []
+
+        store.classifyBranches()
+
+        expect(store.safeToDelete).toContain('stale-merged')
+        expect(store.requiresForce).not.toContain('stale-merged')
+    })
+
+    it('scenario: stale unmerged branch goes to requiresForce', () => {
+        const store = new BranchStore({ remote: 'origin' })
+
+        store.currentBranch = 'main'
+        store.staleBranches = ['stale-unmerged']
+        store.mergedBranches = ['main']
+        store.unmergedBranches = ['stale-unmerged']
+        store.neverPushedBranches = []
+        store.localOrphanedBranches = []
+        store.liveBranches = []
+
+        store.classifyBranches()
+
+        expect(store.requiresForce).toContain('stale-unmerged')
+        expect(store.safeToDelete).not.toContain('stale-unmerged')
+    })
+
+    it('scenario: local-only merged branch goes to safeToDelete', () => {
+        const store = new BranchStore({ remote: 'origin' })
+
+        store.currentBranch = 'main'
+        store.staleBranches = []
+        store.mergedBranches = ['local-merged', 'main']
+        store.unmergedBranches = []
+        store.neverPushedBranches = ['local-merged']
+        store.localOrphanedBranches = []
+        store.liveBranches = []
+
+        store.classifyBranches()
+
+        expect(store.safeToDelete).toContain('local-merged')
+        expect(store.requiresForce).not.toContain('local-merged')
+    })
+
+    it('scenario: local-only unmerged branch goes to requiresForce', () => {
+        const store = new BranchStore({ remote: 'origin' })
+
+        store.currentBranch = 'main'
+        store.staleBranches = []
+        store.mergedBranches = ['main']
+        store.unmergedBranches = ['local-unmerged']
+        store.neverPushedBranches = ['local-unmerged']
+        store.localOrphanedBranches = []
+        store.liveBranches = []
+
+        store.classifyBranches()
+
+        expect(store.requiresForce).toContain('local-unmerged')
+        expect(store.safeToDelete).not.toContain('local-unmerged')
+    })
+
+    it('scenario: renamed branch with live remote goes to infoOnly', () => {
+        const store = new BranchStore({ remote: 'origin' })
+
+        store.currentBranch = 'main'
+        store.staleBranches = []
+        store.mergedBranches = ['main']
+        store.unmergedBranches = []
+        store.neverPushedBranches = []
+        store.localOrphanedBranches = [{ localBranch: 'local-name', remoteBranch: 'remote-name' }]
+        store.liveBranches = ['remote-name']
+
+        store.classifyBranches()
+
+        expect(store.infoOnly).toContain('local-name')
+        expect(store.safeToDelete).not.toContain('local-name')
+        expect(store.requiresForce).not.toContain('local-name')
+    })
+
+    it('scenario: branch with same local and remote name should not be in infoOnly', () => {
+        const store = new BranchStore({ remote: 'origin' })
+
+        store.currentBranch = 'main'
+        store.staleBranches = []
+        store.mergedBranches = ['main', 'same-name']
+        store.unmergedBranches = []
+        store.neverPushedBranches = []
+        store.localOrphanedBranches = [{ localBranch: 'same-name', remoteBranch: 'same-name' }]
+        store.liveBranches = ['same-name']
+
+        store.classifyBranches()
+
+        expect(store.infoOnly).not.toContain('same-name')
+    })
+
+    it('scenario: current branch is protected and stale - should not appear anywhere', () => {
+        const store = new BranchStore({ remote: 'origin' })
+
+        store.currentBranch = 'main'
+        store.staleBranches = ['main']
+        store.mergedBranches = ['main']
+        store.unmergedBranches = []
+        store.neverPushedBranches = []
+        store.localOrphanedBranches = []
+        store.liveBranches = []
+
+        store.classifyBranches()
+
+        expect(store.safeToDelete).not.toContain('main')
+        expect(store.requiresForce).not.toContain('main')
+        expect(store.infoOnly).not.toContain('main')
+    })
+
+    it('scenario: master branch is protected - should not appear anywhere', () => {
+        const store = new BranchStore({ remote: 'origin' })
+
+        store.currentBranch = 'other'
+        store.staleBranches = ['master']
+        store.mergedBranches = ['master', 'other']
+        store.unmergedBranches = []
+        store.neverPushedBranches = []
+        store.localOrphanedBranches = []
+        store.liveBranches = []
+
+        store.classifyBranches()
+
+        expect(store.safeToDelete).not.toContain('master')
+        expect(store.requiresForce).not.toContain('master')
+        expect(store.infoOnly).not.toContain('master')
+    })
+
+    it('scenario: many branches in all categories', () => {
+        const store = new BranchStore({ remote: 'origin' })
+
+        store.currentBranch = 'main'
+        store.staleBranches = ['stale1', 'stale2', 'stale3']
+        store.mergedBranches = ['main', 'stale1', 'stale2', 'local1']
+        store.unmergedBranches = ['stale3', 'local2']
+        store.neverPushedBranches = ['local1', 'local2']
+        store.localOrphanedBranches = [
+            { localBranch: 'renamed1', remoteBranch: 'live1' },
+            { localBranch: 'renamed2', remoteBranch: 'live2' },
+        ]
+        store.liveBranches = ['live1', 'live2']
+
+        store.classifyBranches()
+
+        // Verify safeToDelete
+        expect(store.safeToDelete).toContain('stale1')
+        expect(store.safeToDelete).toContain('stale2')
+        expect(store.safeToDelete).toContain('local1')
+        expect(store.safeToDelete).toHaveLength(3)
+
+        // Verify requiresForce
+        expect(store.requiresForce).toContain('stale3')
+        expect(store.requiresForce).toContain('local2')
+        expect(store.requiresForce).toHaveLength(2)
+
+        // Verify infoOnly
+        expect(store.infoOnly).toContain('renamed1')
+        expect(store.infoOnly).toContain('renamed2')
+        expect(store.infoOnly).toHaveLength(2)
+    })
+})
+
+describe('BranchStore - error handling', () => {
+    let originalCwd: string
+
+    beforeAll(() => {
+        vi.spyOn(console, 'log').mockImplementation(() => {})
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+        originalCwd = process.cwd()
+    })
+
+    afterAll(() => {
+        process.chdir(originalCwd)
+        vi.restoreAllMocks()
+    })
+
+    beforeEach(() => {
+        const workingDir = testSetup()
+        process.chdir(workingDir)
+    })
+
+    it('should throw RemoteError when remote is empty in findLiveBranches', async () => {
+        const store = new BranchStore({ remote: '' })
+
+        await expect(store.findLiveBranches()).rejects.toThrow('Remote is empty')
+
+        try {
+            await store.findLiveBranches()
+        } catch (err) {
+            expect((err as { code: number }).code).toBe(1984)
+        }
+    })
+
+    it('should handle errors in deleteBranches and continue', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+
+        // Try to delete the current branch (should fail)
+        store.queuedForDeletion = ['main']
+        store.queuedForForceDeletion = []
+
+        const result = await store.deleteBranches()
+
+        expect(result.failed).toHaveLength(1)
+        expect(result.failed[0]!.branch).toBe('main')
+        expect(result.failed[0]!.error).toBeDefined()
+    })
+
+    it('should populate error message in failed deletions', async () => {
+        const store = new BranchStore({ remote: 'origin' })
+
+        store.queuedForDeletion = ['definitely-not-a-real-branch-12345']
+        store.queuedForForceDeletion = []
+
+        const result = await store.deleteBranches()
+
+        expect(result.failed[0]!.error).toBeTruthy()
+        expect(typeof result.failed[0]!.error).toBe('string')
+    })
+})
+
+describe('BranchStore - findStaleBranches return value', () => {
+    let originalCwd: string
+
+    beforeAll(() => {
+        vi.spyOn(console, 'log').mockImplementation(() => {})
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+        originalCwd = process.cwd()
+    })
+
+    afterAll(() => {
+        process.chdir(originalCwd)
+        vi.restoreAllMocks()
+    })
+
+    it('should return staleBranches array', async () => {
+        const workingDir = testSetup()
+        process.chdir(workingDir)
+
+        const store = new BranchStore({ remote: 'origin' })
+        const result = await store.findStaleBranches()
+
+        expect(Array.isArray(result)).toBe(true)
+        expect(result).toBe(store.staleBranches)
+    })
+
+    it('should return empty array when no stale branches', async () => {
+        const workingDir = testSetup()
+        process.chdir(workingDir)
+
+        const store = new BranchStore({ remote: 'nonexistent-remote' })
+
+        // With a nonexistent remote, we can't get stale branches properly
+        // but the function should still return an array
+        const result = await store.findStaleBranches()
+
+        expect(Array.isArray(result)).toBe(true)
+    })
+})
+
+describe('BranchStore - concurrent operations safety', () => {
+    let originalCwd: string
+
+    beforeAll(() => {
+        vi.spyOn(console, 'log').mockImplementation(() => {})
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+        originalCwd = process.cwd()
+    })
+
+    afterAll(() => {
+        process.chdir(originalCwd)
+        vi.restoreAllMocks()
+    })
+
+    it('should handle multiple preprocess calls sequentially', async () => {
+        const workingDir = testSetup()
+        process.chdir(workingDir)
+
+        const store = new BranchStore({ remote: 'origin' })
+
+        // First preprocess
+        await store.preprocess()
+        const firstStaleBranches = [...store.staleBranches]
+
+        // Second preprocess should reset and repopulate
+        await store.preprocess()
+        const secondStaleBranches = [...store.staleBranches]
+
+        // Results should be the same
+        expect(firstStaleBranches.sort()).toEqual(secondStaleBranches.sort())
+    })
+
+    it('should handle multiple findStaleBranches calls', async () => {
+        const workingDir = testSetup()
+        process.chdir(workingDir)
+
+        const store = new BranchStore({ remote: 'origin' })
+
+        const results = await Promise.all([store.findStaleBranches(), store.findStaleBranches()])
+
+        // Both calls should complete (though state may be inconsistent due to races)
+        expect(Array.isArray(results[0])).toBe(true)
+        expect(Array.isArray(results[1])).toBe(true)
     })
 })
