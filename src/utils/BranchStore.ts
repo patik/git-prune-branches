@@ -3,6 +3,10 @@ import ora from 'ora'
 import stdout, { stdoutFile } from 'simple-stdout'
 import split from './split.js'
 
+class RemoteError extends Error {
+    code = 1984
+}
+
 export default class BranchStore {
     remote: string
     remoteBranches: Array<string>
@@ -11,14 +15,6 @@ export default class BranchStore {
      * Local branches which track remote branches that no longer exist
      */
     localOrphanedBranches: Array<{ localBranch: string; remoteBranch: string }>
-
-    /**
-     * The app will offer to delete these
-     */
-    staleBranches: Array<string>
-    queuedForDeletion: Array<string>
-    queuedForForceDeletion: Array<string>
-    failedToDelete: Array<{ branch: string; error: string }>
 
     /**
      * Branches that are still in use; will never be deleted
@@ -70,6 +66,20 @@ export default class BranchStore {
      */
     branchLastCommitTimes: Map<string, number>
 
+    /**
+     * These are the branches that the app will offer to delete
+     */
+    staleBranches: Array<string>
+
+    queuedForDeletion: Array<string>
+    queuedForForceDeletion: Array<string>
+    failedToDelete: Array<{ branch: string; error: string }>
+
+    /**
+     * All branches, including their upstream info
+     */
+    allBranches: Array<string>
+
     noConnection: boolean
 
     constructor(ops: { remote: string }) {
@@ -91,6 +101,7 @@ export default class BranchStore {
         this.infoOnly = []
         this.branchLastCommitTimes = new Map()
         this.noConnection = false
+        this.allBranches = []
     }
 
     setQueuedForDeletion(safe: Array<string>, force: Array<string>) {
@@ -124,16 +135,17 @@ export default class BranchStore {
 
         // Gather all the information
         // Run potentially conflicting git operations in a controlled order to avoid lock contention
-        await this.findCurrentBranch()
+        await this.getCurrentBranch()
+        await this.findAllBranches()
         await Promise.all([
             this.findLiveBranches(),
             this.findUnmergedBranches(),
             this.findRemoteBranches(),
             this.findMergedBranches(),
             this.findBranchLastCommitTimes(),
+            this.findLocalOrphanedBranches(),
+            this.findNeverPushedBranches(),
         ])
-        await this.findLocalOrphanedBranches()
-        await this.findNeverPushedBranches()
 
         // Calculate stale branches (must be done AFTER finding local orphaned and remote branches)
         this.staleBranches = this.localOrphanedBranches
@@ -144,17 +156,12 @@ export default class BranchStore {
         this.classifyBranches()
     }
 
-    //
-    // this method will use "git ls-remote"
-    // to find branches which are still available on the remote
-    // and store them in liveBranches state
-    //
+    /**
+     * Uses "git ls-remote" to find branches that are still available on the remote and store them in liveBranches state
+     */
     async findLiveBranches() {
         if (this.remote === '') {
-            const e = new Error('Remote is empty. Please specify remote with -r parameter')
-            // @ts-expect-error - this is a custom error code
-            e.code = 1984
-            throw e
+            throw new RemoteError('Remote is empty. Please specify remote with -r parameter')
         }
 
         const remotesStr = await stdout('git remote -v')
@@ -167,9 +174,7 @@ export default class BranchStore {
 
         if (!hasRemote) {
             console.log(
-                `WARNING: Unable to find remote "${
-                    this.remote
-                }".\r\n\r\nAvailable remotes are:\r\n${remotesStr?.toString()}`,
+                `WARNING: Unable to find remote "${this.remote}".\r\n\r\nAvailable remotes are:\r\n${remotesStr}`,
             )
             this.noConnection = true
             return
@@ -181,9 +186,9 @@ export default class BranchStore {
             const lines = split(out)
 
             // take out sha and refs/heads
-            lines?.forEach((line) => {
+            lines.forEach((line) => {
                 const group = line.match(/refs\/heads\/([^\s]*)/)
-                if (group) {
+                if (group && group[1]) {
                     this.liveBranches.push(group[1] || '')
                 }
             })
@@ -191,7 +196,7 @@ export default class BranchStore {
             // reset branches
             this.liveBranches = []
             // @ts-expect-error - this is a custom error code
-            if (err.code && err.code === '128') {
+            if (err.code && err.code === 128) {
                 // error 128 means there is no connection currently to the remote
                 // skip this step then
                 this.noConnection = true
@@ -202,15 +207,15 @@ export default class BranchStore {
         }
     }
 
-    async findLocalOrphanedBranches() {
+    async findAllBranches() {
         // list all the branches
-        // by using format
-        // git branch --format="%(refname:short)@{%(upstream)}"
         const out = await stdout('git branch --format="%(refname:short)@{%(upstream)}"')
-        const lines = split(out)
+        this.allBranches = split(out)
+    }
 
-        lines.forEach((line) => {
-            // upstream has format: "@{refs/remotes/origin/#333-work}"
+    findLocalOrphanedBranches() {
+        this.allBranches.forEach((line) => {
+            // upstream has format: "@{refs/remotes/origin/some-branch-name}"
             const startIndex = line.indexOf(`@{refs/remotes/${this.remote}`)
             if (startIndex === -1) {
                 return
@@ -218,7 +223,6 @@ export default class BranchStore {
 
             const localBranch = line.slice(0, startIndex)
             const upstream = line.slice(startIndex + 2, -1).trim()
-
             const upParts = upstream.match(/refs\/remotes\/[^/]+\/(.+)/)
             const [, remoteBranch] = upParts || []
 
@@ -262,7 +266,7 @@ export default class BranchStore {
         })
     }
 
-    async findCurrentBranch() {
+    async getCurrentBranch() {
         try {
             const out = await stdout('git branch --show-current')
             this.currentBranch = out.trim()
@@ -271,12 +275,8 @@ export default class BranchStore {
         }
     }
 
-    async findNeverPushedBranches() {
-        // Get branches with no upstream tracking
-        const out = await stdout('git branch --format="%(refname:short)@{%(upstream)}"')
-        const lines = split(out)
-
-        lines.forEach((line) => {
+    findNeverPushedBranches() {
+        this.allBranches.forEach((line) => {
             // If line ends with "@{}", it has no upstream
             if (line.endsWith('@{}')) {
                 const branchName = line.slice(0, -3) // Remove "@{}"
@@ -315,43 +315,48 @@ export default class BranchStore {
 
     classifyBranches() {
         const protectedBranchesSet = new Set(this.protectedBranches)
+        const unmergedBranchesSet = new Set(this.unmergedBranches)
 
         // Group 1: Safe to delete (pre-selected)
+        const seen1 = new Set<string>()
         const safeToDelete = [
             // Stale branches that are merged (deleted from remote, no force needed)
-            ...this.staleBranches.filter((b) => !this.unmergedBranches.includes(b)),
+            ...this.staleBranches.filter((b) => !unmergedBranchesSet.has(b)),
 
             // Local merged branches never pushed to remote
             // (mergedBranches and unmergedBranches are mutually exclusive from git)
             ...this.mergedBranches.filter((b) => this.neverPushedBranches.includes(b)),
         ]
             // Remove duplicates, current branch, and protected branches
-            .filter((b, i, arr) => arr.indexOf(b) === i && b !== this.currentBranch && !protectedBranchesSet.has(b))
+            .filter((b) => !seen1.has(b) && seen1.add(b) && b !== this.currentBranch && !protectedBranchesSet.has(b))
 
         // Group 2: Requires force (NOT pre-selected)
+        const seen2 = new Set<string>()
         const requiresForce = [
             // Stale branches that are unmerged
-            ...this.staleBranches.filter((b) => this.unmergedBranches.includes(b)),
+            ...this.staleBranches.filter((b) => unmergedBranchesSet.has(b)),
 
             // Never pushed branches that are unmerged
-            ...this.neverPushedBranches.filter((b) => this.unmergedBranches.includes(b)),
+            ...this.neverPushedBranches.filter((b) => unmergedBranchesSet.has(b)),
         ]
             // Remove duplicates, current branch, and protected branches
-            .filter((b, i, arr) => arr.indexOf(b) === i && b !== this.currentBranch && !protectedBranchesSet.has(b))
+            .filter((b) => !seen2.has(b) && seen2.add(b) && b !== this.currentBranch && !protectedBranchesSet.has(b))
 
         // Group 3: Info only (disabled)
+        const liveBranchesSet = new Set(this.liveBranches)
+        const seen3 = new Set<string>()
         const infoOnly = [
             // Local branches with different names tracking active remote branches
             // (renamed locally, original still exists on remote)
             ...this.localOrphanedBranches
                 .filter(
                     ({ remoteBranch, localBranch }) =>
-                        remoteBranch !== localBranch && this.liveBranches.includes(remoteBranch),
+                        remoteBranch !== localBranch && liveBranchesSet.has(remoteBranch),
                 )
                 .map(({ localBranch }) => localBranch),
         ]
             // Remove duplicates, current branch, and protected branches
-            .filter((b, i, arr) => arr.indexOf(b) === i && b !== this.currentBranch && !protectedBranchesSet.has(b))
+            .filter((b) => !seen3.has(b) && seen3.add(b) && b !== this.currentBranch && !protectedBranchesSet.has(b))
 
         this.safeToDelete = safeToDelete
         this.requiresForce = requiresForce

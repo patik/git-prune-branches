@@ -85,10 +85,10 @@ describe('BranchStore', () => {
         })
     })
 
-    describe('findCurrentBranch (real git)', () => {
+    describe('getCurrentBranch (real git)', () => {
         it('should find the current branch', async () => {
             const store = new BranchStore({ remote: 'origin' })
-            await store.findCurrentBranch()
+            await store.getCurrentBranch()
 
             // testSetup() ends on 'main' branch
             expect(store.currentBranch).toBe('main')
@@ -98,6 +98,7 @@ describe('BranchStore', () => {
     describe('findLocalOrphanedBranches (real git)', () => {
         it('should find local branches tracking remote branches', async () => {
             const store = new BranchStore({ remote: 'origin' })
+            await store.findAllBranches()
             await store.findLocalOrphanedBranches()
 
             // These branches were pushed to origin and track it
@@ -165,6 +166,7 @@ describe('BranchStore', () => {
     describe('findNeverPushedBranches (real git)', () => {
         it('should find branches with no upstream tracking', async () => {
             const store = new BranchStore({ remote: 'origin' })
+            await store.findAllBranches()
             await store.findNeverPushedBranches()
 
             // These were never pushed (created with -b, no -u)

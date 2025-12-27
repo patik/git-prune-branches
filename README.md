@@ -116,6 +116,13 @@ Build the TypeScript source:
 pnpm build
 ```
 
+## Breaking changes
+
+### Version 2.0.0
+
+- Removed flags: `--dry-run`, `--prune-all`, `--force`, and `--yes`
+    - This is a visual, interactive app. If you're looking for automation, consider another package such as [git-removed-branches](https://github.com/nemisj/git-removed-branches)
+
 ## Credit
 
 Forked from [git-removed-branches](https://github.com/nemisj/git-removed-branches) by [Maks Nemisj](https://github.com/nemisj) @nemisj
