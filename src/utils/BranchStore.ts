@@ -189,7 +189,7 @@ export default class BranchStore {
             lines.forEach((line) => {
                 const group = line.match(/refs\/heads\/([^\s]*)/)
                 if (group && group[1]) {
-                    this.liveBranches.push(group[1] || '')
+                    this.liveBranches.push(group[1])
                 }
             })
         } catch (err) {
