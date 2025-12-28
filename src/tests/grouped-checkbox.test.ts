@@ -18,7 +18,8 @@ vi.mock('node:process', async () => {
 
 // Store the mock result for the custom confirm prompt
 let mockConfirmResult: ConfirmResult = 'cancel'
-let mockKeypressHandler: ((str: string | undefined, key: { name: string; ctrl?: boolean }) => void) | null = null
+type KeypressHandler = (str: string | undefined, key: { name: string; ctrl?: boolean }) => void
+let mockKeypressHandler: KeypressHandler
 
 // Mock node:readline to control keypress events
 vi.mock('node:readline', async () => {
