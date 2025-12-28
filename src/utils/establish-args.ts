@@ -1,4 +1,5 @@
-import minimist, { ParsedArgs } from 'minimist'
+import type { ParsedArgs } from 'minimist'
+import minimist from 'minimist'
 import { exit } from 'node:process'
 import pkg from '../../package.json' with { type: 'json' }
 import { defaultProtectedBranches, defaultRemote } from '../program/constants.js'

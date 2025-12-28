@@ -2,4 +2,4 @@
 
 import program from './program/index.js'
 
-program()
+void program()

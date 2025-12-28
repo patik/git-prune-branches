@@ -140,7 +140,9 @@ export default class BranchStore {
             this.findRemoteBranches(),
             this.lookupMergedBranches(),
             this.lookupLastCommitTimes(),
+            // eslint-disable-next-line @typescript-eslint/await-thenable
             this.findLocalOrphanedBranches(),
+            // eslint-disable-next-line @typescript-eslint/await-thenable
             this.findNeverPushedBranches(),
         ])
 
