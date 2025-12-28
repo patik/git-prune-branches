@@ -18,7 +18,7 @@ export default [
                 },
             ],
             curly: 'error',
-            eqeqeq: ['error', 'always'],
+            eqeqeq: ['error', 'always', { null: 'ignore' }],
             'no-var': 'error',
             'prefer-const': 'error',
             'no-throw-literal': 'error',
