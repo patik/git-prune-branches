@@ -57,7 +57,7 @@ async function confirmWithEscape(message: string, linesToClear: number): Promise
             rl.close()
 
             if (clearOutput) {
-                // Clear the prompt line first, then all the output lines
+                // Clear the prompt line first, then the specified number of previous output lines
                 process.stdout.write('\x1b[2K\r') // Clear current line
                 clearLines(linesToClear)
             } else {
