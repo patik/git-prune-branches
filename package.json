@@ -51,7 +51,7 @@
     ],
     "dependencies": {
         "@inquirer/prompts": "^8.1.0",
-        "inquirer-grouped-checkbox": "^0.5.0",
+        "inquirer-grouped-checkbox": "^0.5.1",
         "minimist": "^1.2.8",
         "ora": "^9.0.0",
         "simple-stdout": "^2.1.0"

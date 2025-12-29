@@ -12,8 +12,8 @@ importers:
         specifier: ^8.1.0
         version: 8.1.0(@types/node@24.10.4)
       inquirer-grouped-checkbox:
-        specifier: ^0.5.0
-        version: 0.5.0(@types/node@24.10.4)
+        specifier: ^0.5.1
+        version: 0.5.1(@types/node@24.10.4)
       minimist:
         specifier: ^1.2.8
         version: 1.2.8
@@ -1028,8 +1028,8 @@ packages:
     resolution: {integrity: sha512-JmXMZ6wuvDmLiHEml9ykzqO6lwFbof0GG4IkcGaENdCRDDmMVnny7s5HsIgHCbaq0w2MyPhDqkhTUgS2LU2PHA==}
     engines: {node: '>=0.8.19'}
 
-  inquirer-grouped-checkbox@0.5.0:
-    resolution: {integrity: sha512-pJbn5GmBcbCui9ZLwErsuJ+gPWuJqdkw5s4JbO+7Hy2bzfoDKGI7LWHqLkNRSccJHziaqHRKIewxcFQmzGXJvA==}
+  inquirer-grouped-checkbox@0.5.1:
+    resolution: {integrity: sha512-aAd5FhY2msVYWepGZ5fEQuBlQMU7DfulrN7CCQulYVT4oQpER0270ks0OdwxDoe+KMOI4pTGcJG4xORkoDeAmQ==}
 
   is-docker@3.0.0:
     resolution: {integrity: sha512-eljcgEDlEns/7AXFosB5K/2nCM4P7FQPkGc/DWLy5rmFEWvZayGrik1d9/QIY5nJ4f9YsVvBkA6kJpHn9rISdQ==}
@@ -2425,7 +2425,7 @@ snapshots:
 
   imurmurhash@0.1.4: {}
 
-  inquirer-grouped-checkbox@0.5.0(@types/node@24.10.4):
+  inquirer-grouped-checkbox@0.5.1(@types/node@24.10.4):
     dependencies:
       '@inquirer/core': 11.1.0(@types/node@24.10.4)
       '@inquirer/figures': 2.0.2

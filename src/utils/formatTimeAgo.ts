@@ -1,5 +1,5 @@
 /**
- * Format a time ago string from a timestamp
+ * Creates a "time ago" string from a timestamp
  */
 export function formatTimeAgo(timestamp: number): string {
     const nowDate = new Date()

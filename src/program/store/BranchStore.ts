@@ -1,9 +1,9 @@
 import { execFileSync } from 'node:child_process'
 import ora from 'ora'
 import stdout, { stdoutFile } from 'simple-stdout'
-import { formatTimeAgo } from '../utils/formatTimeAgo.js'
-import split from '../utils/split.js'
-import { defaultProtectedBranches, defaultRemote } from './constants.js'
+import { formatTimeAgo } from '../../utils/formatTimeAgo.js'
+import split from '../../utils/split.js'
+import { defaultProtectedBranches, defaultRemote } from '../constants.js'
 
 class RemoteError extends Error {
     code = 1984

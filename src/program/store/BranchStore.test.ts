@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { testSetup } from '../tests/manual/setup.js'
+import { testSetup } from '../../tests/manual/setup.js'
 import BranchStore from './BranchStore.js'
 
 // Only mock ora to suppress spinner output during tests

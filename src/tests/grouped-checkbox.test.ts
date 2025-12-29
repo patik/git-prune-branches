@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { confirmDeletion, type ConfirmResult } from '../program/confirm-deletion.js'
 import { executeDeletions } from '../program/execute-deletions.js'
 import { selectBranches } from '../program/select-branches.js'
-import store from '../program/store.js'
+import store from '../program/store/store.js'
 
 // Mock process.exit to throw an error to stop execution
 vi.mock('node:process', async () => {

@@ -1,7 +1,8 @@
+import type { GroupedCheckboxConfig } from 'inquirer-grouped-checkbox'
 import groupedCheckbox from 'inquirer-grouped-checkbox'
 import { exit } from 'node:process'
 import { gray, yellow } from '../utils/colors.js'
-import store from './store.js'
+import store from './store/store.js'
 
 /** Previous selection state to restore when returning from confirmation screen */
 export interface PreviousSelection {
@@ -34,7 +35,7 @@ export async function selectBranches(previousSelection?: PreviousSelection): Pro
         exit(0)
     }
 
-    const groups = []
+    const groups: GroupedCheckboxConfig<string>['groups'] = []
 
     // Group 1: Safe to delete
     if (store.safeToDelete.length > 0) {

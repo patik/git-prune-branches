@@ -8,9 +8,9 @@ const options = ['version', 'remote', 'r', '_', 'protected']
 
 export function establishArgs(): ParsedArgs {
     const argv = minimist(process.argv, {
-        string: 'remote',
+        string: ['remote', 'protected'],
         boolean: ['version'],
-        alias: { r: 'remote' },
+        alias: { r: 'remote', p: 'protected' },
         default: {
             remote: defaultRemote,
             protected: defaultProtectedBranches,
@@ -20,7 +20,7 @@ export function establishArgs(): ParsedArgs {
     const hasInvalidParams = Object.keys(argv).some((name) => options.indexOf(name) === -1)
 
     if (hasInvalidParams) {
-        console.info('Usage: git prune-branches [-r|--remote <remote>] [--version]')
+        console.info('Usage: git prune-branches [-r|--remote <remote>] [-p|--protected <branches>] [--version]')
         exit(1)
     }
 

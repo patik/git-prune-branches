@@ -44,7 +44,7 @@ export default async function program(): Promise<void> {
                 process.stderr.write(`ERROR: ${err.message} \r\n`)
             } else if ('stack' in err) {
                 if (err instanceof Error && err.name === 'ExitPromptError') {
-                    console.log('\r\n👋 No branches were deleted.')
+                    console.log('\r\nℹ️ No branches were deleted.')
                     exit(0)
                 }
 
