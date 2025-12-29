@@ -60,7 +60,7 @@ export default class BranchStore {
     requiresForce: Array<string>
 
     /**
-     * Info only - renamed branches still on remote (disabled in UI)
+     * Will not be deleted: local branches still tracking remote branches with different names (disabled in UI)
      */
     infoOnly: Array<string>
 
@@ -409,9 +409,9 @@ export default class BranchStore {
      */
     public getInfoOnlyReason(branch: string): string {
         const timestamp = this.lastCommitTimes.get(branch)
-        const timeAgo = timestamp ? `; last commit ${formatTimeAgo(timestamp)}` : ''
+        const timeAgo = timestamp ? `last commit ${formatTimeAgo(timestamp)}` : ''
 
-        return `renamed locally${timeAgo}`
+        return timeAgo
     }
 
     async getDeletableBranches(): Promise<string[]> {

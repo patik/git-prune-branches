@@ -595,7 +595,7 @@ describe('BranchStore', () => {
             await store.getDeletableBranches()
 
             const reason = store.getInfoOnlyReason('bugfix/cache-invalidation')
-            expect(reason).toContain('renamed locally')
+            expect(reason).toMatch(/^last commit.+/)
         })
 
         it('should include time ago for all reason types', async () => {

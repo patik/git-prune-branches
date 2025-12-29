@@ -35,6 +35,29 @@ export async function selectBranches(previousSelection?: PreviousSelection): Pro
         exit(0)
     }
 
+    // Display info-only branches before the prompt
+    if (store.infoOnly.length > 0) {
+        console.info(
+            `\n    Will not be deleted — ${gray('local branches still tracking remote branches with different names:')}`,
+        )
+
+        // Show all if few, otherwise show first 3 with count
+        if (store.infoOnly.length < 4) {
+            store.infoOnly.forEach((branch) => {
+                console.info(`      • ${branch} ${gray(`[${store.getInfoOnlyReason(branch)}]`)}`)
+            })
+        } else {
+            store.infoOnly.slice(0, 3).forEach((branch) => {
+                console.info(`      • ${branch} ${gray(`[${store.getInfoOnlyReason(branch)}]`)}`)
+            })
+            console.info(`      • And ${store.infoOnly.length - 3} more branches...`)
+        }
+
+        // blank lines before prompt
+        console.info()
+        console.info()
+    }
+
     const groups: GroupedCheckboxConfig<string>['groups'] = []
 
     // Group 1: Safe to delete
@@ -63,20 +86,6 @@ export async function selectBranches(previousSelection?: PreviousSelection): Pro
                 name: `${branch} ${gray(`[${store.getRequiresForceReason(branch)}]`)}`,
                 // Restore previous selection if available, otherwise default to NOT pre-selected
                 checked: previousSelection ? previousSelection.force.includes(branch) : false,
-            })),
-        })
-    }
-
-    // Group 3: Info only
-    if (store.infoOnly.length > 0) {
-        groups.push({
-            key: 'info',
-            label: gray('Info only - renamed branches still on remote'),
-            icon: 'ℹ️',
-            choices: store.infoOnly.map((branch) => ({
-                value: branch,
-                name: `${branch} ${gray(`[${store.getInfoOnlyReason(branch)}]`)}`,
-                disabled: true, // Cannot select
             })),
         })
     }

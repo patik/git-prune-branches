@@ -109,8 +109,9 @@ describe('git-prune-branches', () => {
             expect(output).toContain('experiment/graphql-api')
             expect(output).toContain('wip/settings-redesign')
 
-            // Should list branches in Info only group
+            // Should list branches in Info only section (displayed above prompt)
             expect(output).toContain('bugfix/cache-invalidation')
+            expect(output).toContain('Will not be deleted')
 
             // Protected branch should NOT be shown (develop is in protected list)
             expect(output).not.toContain('develop')
@@ -123,7 +124,6 @@ describe('git-prune-branches', () => {
             expect(uiSection).toContain('Select branches to remove')
             expect(uiSection).toContain('Safe to delete')
             expect(uiSection).toContain('Requires force delete')
-            expect(uiSection).toContain('Info only')
         })
 
         it('should allow selecting merged branches and deleting them', async () => {

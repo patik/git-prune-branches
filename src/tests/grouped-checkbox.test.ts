@@ -133,8 +133,8 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
         vi.restoreAllMocks()
     })
 
-    describe('selectBranches - 3 group structure', () => {
-        it('should display 3 groups: safe, force, and info', async () => {
+    describe('selectBranches - 2 group structure', () => {
+        it('should display 2 groups: safe and force', async () => {
             store.safeToDelete = ['feature/safe-1', 'feature/safe-2']
             store.requiresForce = ['feature/unmerged']
             store.infoOnly = ['feature/renamed']
@@ -142,7 +142,6 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             mockGroupedCheckbox.mockResolvedValueOnce({
                 safe: ['feature/safe-1'],
                 force: [],
-                info: [],
             })
 
             vi.spyOn(store, 'getDeletableBranches').mockImplementation(async () => [])
@@ -168,14 +167,6 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
                         icon: '⚠️',
                         choices: expect.arrayContaining([
                             expect.objectContaining({ value: 'feature/unmerged', checked: false }),
-                        ]),
-                    },
-                    {
-                        key: 'info',
-                        label: expect.stringContaining('Info only'),
-                        icon: 'ℹ️',
-                        choices: expect.arrayContaining([
-                            expect.objectContaining({ value: 'feature/renamed', disabled: true }),
                         ]),
                     },
                 ],
@@ -223,23 +214,26 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
             ])
         })
 
-        it('should disable info-only branches', async () => {
+        it('should display info-only branches above the prompt', async () => {
             store.safeToDelete = ['safe-branch'] // Need at least one deletable branch so UI is shown
             store.requiresForce = []
             store.infoOnly = ['renamed-branch']
             store.staleBranches = ['safe-branch']
 
-            mockGroupedCheckbox.mockResolvedValueOnce({ safe: [], force: [], info: [] })
+            mockGroupedCheckbox.mockResolvedValueOnce({ safe: [], force: [] })
             vi.spyOn(store, 'getDeletableBranches').mockImplementation(async () => [])
+            vi.spyOn(store, 'getInfoOnlyReason').mockReturnValue('renamed')
 
             await selectBranches()
 
+            // Info-only branches should be displayed via console.info, not in the groups
+            expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('Will not be deleted'))
+            expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('renamed-branch'))
+
+            // Info group should NOT be in the groupedCheckbox call
             const call = mockGroupedCheckbox.mock.calls[0]?.[0]
             const infoGroup = call?.groups.find((g: { key: string }) => g.key === 'info')
-
-            expect(infoGroup?.choices).toEqual([
-                { value: 'renamed-branch', name: expect.stringContaining('renamed-branch'), disabled: true },
-            ])
+            expect(infoGroup).toBeUndefined()
         })
     })
 
