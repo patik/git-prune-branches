@@ -50,7 +50,7 @@ async function confirmWithEscape(message: string, linesToClear: number): Promise
             process.stdin.setRawMode(true)
         }
 
-        const cleanup = (clearOutput: boolean = false) => {
+        const cleanup = (clearOutput: boolean = false): void => {
             if (process.stdin.isTTY) {
                 process.stdin.setRawMode(false)
             }
@@ -65,7 +65,7 @@ async function confirmWithEscape(message: string, linesToClear: number): Promise
             }
         }
 
-        const handler = (_str: string | undefined, key: readline.Key | undefined) => {
+        const handler = (_str: string | undefined, key: readline.Key | undefined): void => {
             if (!key) {
                 return
             }

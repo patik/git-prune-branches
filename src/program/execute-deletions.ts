@@ -1,7 +1,7 @@
 import { green, red, yellow } from '../utils/colors.js'
 import store from './store.js'
 
-export async function executeDeletions(safe: string[], force: string[]) {
+export async function executeDeletions(safe: string[], force: string[]): Promise<0 | 1> {
     store.setQueuedForDeletion(safe, force)
     const results = await store.deleteBranches()
 

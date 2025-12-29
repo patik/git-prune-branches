@@ -8,7 +8,7 @@ const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
 let tempdir: string = process.env.TEMP_DIR || ''
 let workingDir: string = ''
 
-export const testSetup = () => {
+export const testSetup = (): string => {
     if (isCI) {
         try {
             child_process.execSync('git config --global user.email "ci@example.com"')

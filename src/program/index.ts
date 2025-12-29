@@ -8,7 +8,7 @@ import { confirmDeletion, type ConfirmResult } from './confirm-deletion.js'
 import { executeDeletions } from './execute-deletions.js'
 import { selectBranches, type PreviousSelection } from './select-branches.js'
 
-export default async function program() {
+export default async function program(): Promise<void> {
     try {
         let previousSelection: PreviousSelection | undefined
         let confirmResult: ConfirmResult

@@ -1,7 +1,7 @@
 /**
  * Split the stdout output and will take out all the empty lines
  */
-const split = (stdout: string) => {
+const split = (stdout: string): string[] => {
     return (
         (stdout || '')
             .split('\n')

@@ -106,12 +106,12 @@ export default class BranchStore {
         this.allBranches = []
     }
 
-    setQueuedForDeletion(safe: Array<string>, force: Array<string>) {
+    setQueuedForDeletion(safe: Array<string>, force: Array<string>): void {
         this.queuedForDeletion = safe
         this.queuedForForceDeletion = force
     }
 
-    async preprocess() {
+    async preprocess(): Promise<void> {
         // Reset all lists at the start
         this.remoteBranches = []
         this.localOrphanedBranches = []
@@ -155,14 +155,14 @@ export default class BranchStore {
         this.classifyBranches()
     }
 
-    private async fetchRemote() {
+    private async fetchRemote(): Promise<void> {
         const spinner = ora('Fetching from remote...').start()
 
         try {
             // Auto-prune: fetch and prune from remote
             execFileSync('git', ['fetch', this.remote, '--prune'])
             spinner.succeed('Fetched from remote')
-        } catch (err) {
+        } catch {
             spinner.warn('Could not fetch from remote, using cached data instead')
             this.noConnection = true
         }
@@ -171,7 +171,7 @@ export default class BranchStore {
     /**
      * Uses "git ls-remote" to find branches that are still available on the remote and store them in liveBranches state
      */
-    async findLiveBranches() {
+    async findLiveBranches(): Promise<void> {
         if (this.remote === '') {
             throw new RemoteError('Remote is empty. Please specify remote with -r parameter')
         }
@@ -218,13 +218,13 @@ export default class BranchStore {
         }
     }
 
-    async findAllBranches() {
+    async findAllBranches(): Promise<void> {
         // list all the branches
         const out = await stdout('git branch --format="%(refname:short)@{%(upstream)}"')
         this.allBranches = split(out)
     }
 
-    findLocalOrphanedBranches() {
+    findLocalOrphanedBranches(): void {
         this.allBranches.forEach((line) => {
             // upstream has format: "@{refs/remotes/origin/some-branch-name}"
             const startIndex = line.indexOf(`@{refs/remotes/${this.remote}`)
@@ -244,7 +244,7 @@ export default class BranchStore {
         })
     }
 
-    async findUnmergedBranches() {
+    async findUnmergedBranches(): Promise<void> {
         // list all the unmerged branches
         const out = await stdout('git branch --format="%(refname:short)" --no-merged')
         const lines = split(out)
@@ -257,7 +257,7 @@ export default class BranchStore {
         })
     }
 
-    async findRemoteBranches() {
+    async findRemoteBranches(): Promise<void> {
         this.remoteBranches = []
 
         // get list of remote branches
@@ -277,16 +277,16 @@ export default class BranchStore {
         })
     }
 
-    async getCurrentBranch() {
+    async getCurrentBranch(): Promise<void> {
         try {
             const out = await stdout('git branch --show-current')
             this.currentBranch = out.trim()
-        } catch (err) {
+        } catch {
             this.currentBranch = ''
         }
     }
 
-    findNeverPushedBranches() {
+    findNeverPushedBranches(): void {
         this.allBranches.forEach((line) => {
             // If line ends with "@{}", it has no upstream
             if (line.endsWith('@{}')) {
@@ -298,7 +298,7 @@ export default class BranchStore {
         })
     }
 
-    async lookupMergedBranches() {
+    async lookupMergedBranches(): Promise<void> {
         // Get all merged branches
         const out = await stdout('git branch --format="%(refname:short)" --merged')
         const lines = split(out)
@@ -311,7 +311,7 @@ export default class BranchStore {
         })
     }
 
-    async lookupLastCommitTimes() {
+    async lookupLastCommitTimes(): Promise<void> {
         // Get all local branches with their last commit timestamps in one efficient command
         const out = await stdout('git for-each-ref --format="%(refname:short)|%(committerdate:unix)" refs/heads/')
         const lines = split(out)
@@ -324,7 +324,7 @@ export default class BranchStore {
         })
     }
 
-    classifyBranches() {
+    classifyBranches(): void {
         // Group 1: Safe to delete (pre-selected)
         const seen1 = new Set<string>()
         this.safeToDelete = [
@@ -412,7 +412,7 @@ export default class BranchStore {
         return `renamed locally${timeAgo}`
     }
 
-    async getDeletableBranches() {
+    async getDeletableBranches(): Promise<string[]> {
         await this.preprocess()
         return this.staleBranches
     }

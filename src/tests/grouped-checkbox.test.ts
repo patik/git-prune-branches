@@ -90,7 +90,7 @@ const mockGroupedCheckbox = vi.mocked(groupedCheckbox)
 /**
  * Set the mock result for confirmDeletion
  */
-function setMockConfirmResult(result: ConfirmResult) {
+function setMockConfirmResult(result: ConfirmResult): void {
     mockConfirmResult = result
 }
 
@@ -340,7 +340,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
 
             try {
                 await selectBranches()
-            } catch (e) {
+            } catch {
                 // Exit throws in tests
             }
 
@@ -358,7 +358,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
 
             try {
                 await selectBranches()
-            } catch (e) {
+            } catch {
                 // Exit throws in tests
             }
 

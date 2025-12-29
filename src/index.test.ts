@@ -42,7 +42,7 @@ function runInteractive(
             stderr += data.toString()
         })
 
-        const sendNextInput = () => {
+        const sendNextInput = (): void => {
             if (inputIndex < inputs.length && child.stdin) {
                 child.stdin.write(inputs[inputIndex])
                 inputIndex++
