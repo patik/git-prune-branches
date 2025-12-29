@@ -260,14 +260,14 @@ describe('BranchStore', () => {
     describe('findLiveBranches (real git)', () => {
         it('should throw error when remote is empty', async () => {
             const store = new BranchStore({ remote: '' })
-            await expect(store.findLiveBranches()).rejects.toThrow(
+            await expect(store.lookupLiveBranches()).rejects.toThrow(
                 'Remote is empty. Please specify remote with -r parameter',
             )
         })
 
         it('should find branches that exist on the remote', async () => {
             const store = new BranchStore()
-            await store.findLiveBranches()
+            await store.lookupLiveBranches()
 
             // These branches still exist on remote (were not deleted)
             expect(store.liveBranches).toContain('main')
@@ -280,7 +280,7 @@ describe('BranchStore', () => {
 
         it('should set noConnection when remote does not exist', async () => {
             const store = new BranchStore({ remote: 'nonexistent-remote' })
-            await store.findLiveBranches()
+            await store.lookupLiveBranches()
 
             expect(store.noConnection).toBe(true)
             expect(store.liveBranches.size).toBe(0)
@@ -290,7 +290,7 @@ describe('BranchStore', () => {
             const store = new BranchStore()
             store.liveBranches = new Set(['old-branch'])
 
-            await store.findLiveBranches()
+            await store.lookupLiveBranches()
 
             // Note: findLiveBranches appends to existing array
             // Reset is handled by preprocess() which clears all arrays first
@@ -299,10 +299,10 @@ describe('BranchStore', () => {
         })
     })
 
-    describe('findUnmergedBranches (real git)', () => {
+    describe('lookupUnmergedBranches (real git)', () => {
         it('should find branches not merged into current branch', async () => {
             const store = new BranchStore()
-            await store.findUnmergedBranches()
+            await store.lookupUnmergedBranches()
 
             // These branches have commits not merged into main
             expect(store.unmergedBranches).toContain('experiment/graphql-api')
@@ -316,17 +316,17 @@ describe('BranchStore', () => {
         it('should not include current branch', async () => {
             const store = new BranchStore()
             await store.getCurrentBranch()
-            await store.findUnmergedBranches()
+            await store.lookupUnmergedBranches()
 
             // main is the current branch and is merged into itself
             expect(store.unmergedBranches).not.toContain('main')
         })
     })
 
-    describe('findRemoteBranches (real git)', () => {
+    describe('lookupRemoteBranches (real git)', () => {
         it('should find cached remote branches', async () => {
             const store = new BranchStore()
-            await store.findRemoteBranches()
+            await store.lookupRemoteBranches()
 
             // These exist in git's remote-tracking refs
             expect(store.remoteBranches).toContain('main')
@@ -335,7 +335,7 @@ describe('BranchStore', () => {
 
         it('should not include branches from other remotes', async () => {
             const store = new BranchStore()
-            await store.findRemoteBranches()
+            await store.lookupRemoteBranches()
 
             // All branches should be from origin
             // (no other remotes in our test setup, but ensure the filter works)
@@ -346,14 +346,14 @@ describe('BranchStore', () => {
             const store = new BranchStore()
             store.remoteBranches = ['old-remote-branch']
 
-            await store.findRemoteBranches()
+            await store.lookupRemoteBranches()
 
             expect(store.remoteBranches).not.toContain('old-remote-branch')
         })
 
         it('should handle remote with no branches (different remote name)', async () => {
             const store = new BranchStore({ remote: 'nonexistent' })
-            await store.findRemoteBranches()
+            await store.lookupRemoteBranches()
 
             expect(store.remoteBranches).toEqual([])
         })
@@ -1487,10 +1487,10 @@ describe('BranchStore - error handling', () => {
     it('should throw RemoteError when remote is empty in findLiveBranches', async () => {
         const store = new BranchStore({ remote: '' })
 
-        await expect(store.findLiveBranches()).rejects.toThrow('Remote is empty')
+        await expect(store.lookupLiveBranches()).rejects.toThrow('Remote is empty')
 
         try {
-            await store.findLiveBranches()
+            await store.lookupLiveBranches()
         } catch (err) {
             expect((err as { code: number }).code).toBe(1984)
         }

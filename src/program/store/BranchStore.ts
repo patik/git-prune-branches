@@ -11,6 +11,7 @@ class RemoteError extends Error {
 
 export default class BranchStore {
     remote: string
+    hasRunPreprocess: boolean = false
     remoteBranches: Array<string>
 
     /**
@@ -31,7 +32,7 @@ export default class BranchStore {
     /**
      * Current branch (cannot be deleted)
      */
-    currentBranch: string
+    currentBranch: string = ''
 
     /**
      * Protected branches that should never be deleted
@@ -94,7 +95,7 @@ export default class BranchStore {
         this.failedToDelete = []
         this.liveBranches = new Set()
         this.unmergedBranches = new Set()
-        this.currentBranch = ''
+        // this.currentBranch = ''
         this.protectedBranches = new Set((ops.protected ?? defaultProtectedBranches).split(',').map((b) => b.trim()))
         this.neverPushedBranches = new Set()
         this.mergedBranches = []
@@ -135,9 +136,9 @@ export default class BranchStore {
 
         // Sift through the branches in parallel and categorize them
         await Promise.all([
-            this.findLiveBranches(),
-            this.findUnmergedBranches(),
-            this.findRemoteBranches(),
+            this.lookupLiveBranches(),
+            this.lookupUnmergedBranches(),
+            this.lookupRemoteBranches(),
             this.lookupMergedBranches(),
             this.lookupLastCommitTimes(),
             // eslint-disable-next-line @typescript-eslint/await-thenable
@@ -153,6 +154,7 @@ export default class BranchStore {
 
         // Classify branches into the 3 groups
         this.classifyBranches()
+        this.hasRunPreprocess = true
     }
 
     private async fetchRemote(): Promise<void> {
@@ -171,7 +173,7 @@ export default class BranchStore {
     /**
      * Uses "git ls-remote" to find branches that are still available on the remote and store them in liveBranches state
      */
-    async findLiveBranches(): Promise<void> {
+    async lookupLiveBranches(): Promise<void> {
         if (this.remote === '') {
             throw new RemoteError('Remote is empty. Please specify remote with -r parameter')
         }
@@ -244,7 +246,7 @@ export default class BranchStore {
         })
     }
 
-    async findUnmergedBranches(): Promise<void> {
+    async lookupUnmergedBranches(): Promise<void> {
         // list all the unmerged branches
         const out = await stdout('git branch --format="%(refname:short)" --no-merged')
         const lines = split(out)
@@ -257,7 +259,7 @@ export default class BranchStore {
         })
     }
 
-    async findRemoteBranches(): Promise<void> {
+    async lookupRemoteBranches(): Promise<void> {
         this.remoteBranches = []
 
         // get list of remote branches
@@ -413,7 +415,10 @@ export default class BranchStore {
     }
 
     async getDeletableBranches(): Promise<string[]> {
-        await this.preprocess()
+        if (!this.hasRunPreprocess) {
+            await this.preprocess()
+        }
+
         return this.staleBranches
     }
 

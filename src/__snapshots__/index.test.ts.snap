@@ -18,7 +18,7 @@ exports[`git-prune-branches > interactive grouped checkbox mode (end-to-end) > s
     ◯ bugfix/cache-invalidation [renamed locally; last commit just now]
 (space: select, ctrl+a: toggle all, ctrl+i: invert, type to search)
 
-👋 No branches were deleted.
+ℹ️ No branches were deleted.
 - Fetching from remote...
 ✔ Fetched from remote
 "
