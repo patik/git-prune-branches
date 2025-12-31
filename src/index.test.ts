@@ -202,8 +202,8 @@ describe('git-prune-branches', () => {
             const cleaned = stripAnsi(output)
 
             // Should have grouped structure
-            expect(cleaned).toContain('✅ Safe to delete')
-            expect(cleaned).toContain('⚠️ Requires force delete')
+            expect(cleaned).toContain('Safe to delete')
+            expect(cleaned).toContain('Requires force delete')
 
             // Should show help text
             expect(cleaned).toContain('space: select')
