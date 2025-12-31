@@ -155,7 +155,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
                     {
                         key: 'safe',
                         label: 'Safe to delete',
-                        icon: '✅',
+                        icon: '✔︎',
                         choices: expect.arrayContaining([
                             expect.objectContaining({ value: 'feature/safe-1', checked: true }),
                             expect.objectContaining({ value: 'feature/safe-2', checked: true }),
@@ -164,7 +164,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
                     {
                         key: 'force',
                         label: expect.stringContaining('Requires force delete'),
-                        icon: '⚠️',
+                        icon: '⚠︎',
                         choices: expect.arrayContaining([
                             expect.objectContaining({ value: 'feature/unmerged', checked: false }),
                         ]),

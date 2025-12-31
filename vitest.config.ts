@@ -7,6 +7,6 @@ export default defineConfig({
         testTimeout: 10000,
         hookTimeout: 10000,
         include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts}'],
-        exclude: ['src/tests/manual/**/*'],
+        exclude: ['src/tests/demo/**/*'],
     },
 })

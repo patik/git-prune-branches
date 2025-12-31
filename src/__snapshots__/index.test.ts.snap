@@ -2,7 +2,7 @@
 
 exports[`git-prune-branches > interactive grouped checkbox mode (end-to-end) > should display complete UI snapshot with all elements > grouped-checkbox-clean-output 1`] = `
 "
-    Will not be deleted — local branches still tracking remote branches with different names:
+ℹ️ Will not be deleted — local branches still tracking remote branches with different names
       • bugfix/cache-invalidation [last commit just now]
 
 

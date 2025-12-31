@@ -1,7 +1,7 @@
 import type { GroupedCheckboxConfig } from 'inquirer-grouped-checkbox'
 import groupedCheckbox from 'inquirer-grouped-checkbox'
 import { exit } from 'node:process'
-import { gray, yellow } from '../utils/colors.js'
+import { gray, green, yellow } from '../utils/colors.js'
 import store from './store/store.js'
 
 /** Previous selection state to restore when returning from confirmation screen */
@@ -30,27 +30,25 @@ export async function selectBranches(previousSelection?: PreviousSelection): Pro
 
     if (totalDeletable === 0) {
         console.info('✅ No deletable branches were found')
-        console.info('\nℹ️ Some branches are renamed locally but still exist on remote:')
+        console.info('\nℹ Some branches are renamed locally but still exist on remote:')
         store.infoOnly.forEach((b) => console.info(`  • ${b}`))
         exit(0)
     }
 
     // Display info-only branches before the prompt
     if (store.infoOnly.length > 0) {
-        console.info(
-            `\n    Will not be deleted — ${gray('local branches still tracking remote branches with different names:')}`,
-        )
+        console.info(`\nℹ Will not be deleted — ${gray('local branches whose remote branches have different names')}`)
 
         // Show all if few, otherwise show first 3 with count
         if (store.infoOnly.length < 4) {
             store.infoOnly.forEach((branch) => {
-                console.info(`      • ${branch} ${gray(`[${store.getInfoOnlyReason(branch)}]`)}`)
+                console.info(`    • ${branch} ${gray(`[${store.getInfoOnlyReason(branch)}]`)}`)
             })
         } else {
             store.infoOnly.slice(0, 3).forEach((branch) => {
-                console.info(`      • ${branch} ${gray(`[${store.getInfoOnlyReason(branch)}]`)}`)
+                console.info(`    • ${branch} ${gray(`[${store.getInfoOnlyReason(branch)}]`)}`)
             })
-            console.info(`      • And ${store.infoOnly.length - 3} more branches...`)
+            console.info(`    • And ${store.infoOnly.length - 3} more branches...`)
         }
 
         // blank lines before prompt
@@ -65,7 +63,7 @@ export async function selectBranches(previousSelection?: PreviousSelection): Pro
         groups.push({
             key: 'safe',
             label: 'Safe to delete',
-            icon: '✅',
+            icon: green('✔︎'),
             choices: store.safeToDelete.map((branch) => ({
                 value: branch,
                 name: `${branch} ${gray(`[${store.getSafeToDeleteReason(branch)}]`)}`,
@@ -80,7 +78,7 @@ export async function selectBranches(previousSelection?: PreviousSelection): Pro
         groups.push({
             key: 'force',
             label: yellow('Requires force delete — cannot be undone'),
-            icon: '⚠️',
+            icon: yellow('⚠︎'),
             choices: store.requiresForce.map((branch) => ({
                 value: branch,
                 name: `${branch} ${gray(`[${store.getRequiresForceReason(branch)}]`)}`,

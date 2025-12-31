@@ -14,9 +14,9 @@
     "scripts": {
         "build": "tsc",
         "start": "tsx ./src/index.ts",
-        "test": "pnpm run build && vitest",
-        "test:once": "pnpm run build && vitest run",
-        "test:manual": "./src/tests/manual/run.sh",
+        "test": "vitest",
+        "test:once": "vitest run",
+        "demo": "./src/tests/demo/run.sh",
         "lint": "tsc --noEmit && eslint . --fix && pnpm run format",
         "format": "prettier . --list-different --write",
         "check-format": "prettier . --list-different",

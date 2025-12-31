@@ -100,7 +100,7 @@ pnpx tsx ~/code/git-prune-branches/src/index.ts
 You can also run the app against a fake git repo in a temporary folder
 
 ```sh
-pnpm run test:manual
+pnpm demo
 ```
 
 ### Testing

@@ -3,7 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import stripAnsi from 'strip-ansi'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { testSetup } from './tests/manual/setup.js'
+import { testSetup } from './tests/demo/setup.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
