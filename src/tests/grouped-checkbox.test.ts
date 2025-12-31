@@ -4,6 +4,7 @@ import { confirmDeletion, type ConfirmResult } from '../program/confirm-deletion
 import { executeDeletions } from '../program/execute-deletions.js'
 import { selectBranches } from '../program/select-branches.js'
 import store from '../program/store/store.js'
+import { bold, green, yellow } from '../utils/colors.js'
 
 // Mock process.exit to throw an error to stop execution
 vi.mock('node:process', async () => {
@@ -155,7 +156,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
                     {
                         key: 'safe',
                         label: 'Safe to delete',
-                        icon: '✔︎',
+                        icon: bold(green('✔')),
                         choices: expect.arrayContaining([
                             expect.objectContaining({ value: 'feature/safe-1', checked: true }),
                             expect.objectContaining({ value: 'feature/safe-2', checked: true }),
@@ -164,7 +165,7 @@ describe('Grouped Checkbox UI V2 (e2e)', () => {
                     {
                         key: 'force',
                         label: expect.stringContaining('Requires force delete'),
-                        icon: '⚠︎',
+                        icon: yellow('⚠︎'),
                         choices: expect.arrayContaining([
                             expect.objectContaining({ value: 'feature/unmerged', checked: false }),
                         ]),

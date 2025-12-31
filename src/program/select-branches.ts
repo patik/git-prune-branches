@@ -1,7 +1,7 @@
 import type { GroupedCheckboxConfig } from 'inquirer-grouped-checkbox'
 import groupedCheckbox from 'inquirer-grouped-checkbox'
 import { exit } from 'node:process'
-import { gray, green, yellow } from '../utils/colors.js'
+import { bold, gray, green, yellow } from '../utils/colors.js'
 import store from './store/store.js'
 
 /** Previous selection state to restore when returning from confirmation screen */
@@ -63,7 +63,7 @@ export async function selectBranches(previousSelection?: PreviousSelection): Pro
         groups.push({
             key: 'safe',
             label: 'Safe to delete',
-            icon: green('✔︎'),
+            icon: bold(green('✔')),
             choices: store.safeToDelete.map((branch) => ({
                 value: branch,
                 name: `${branch} ${gray(`[${store.getSafeToDeleteReason(branch)}]`)}`,
