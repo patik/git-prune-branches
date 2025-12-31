@@ -7,7 +7,7 @@ exports[`git-prune-branches > interactive grouped checkbox mode (end-to-end) > s
 
 
 ? Select branches to remove
-❯ ◉ ✔ Safe to delete (7/7)
+❯ ◉ ✅ Safe to delete (7/7)
     ◉ feature/dark-mode [merged, remote deleted; last commit just now]
     ◉ feature/payments/stripe/webhooks [merged, remote deleted; last commit just
  now]
@@ -16,7 +16,7 @@ exports[`git-prune-branches > interactive grouped checkbox mode (end-to-end) > s
     ◉ fix/#432-modal-close [merged, remote deleted; last commit just now]
     ◉ release/v2.1.0 [merged, remote deleted; last commit just now]
     ◉ chore/update-deps [merged, local only; last commit just now]
-  ◯ ⚠︎ Requires force delete — cannot be undone (0/2)
+  ◯ ⚠️ Requires force delete — cannot be undone (0/2)
     ◯ experiment/graphql-api [unmerged, remote deleted; last commit just now]
     ◯ wip/settings-redesign [unmerged, local only; last commit just now]
 (space: select, ctrl+a: toggle all, ctrl+i: invert, type to search)
