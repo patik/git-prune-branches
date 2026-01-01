@@ -18,7 +18,6 @@ export default [
         },
         rules: {
             '@typescript-eslint/no-explicit-any': 'error',
-            '@typescript-eslint/explicit-function-return-type': 'warn',
             '@typescript-eslint/no-unused-vars': [
                 'warn',
                 {
@@ -26,7 +25,6 @@ export default [
                     varsIgnorePattern: '^_',
                 },
             ],
-            '@typescript-eslint/no-floating-promises': 'warn',
             '@typescript-eslint/await-thenable': 'error',
             '@typescript-eslint/no-misused-promises': 'error',
             '@typescript-eslint/consistent-type-imports': ['warn', { prefer: 'type-imports' }],

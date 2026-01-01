@@ -95,7 +95,6 @@ export default class BranchStore {
         this.failedToDelete = []
         this.liveBranches = new Set()
         this.unmergedBranches = new Set()
-        // this.currentBranch = ''
         this.protectedBranches = new Set((ops.protected ?? defaultProtectedBranches).split(',').map((b) => b.trim()))
         this.neverPushedBranches = new Set()
         this.mergedBranches = []

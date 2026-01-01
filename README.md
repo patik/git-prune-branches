@@ -2,9 +2,9 @@
 
 Review and delete stale branches using an interactive prompt
 
-<img src="https://github.com/user-attachments/assets/eb468d62-a842-4d43-8645-fed82c5ebdcf" width="600" alt="">
+<img src="https://github.com/user-attachments/assets/7b90e324-2036-4fcf-997b-46159be793f4" width="600" height="489" alt="">
 
-Addresses common questions, like:
+Addresses common use cases, such as:
 
 - [Remove tracking branches no longer on remote](https://stackoverflow.com/questions/7726949/remove-tracking-branches-no-longer-on-remote)
 - [How to prune local tracking branches that do not exist on remote anymore?](https://stackoverflow.com/questions/13064613/how-to-prune-local-tracking-branches-that-do-not-exist-on-remote-anymore/30494276#30494276)
@@ -125,7 +125,7 @@ pnpm build
 ### Version 2.0.0
 
 - Removed flags: `--dry-run`, `--prune-all`, `--force`, and `--yes`
-    - `git-prune-branches` is meant to be a visual, interactive app. If you're looking for automation, consider another package such as [git-removed-branches](https://github.com/nemisj/git-removed-branches)
+    - `git-prune-branches` is meant to be a visual, interactive app. If you're looking for that kind of automation, consider another package such as [git-removed-branches](https://github.com/nemisj/git-removed-branches)
 
 ## Credit
 
