@@ -2,8 +2,8 @@
 
 exports[`git-prune-branches > interactive grouped checkbox mode (end-to-end) > should display complete UI snapshot with all elements > grouped-checkbox-clean-output 1`] = `
 "
-ℹ Will not be deleted — local branches still tracking remote branches with different names
-   • bugfix/cache-invalidation [last commit just now]
+ℹ Will not be deleted — local branches whose remote branches have different names
+    • bugfix/cache-invalidation [last commit just now]
 
 
 ? Select branches to remove
