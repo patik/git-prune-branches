@@ -1,0 +1,29 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`git-prune-branches > interactive grouped checkbox mode (end-to-end) > should display complete UI snapshot with all elements > grouped-checkbox-clean-output 1`] = `
+"
+ℹ Will not be deleted — local branches whose remote branches have different names
+    • bugfix/cache-invalidation [last commit 1d ago]
+
+
+? Select branches to remove (7/9)
+❯ ◉ ✔ Safe to delete (7/7)
+    ◉ feature/dark-mode [merged, remote deleted; last commit 1d ago]
+    ◉ feature/payments/stripe/webhooks [merged, remote deleted; last commit 1d
+ago]
+    ◉ feature/search-filters [merged, remote deleted; last commit 3d ago]
+    ◉ feature/user-avatars [merged, remote deleted; last commit 1d ago]
+    ◉ fix/#432-modal-close [merged, remote deleted; last commit 1d ago]
+    ◉ release/v2.1.0 [merged, remote deleted; last commit 1d ago]
+    ◉ chore/update-deps [merged, local only; last commit 5d ago]
+  ◯ ⚠︎ Requires force delete — cannot be undone (0/2)
+    ◯ experiment/graphql-api [unmerged, remote deleted; last commit 2w ago]
+    ◯ wip/settings-redesign [unmerged, local only; last commit 1w ago]
+
+(Select: space • Toggle all: ctrl+a • Invert: ctrl+i • Type to search)
+
+ℹ No branches were deleted.
+- Fetching from remote...
+✔ Fetched from remote
+"
+`;

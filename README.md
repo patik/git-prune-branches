@@ -1,112 +1,71 @@
 # git-prune-branches
 
-List or remove local tracked branches, which are deleted from the remote.
+Review and delete stale branches using an interactive prompt
 
-It's a fork of [git-removed-branches](https://github.com/nemisj/git-removed-branches) with an interactive prompt, and the ability to retry deleting branches with `--force`
+<img src="https://github.com/user-attachments/assets/7b90e324-2036-4fcf-997b-46159be793f4" width="600" height="489" alt="">
 
-<img src="https://github.com/user-attachments/assets/ac1a3823-a04c-4f83-960e-036788949fb7" width="720" alt="">
-
-<!-- <img src="https://github.com/user-attachments/assets/944bc691-2c0f-4047-8d83-35c13b1f9d82" width="821" alt="">-->
-<!-- <img src="https://github.com/user-attachments/assets/ce5d0e53-6d42-4cfe-b920-0a268d87dd06" width="1043" alt=""> -->
-<!-- https://github.com/user-attachments/assets/e4502861-bd7d-47b7-aee7-e39154bc769c -->
-
-Addresses questions, like:
+Addresses common use cases, such as:
 
 - [Remove tracking branches no longer on remote](https://stackoverflow.com/questions/7726949/remove-tracking-branches-no-longer-on-remote)
 - [How to prune local tracking branches that do not exist on remote anymore?](https://stackoverflow.com/questions/13064613/how-to-prune-local-tracking-branches-that-do-not-exist-on-remote-anymore/30494276#30494276)
 
-![Demo](https://github.com/patik/git-prune-branches/blob/master/usage.gif)
-
-## Why?
-
-Because I'm tired of doing every time `git fetch -p`, `git branch -r`, `git branch` and keep comparing which branches are gone from the GitHub, but still available locally and doing `git branch -D ${branch_name}` on each of them, one by one.
-
 ## What does it do?
 
-This command will compare your local branches with remote and show you branches that are no longer available on remote but are still presented in your local repository. You can also use it to view and delete all (remotely) removed branches in one go using `--prune-all` flag.
+This command will automatically fetch and prune from your remote, then display an interactive selection of branches to delete organized into three groups:
 
-<img width="449" alt="Prompt with list of branches, allowing arbitrary selection" src="https://github.com/user-attachments/assets/705d10ff-733e-449d-832a-94cef66e08c6" />
+1. **Safe to delete** (pre-selected) - Merged branches that were deleted from remote, or local merged branches that were never pushed
+2. **Requires force delete** (not pre-selected) - Unmerged branches with commits that need `--force` to delete
+3. **Info only** - Renamed branches that still exist on remote (shown for context, cannot be deleted)
 
-This command works without the need to run `git fetch -p`, but a working network connection to your remote is required. If no connection can be established with the remote repository, then local information about your remote will be used instead. If your local repository is not in sync with the remote repository, it will warn you about it.
+After selecting branches, you'll see a preview of the exact git commands that will be executed before confirming the deletion.
+
+<img width="938" height="504" alt="" src="https://github.com/user-attachments/assets/c35fe088-0368-4d2b-9a68-2970ccc43a14" />
+
+The tool automatically fetches and prunes from your remote before showing branches, ensuring you always have up-to-date information. A working network connection to your remote is required. If no connection can be established, cached local information will be used instead.
 
 ## Installation
-
-### NPM
 
 ```bash
 npm install -g git-prune-branches
 ```
 
-Please install a package globally with -g flag so that you can use it directly as a sub command of git, like this:
+Recommended: install the package globally with `-g` flag so that you can use it directly as a sub command of git, like this:
 
 ```bash
 git prune-branches
 ```
 
-### NPX
+## Usage
 
-It's also possible to use package through `npx` without installing:
+It's possible to use the package via `npx` without installing:
 
 ```bash
 npx git-prune-branches
 ```
 
-## Usage
+When installed globally with `npm install -g git-prune-branches`, you can use this git alias:
 
 ```bash
 git prune-branches
 ```
 
-This command will look through the branches that are no longer available on the remote and display them.
-In case you haven't run `git fetch -p`, it will warn you to do so.
-
-<img width="1222" alt="Confirmation prompt" src="https://github.com/user-attachments/assets/0cf75cb7-af8d-43c6-81a1-3160ab7f48f3" />
-
-### Auto-removal
-
-To delete all local branches without choosing which ones, and without confirmation, use `--prune-all` or `-p` flag
-
-```bash
-git prune-branches --prune-all
-```
-
-This command will compare your local branches to the remote ones and remove, those which do not exist anymore on the remote side.
-
 ### Custom remote
 
-If you have configured remote alias to something different than **'origin'**, you can use `--remote` or `-r` flag to specify the name of the remote. e.g., to specify remote to be `upstream`, you can use:
+If you have configured remote alias to something different than **'origin'**, you can use `--remote` or `-r` flag to specify the name of the remote. For example, to specify remote to be `upstream`, you can use:
 
 ```bash
 git prune-branches --remote upstream
 ```
 
-## Forcing removal
+### Custom protected branches
 
-If you get an error when trying to delete branches:
-
-```bash
-The branch {branch_name} is not fully merged.
-```
-
-you can force deletion by using `--force` flag or the `-f` alias
+If you want to completely avoid deleting certain branches, you can define the branch names using the `--protected` flag. For example, to skip the `develop` and `release` branches, you can use:
 
 ```bash
-git prune-branches --prune-all --force
+git prune-branches --protected develop,release
 ```
 
-## Retrying with `--force`
-
-If any branches fail to delete when the `--force` flag is not used, `git-prune-branches` will offer to retry and delete them again using `--force`.
-
-<img width="1178" alt="" src="https://github.com/user-attachments/assets/925783c3-c689-4279-b961-a094c63476b3" />
-
-## Skipping confirmation
-
-You can skip the confirmation prompts with `--yes` or the shortcut `-y`:
-
-```bash
-git prune-branches -y
-```
+If `--protected` is not specified, `git-prune-branches` will assume that branches named `main`, `master`, `develop`, and `development` should be protected.
 
 ## Version
 
@@ -118,7 +77,7 @@ git prune-branches --version
 
 ## Troubleshooting
 
-If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too many branches (more then 3382—see [discussion](https://github.com/patik/git-prune-branches/issues/11)).
+If you encounter error `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` it is possible that your repository contains too many branches (more than 3382—see [discussion](https://github.com/nemisj/git-removed-branches/issues/11)).
 
 You can fix this by specifying NODE_MAX_BUFFER environment variable. For example:
 
@@ -128,20 +87,29 @@ NODE_MAX_BUFFER=1048576 git prune-branches
 
 ## Development
 
+Note that `pnpm` is recommended for development since some scripts us `pnpx` internally.
+
+### Running
+
+Run the source code using `tsx`, e.g. to test it on another local repo
+
+```sh
+pnpx tsx ~/code/git-prune-branches/src/index.ts
+```
+
+You can also run the app against a fake git repo in a temporary folder
+
+```sh
+pnpm demo
+```
+
 ### Testing
 
 This project uses [Vitest](https://vitest.dev/) for testing. The tests create a temporary git repository and verify the behavior of the tool in different scenarios.
 
-#### Run tests in watch mode
-
 ```bash
-pnpm test
-```
-
-#### Run tests once
-
-```bash
-pnpm test:once
+pnpm test # watch mode
+pnpm test:once # run all tests once
 ```
 
 ### Building
@@ -152,12 +120,12 @@ Build the TypeScript source:
 pnpm build
 ```
 
-### Linting and Formatting
+## Breaking changes
 
-```bash
-pnpm lint
-pnpm format
-```
+### Version 2.0.0
+
+- Removed flags: `--dry-run`, `--prune-all`, `--force`, and `--yes`
+    - `git-prune-branches` is meant to be a visual, interactive app. If you're looking for that kind of automation, consider another package such as [git-removed-branches](https://github.com/nemisj/git-removed-branches)
 
 ## Credit
 

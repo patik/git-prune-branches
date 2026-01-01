@@ -4,26 +4,38 @@ import './side-effects/handle-control-c.js'
 
 // Program imports
 import { exit } from 'node:process'
-import { green } from 'yoctocolors'
-import { firstAttempt } from './first-attempt.js'
-import { retryFailedDeletions } from './retry-failed-dletions.js'
-import store from './store.js'
+import { confirmDeletion, type ConfirmResult } from './confirm-deletion.js'
+import { executeDeletions } from './execute-deletions.js'
+import { selectBranches, type PreviousSelection } from './select-branches.js'
 
-export default async function program() {
+export default async function program(): Promise<void> {
     try {
-        await firstAttempt()
+        let previousSelection: PreviousSelection | undefined
+        let confirmResult: ConfirmResult
 
-        if (store.failedToDelete.length > 0) {
-            await retryFailedDeletions()
-        } else {
-            const total = store.queuedForDeletion.length
-            console.info(green(`✅ Deleted ${total === 1 ? '1' : `all ${total}`} branch${total === 1 ? '' : 'es'}`))
-            exit(0)
-        }
+        // Loop between selection and confirmation screens
+        // until user confirms, cancels, or exits
+        do {
+            // Screen 1: Select branches (restore previous selection if going back)
+            const { safe, force } = await selectBranches(previousSelection)
 
-        if (store.failedToDelete.length > 0) {
-            exit(1)
-        }
+            // Save current selection in case user goes back
+            previousSelection = { safe, force }
+
+            // Screen 2: Confirm with command preview
+            confirmResult = await confirmDeletion(safe, force)
+
+            if (confirmResult === 'cancel') {
+                console.info('👋 No branches were removed.')
+                exit(0)
+            }
+
+            // If 'back', loop continues and shows selection screen again
+        } while (confirmResult === 'back')
+
+        // Screen 3: Execute and show results (auto-exit)
+        const exitCode = await executeDeletions(previousSelection.safe, previousSelection.force)
+        exit(exitCode)
     } catch (err: unknown) {
         if (typeof err === 'object' && err) {
             if ('code' in err && typeof err.code === 'number' && err.code === 128) {
@@ -32,11 +44,11 @@ export default async function program() {
                 process.stderr.write(`ERROR: ${err.message} \r\n`)
             } else if ('stack' in err) {
                 if (err instanceof Error && err.name === 'ExitPromptError') {
-                    console.log('\r\n👋 until next time!')
+                    console.log('\r\nℹ️ No branches were deleted.')
                     exit(0)
                 }
 
-                process.stderr.write((err.stack || err) + '\r\n')
+                process.stderr.write(`${err.stack || err}\r\n`)
             }
         }
 

@@ -2,7 +2,7 @@
 
 ## Project description
 
-This is a command line tool that helps clean up Git branches the user no longer needs. It compares local branches to the remote ones and removes those which do not exist anymore on the remote side. It features an interactive prompt to let the user choose which branches to delete.
+This is a command line tool that helps clean up Git branches the user no longer needs. It compares local branches to the remote ones and removes those which do not exist anymore on the remote side. It features an interactive prompt to let the user choose which branches to delete. The spirit of the tool is to lean more towards nice UX rather than full automation.
 
 The tool is written in TypeScript and uses the Inquirer.js library for the interactive prompts.
 
@@ -19,8 +19,7 @@ The tool is written in TypeScript and uses the Inquirer.js library for the inter
 
 ## Dependencies
 
-The main contributor of this repo (@patik) also maintains the following Node modules. While working on this repo, if you (the agent) discover a bug in one of these packages, or feel that a package could be improved in some way that would benefit this repo, please consider suggesting that the package be modified.
+The owner of this repo (@patik) also maintains the following Node modules. While working on this repo, if you (the agent) discover a bug in one of these packages, or feel that a package could be improved in some way that would benefit this repo, please consider suggesting that the package be modified.
 
-- inquirer-form-prompt
-- inquirer-select-with-state
+- inquirer-grouped-checkbox
 - simple-stdout
