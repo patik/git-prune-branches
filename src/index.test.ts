@@ -5,6 +5,19 @@ import stripAnsi from 'strip-ansi'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { testSetup } from './tests/demo/setup.js'
 
+/**
+ * Normalize platform-specific emoji variations for consistent snapshots.
+ * macOS terminals render some emojis with variation selectors (colorful),
+ * while Linux/CI uses plain Unicode characters.
+ */
+function normalizeEmojis(str: string): string {
+    return str
+        .replace(/✅/g, '✔') // U+2705 -> U+2714 (Green checkmark to plain checkmark)
+        .replace(/✔️/g, '✔') // U+2714 U+FE0F -> U+2714 (Remove emoji variation selector)
+        .replace(/⚠️/g, '⚠︎') // U+26A0 U+FE0F -> U+26A0 U+FE0E (Emoji variant to text variant)
+        .replace(/ℹ️/g, 'ℹ') // U+2139 U+FE0F -> U+2139 (Remove emoji variation selector)
+}
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const bin = path.join(__dirname, '../dist/index.js')
@@ -244,7 +257,8 @@ describe('git-prune-branches', () => {
             // Snapshot terminal output without ANSI codes for stable testing
             const output = result.stdout + result.stderr
             const cleaned = stripAnsi(output)
-            expect(cleaned).toMatchSnapshot('grouped-checkbox-clean-output')
+            const normalized = normalizeEmojis(cleaned)
+            expect(normalized).toMatchSnapshot('grouped-checkbox-clean-output')
         })
     })
 })

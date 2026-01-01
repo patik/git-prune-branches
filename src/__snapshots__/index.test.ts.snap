@@ -2,12 +2,12 @@
 
 exports[`git-prune-branches > interactive grouped checkbox mode (end-to-end) > should display complete UI snapshot with all elements > grouped-checkbox-clean-output 1`] = `
 "
-ℹ️ Will not be deleted — local branches still tracking remote branches with different names
-      • bugfix/cache-invalidation [last commit 1d ago]
+ℹ Will not be deleted — local branches whose remote branches have different names
+    • bugfix/cache-invalidation [last commit 1d ago]
 
 
 ? Select branches to remove
-❯ ◉ ✅ Safe to delete (7/7)
+❯ ◉ ✔ Safe to delete (7/7)
     ◉ feature/dark-mode [merged, remote deleted; last commit 1d ago]
     ◉ feature/payments/stripe/webhooks [merged, remote deleted; last commit 1d
 ago]
@@ -16,12 +16,12 @@ ago]
     ◉ fix/#432-modal-close [merged, remote deleted; last commit 1d ago]
     ◉ release/v2.1.0 [merged, remote deleted; last commit 1d ago]
     ◉ chore/update-deps [merged, local only; last commit 5d ago]
-  ◯ ⚠️ Requires force delete — cannot be undone (0/2)
+  ◯ ⚠︎ Requires force delete — cannot be undone (0/2)
     ◯ experiment/graphql-api [unmerged, remote deleted; last commit 2w ago]
     ◯ wip/settings-redesign [unmerged, local only; last commit 1w ago]
 (space: select, ctrl+a: toggle all, ctrl+i: invert, type to search)
 
-ℹ️ No branches were deleted.
+ℹ No branches were deleted.
 - Fetching from remote...
 ✔ Fetched from remote
 "
