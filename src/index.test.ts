@@ -219,8 +219,8 @@ describe('git-prune-branches', () => {
             expect(cleaned).toContain('Requires force delete')
 
             // Should show help text
-            expect(cleaned).toContain('space: select')
-            expect(cleaned).toContain('type to search')
+            expect(cleaned).toContain('Select: space')
+            expect(cleaned).toContain('Type to search')
         })
 
         it('should handle user canceling the selection', async () => {
