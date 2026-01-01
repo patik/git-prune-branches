@@ -417,11 +417,11 @@ describe('BranchStore', () => {
             expect(store.lastCommitTimes.size).toBeGreaterThan(0)
             expect(store.lastCommitTimes.has('main')).toBe(true)
 
-            // Timestamps should be reasonable (within last hour since testSetup just ran)
+            // Timestamps should be reasonable (within last 30 days since testSetup creates commits with relative dates)
             const mainTimestamp = store.lastCommitTimes.get('main')
             expect(mainTimestamp).toBeDefined()
             const now = Math.floor(Date.now() / 1000)
-            expect(now - mainTimestamp!).toBeLessThan(3600) // Less than 1 hour ago
+            expect(now - mainTimestamp!).toBeLessThan(30 * 24 * 3600) // Less than 30 days ago
         })
 
         it('should have timestamps for all local branches', async () => {

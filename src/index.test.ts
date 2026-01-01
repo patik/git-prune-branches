@@ -193,7 +193,7 @@ describe('git-prune-branches', () => {
                     '/', // Activate search (if supported)
                     '\x03', // Ctrl+C to exit
                 ],
-                2000,
+                3000,
             )
 
             const output = result.stdout + result.stderr

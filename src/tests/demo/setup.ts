@@ -8,6 +8,21 @@ const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
 let tempdir: string = process.env.TEMP_DIR || ''
 let workingDir: string = ''
 
+// Helper function to execute git commands with a specific date
+const execWithDate = (command: string, daysAgo: number, options: { cwd: string }): Buffer => {
+    const date = new Date()
+    date.setDate(date.getDate() - daysAgo)
+    const dateStr = date.toISOString()
+
+    const env = {
+        ...process.env,
+        GIT_AUTHOR_DATE: dateStr,
+        GIT_COMMITTER_DATE: dateStr,
+    }
+
+    return child_process.execSync(command, { ...options, env })
+}
+
 export const testSetup = (): string => {
     if (isCI) {
         try {
@@ -41,13 +56,17 @@ export const testSetup = (): string => {
     // clone repository
     child_process.execSync('git clone bare working', { cwd: tempdir })
 
-    // create initial commit
+    // create initial commit (28 days ago)
     writeFileSync(file, 'lolipop content')
     child_process.execSync('git add lolipop', { cwd: workingDir })
-    child_process.execSync('git commit -m "initial commit"', { cwd: workingDir })
+    execWithDate('git commit -m "initial commit"', 28, { cwd: workingDir })
 
-    // Simple feature branch - merged, remote deleted
-    child_process.execSync('git branch feature/user-avatars', { cwd: workingDir })
+    // Simple feature branch - merged, remote deleted (recent: 3 hours ago)
+    child_process.execSync('git checkout -b feature/user-avatars', { cwd: workingDir })
+    writeFileSync(file, 'user avatars feature')
+    execWithDate('git commit -a -m "add user avatars"', 0.125, { cwd: workingDir }) // 0.125 days = 3 hours
+    child_process.execSync('git checkout main', { cwd: workingDir })
+    execWithDate('git merge feature/user-avatars', 0.125, { cwd: workingDir })
 
     // Deep nested path (tests multiple slashes in branch name)
     child_process.execSync('git branch feature/payments/stripe/webhooks', { cwd: workingDir })
@@ -70,36 +89,36 @@ export const testSetup = (): string => {
     // checkout working branch for unmerged commits
     child_process.execSync('git checkout experiment/graphql-api', { cwd: workingDir })
 
-    // update file content
+    // update file content (14 days ago)
     writeFileSync(file, 'lolipop content changed')
-    child_process.execSync('git commit -a -m "second commit"', { cwd: workingDir })
+    execWithDate('git commit -a -m "second commit"', 14, { cwd: workingDir })
 
-    // Local-only branch with commits, not merged (needs force)
+    // Local-only branch with commits, not merged (needs force) (7 days ago)
     child_process.execSync('git checkout -b wip/settings-redesign', { cwd: workingDir })
     writeFileSync(file, 'local only branch content')
-    child_process.execSync('git commit -a -m "local only commit"', { cwd: workingDir })
+    execWithDate('git commit -a -m "local only commit"', 7, { cwd: workingDir })
 
-    // Local-only branch that IS merged into main (safe to delete)
+    // Local-only branch that IS merged into main (safe to delete) (5 days ago)
     child_process.execSync('git checkout main', { cwd: workingDir })
     child_process.execSync('git checkout -b chore/update-deps', { cwd: workingDir })
     writeFileSync(file, 'local merged branch content')
-    child_process.execSync('git commit -a -m "local merged commit"', { cwd: workingDir })
+    execWithDate('git commit -a -m "local merged commit"', 5, { cwd: workingDir })
     child_process.execSync('git checkout main', { cwd: workingDir })
-    child_process.execSync('git merge chore/update-deps', { cwd: workingDir })
+    execWithDate('git merge chore/update-deps', 5, { cwd: workingDir })
 
-    // Typical PR workflow: create, push, merge via GitHub, remote deleted
+    // Typical PR workflow: create, push, merge via GitHub, remote deleted (3 days ago)
     child_process.execSync('git checkout -b feature/search-filters', { cwd: workingDir })
     writeFileSync(file, 'PR branch content')
-    child_process.execSync('git commit -a -m "PR commit"', { cwd: workingDir })
+    execWithDate('git commit -a -m "PR commit"', 3, { cwd: workingDir })
     child_process.execSync('git checkout main', { cwd: workingDir })
-    child_process.execSync('git merge feature/search-filters', { cwd: workingDir })
+    execWithDate('git merge feature/search-filters', 3, { cwd: workingDir })
 
-    // Protected branch (develop) - should be excluded from deletion
+    // Protected branch (develop) - should be excluded from deletion (2 days ago)
     child_process.execSync('git checkout -b develop', { cwd: workingDir })
     writeFileSync(file, 'develop branch content')
-    child_process.execSync('git commit -a -m "develop commit"', { cwd: workingDir })
+    execWithDate('git commit -a -m "develop commit"', 2, { cwd: workingDir })
     child_process.execSync('git checkout main', { cwd: workingDir })
-    child_process.execSync('git merge develop', { cwd: workingDir })
+    execWithDate('git merge develop', 2, { cwd: workingDir })
 
     // Push all branches to remote
     child_process.execSync('git push origin -u main', { cwd: workingDir })
