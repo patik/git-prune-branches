@@ -50,7 +50,7 @@
         "tool"
     ],
     "dependencies": {
-        "inquirer-grouped-checkbox": "^0.5.1",
+        "inquirer-grouped-checkbox": "^1.0.0",
         "minimist": "^1.2.8",
         "ora": "^9.0.0",
         "simple-stdout": "^2.1.0"
@@ -68,7 +68,7 @@
         "strip-ansi": "^7.1.2",
         "tsx": "^4.21.0",
         "typescript": "^5.9.3",
-        "typescript-eslint": "^8.50.1",
+        "typescript-eslint": "^8.51.0",
         "vitest": "^4.0.16"
     },
     "packageManager": "pnpm@10.26.1+sha512.664074abc367d2c9324fdc18037097ce0a8f126034160f709928e9e9f95d98714347044e5c3164d65bd5da6c59c6be362b107546292a8eecb7999196e5ce58fa"
