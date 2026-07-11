@@ -40,15 +40,23 @@ export default async function program(): Promise<void> {
         if (typeof err === 'object' && err) {
             if ('code' in err && typeof err.code === 'number' && err.code === 128) {
                 process.stderr.write('ERROR: Not a git repository\r\n')
-            } else if ('code' in err && typeof err.code === 'number' && 'message' in err && err.code === 1984) {
+            } else if (
+                'code' in err &&
+                typeof err.code === 'number' &&
+                'message' in err &&
+                typeof err.message === 'string' &&
+                err.code === 1984
+            ) {
                 process.stderr.write(`ERROR: ${err.message} \r\n`)
-            } else if ('stack' in err) {
-                if (err instanceof Error && err.name === 'ExitPromptError') {
+            } else if (err instanceof Error) {
+                if (err.name === 'ExitPromptError') {
                     console.log('\r\nℹ️ No branches were deleted.')
                     exit(0)
                 }
 
-                process.stderr.write(`${err.stack || err}\r\n`)
+                process.stderr.write(`${err.stack ?? err.message}\r\n`)
+            } else if ('message' in err && typeof err.message === 'string') {
+                process.stderr.write(`${err.message}\r\n`)
             }
         }
 

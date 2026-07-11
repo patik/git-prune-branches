@@ -21,6 +21,7 @@ function normalizeEmojis(str: string): string {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const bin = path.join(__dirname, '../dist/index.js')
+const fixedTerminalSize = path.join(__dirname, 'tests/fixed-terminal-size.cjs')
 
 /**
  * Helper to run interactive CLI tests with simulated user input
@@ -31,7 +32,7 @@ function runInteractive(
     timeout = 3000,
 ): Promise<{ stdout: string; stderr: string; exitCode: number | null }> {
     return new Promise((resolve) => {
-        const child = spawn('node', [bin], {
+        const child = spawn('node', ['--require', fixedTerminalSize, bin], {
             cwd,
             env: { ...process.env, FORCE_COLOR: '0' }, // Disable colors for easier snapshot testing
         })

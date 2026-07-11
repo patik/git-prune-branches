@@ -1,0 +1,44 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "ignorePatterns": ["dist/**", "node_modules/**", "vitest.config.ts"],
+    "plugins": ["typescript"],
+    "rules": {
+        "typescript/no-explicit-any": "error",
+        "no-unused-vars": [
+            "warn",
+            {
+                "argsIgnorePattern": "^_",
+                "varsIgnorePattern": "^_"
+            }
+        ],
+        "typescript/await-thenable": "error",
+        "typescript/no-misused-promises": "error",
+        "typescript/consistent-type-imports": ["warn", { "prefer": "type-imports" }],
+        "typescript/explicit-function-return-type": [
+            "warn",
+            {
+                "allowExpressions": true,
+                "allowIIFEs": true,
+                "allowTypedFunctionExpressions": true
+            }
+        ],
+        "typescript/no-floating-promises": "error",
+        "curly": "error",
+        "eqeqeq": ["error", "always", { "null": "ignore" }],
+        "no-var": "error",
+        "prefer-const": "error",
+        "no-throw-literal": "error",
+        "no-lonely-if": "error",
+        "no-else-return": "error",
+        "object-shorthand": "error",
+        "prefer-template": "error"
+    },
+    "overrides": [
+        {
+            "files": ["src/**/*.test.ts"],
+            "rules": {
+                "typescript/unbound-method": "off"
+            }
+        }
+    ]
+}

@@ -133,6 +133,9 @@ export default class BranchStore {
         await this.getCurrentBranch()
         await this.findAllBranches()
 
+        this.findLocalOrphanedBranches()
+        this.findNeverPushedBranches()
+
         // Sift through the branches in parallel and categorize them
         await Promise.all([
             this.lookupLiveBranches(),
@@ -140,10 +143,6 @@ export default class BranchStore {
             this.lookupRemoteBranches(),
             this.lookupMergedBranches(),
             this.lookupLastCommitTimes(),
-            // eslint-disable-next-line @typescript-eslint/await-thenable
-            this.findLocalOrphanedBranches(),
-            // eslint-disable-next-line @typescript-eslint/await-thenable
-            this.findNeverPushedBranches(),
         ])
 
         // Calculate stale branches (must be done AFTER finding local orphaned and remote branches)
@@ -208,7 +207,7 @@ export default class BranchStore {
             // reset branches
             this.liveBranches.clear()
 
-            if (err && typeof err === 'object' && 'code' in err && err.code && String(err.code) === '128') {
+            if (err && typeof err === 'object' && 'code' in err && (err.code === 128 || err.code === '128')) {
                 // error 128 means there is no connection currently to the remote
                 // skip this step then
                 this.noConnection = true
