@@ -126,6 +126,10 @@ pnpm build
 
 ## Breaking changes
 
+### Version 3.0.0
+
+- Requires Node 22
+
 ### Version 2.0.0
 
 - Removed flags: `--dry-run`, `--prune-all`, `--force`, and `--yes`
