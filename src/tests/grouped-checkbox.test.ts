@@ -37,7 +37,6 @@ vi.mock('node:readline', async () => {
 // Mock process.stdin to capture keypress handler and simulate keypresses
 const originalStdin = process.stdin
 beforeAll(() => {
-    // @ts-expect-error - mocking stdin methods
     process.stdin.on = vi.fn((event: string, handler: typeof mockKeypressHandler) => {
         if (event === 'keypress') {
             mockKeypressHandler = handler

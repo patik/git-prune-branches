@@ -35,6 +35,8 @@ Recommended: install the package globally with `-g` flag so that you can use it 
 git prune-branches
 ```
 
+Requires Node.js 22 or newer.
+
 ## Usage
 
 It's possible to use the package via `npx` without installing:
