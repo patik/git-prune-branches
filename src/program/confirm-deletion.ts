@@ -9,12 +9,11 @@ export type ConfirmResult = 'confirm' | 'cancel' | 'back'
  * Note that this is not the same algorithm that we use to sanitize branch names for actual execution.
  */
 function displayBranchName(branch: string): string {
-    // If branch name contains special characters or spaces, wrap it in quotes
-    if (/[\s"'`\\]/.test(branch)) {
-        return `"${branch.replace(/(["\\$`])/g, '\\$1')}"`
+    if (/^[A-Za-z0-9._/-]+$/.test(branch)) {
+        return branch
     }
 
-    return branch
+    return `'${branch.replace(/'/g, `'"'"'`)}'`
 }
 
 /**
@@ -117,7 +116,7 @@ export async function confirmDeletion(safe: string[], force: string[]): Promise<
         console.log(green(`Safely delete ${safe.length} branch${safe.length === 1 ? '' : 'es'}:`))
         lineCount += 1
         safe.forEach((branch) => {
-            console.log(dim(`  git branch -d ${displayBranchName(branch)}`))
+            console.log(dim(`  git branch -d -- ${displayBranchName(branch)}`))
             lineCount += 1
         })
         console.log('')
@@ -128,7 +127,7 @@ export async function confirmDeletion(safe: string[], force: string[]): Promise<
         console.log(red(`Force delete ${force.length} branch${force.length === 1 ? '' : 'es'}:`))
         lineCount += 1
         force.forEach((branch) => {
-            console.log(dim(`  git branch -D ${displayBranchName(branch)}`))
+            console.log(dim(`  git branch -D -- ${displayBranchName(branch)}`))
             lineCount += 1
         })
         console.log('')

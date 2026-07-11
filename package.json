@@ -8,20 +8,25 @@
     "bin": {
         "git-prune-branches": "dist/index.js"
     },
+    "files": [
+        "dist"
+    ],
     "engines": {
         "node": ">=22"
     },
     "scripts": {
-        "build": "tsc",
+        "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+        "build": "pnpm clean && tsc --project tsconfig.build.json",
+        "postbuild": "node -e \"require('node:fs').chmodSync('dist/index.js', 0o755)\"",
         "start": "tsx ./src/index.ts",
         "test": "vitest",
         "test:once": "vitest run",
         "demo": "./src/tests/demo/run.sh",
-        "lint": "tsc --noEmit && oxlint . --type-aware && pnpm run format",
+        "lint": "tsc --noEmit && oxlint . --type-aware && pnpm check-format",
         "format": "prettier . --list-different --write",
         "check-format": "prettier . --list-different",
         "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
-        "ci": "pnpm build && pnpm check-exports && pnpm test:once",
+        "ci": "pnpm lint && pnpm build && pnpm check-exports && pnpm test:once",
         "prepublishOnly": "pnpm run ci",
         "prepare": "husky",
         "postinstall": "node -e \"if(process.env.npm_config_global)console.log('\\n✓ You can now run: git prune-branches\\n')\""

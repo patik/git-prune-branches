@@ -1,15 +1,14 @@
-// Side effects
-import './side-effects/check-for-git-repo.js'
-import './side-effects/handle-control-c.js'
-
 // Program imports
 import { exit } from 'node:process'
 import { confirmDeletion, type ConfirmResult } from './confirm-deletion.js'
 import { executeDeletions } from './execute-deletions.js'
 import { selectBranches, type PreviousSelection } from './select-branches.js'
+import { checkForGitRepository } from './side-effects/check-for-git-repo.js'
 
 export default async function program(): Promise<void> {
     try {
+        checkForGitRepository()
+
         let previousSelection: PreviousSelection | undefined
         let confirmResult: ConfirmResult
 

@@ -26,8 +26,10 @@ jobs:
                   node-version: '22'
                   registry-url: 'https://registry.npmjs.org/'
 
-            - name: Install pnpm
-              run: npm install -g pnpm
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 11.11.0
+                  run_install: false
 
             # npm 11.5+ required for OIDC trusted publishing
             - name: Update npm

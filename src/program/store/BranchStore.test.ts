@@ -255,6 +255,15 @@ describe('BranchStore', () => {
             expect(nestedBranch).toBeDefined()
             expect(nestedBranch!.remoteBranch).toBe('feature/payments/stripe/webhooks')
         })
+
+        it('should not confuse remotes whose names share a prefix', () => {
+            const store = new BranchStore({ remote: 'origin' })
+            store.allBranches = ['feature@{refs/remotes/origin-backup/feature}']
+
+            store.findLocalOrphanedBranches()
+
+            expect(store.localOrphanedBranches).toEqual([])
+        })
     })
 
     describe('findLiveBranches (real git)', () => {
@@ -442,6 +451,20 @@ describe('BranchStore', () => {
                 expect(timestamp).toBeGreaterThan(0)
                 // Should be a reasonable timestamp (after year 2000)
                 expect(timestamp).toBeGreaterThan(946684800) // Jan 1, 2000
+            }
+        })
+
+        it('should preserve branch names containing the old field delimiter', async () => {
+            const branchName = 'feature|with-pipe'
+            execSync(`git branch '${branchName}'`)
+
+            try {
+                const store = new BranchStore()
+                await store.lookupLastCommitTimes()
+
+                expect(store.lastCommitTimes.has(branchName)).toBe(true)
+            } finally {
+                execSync(`git branch -D '${branchName}'`)
             }
         })
     })
