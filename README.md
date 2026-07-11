@@ -124,6 +124,14 @@ Build the TypeScript source:
 pnpm build
 ```
 
+### Releasing
+
+With the changes already on `main`, push a new tag with the version number.
+
+```sh
+git tag "v$(jq -r .version package.json)" && git push origin "v$(jq -r .version package.json)"
+```
+
 ## Breaking changes
 
 ### Version 3.0.0
