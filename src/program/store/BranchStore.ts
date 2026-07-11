@@ -3,7 +3,7 @@ import ora from 'ora'
 import stdout, { stdoutFile } from 'simple-stdout'
 import { formatTimeAgo } from '../../utils/formatTimeAgo.js'
 import split from '../../utils/split.js'
-import { defaultProtectedBranches, defaultRemote } from '../constants.js'
+import { DEFAULT_PROTECTED_BRANCHES, DEFAULT_REMOTE } from '../constants.js'
 
 class RemoteError extends Error {
     code = 1984
@@ -86,7 +86,7 @@ export default class BranchStore {
     noConnection: boolean
 
     constructor(ops: { remote?: string; protected?: string } = {}) {
-        this.remote = ops.remote ?? defaultRemote
+        this.remote = ops.remote ?? DEFAULT_REMOTE
         this.remoteBranches = []
         this.localOrphanedBranches = []
         this.staleBranches = []
@@ -95,7 +95,7 @@ export default class BranchStore {
         this.failedToDelete = []
         this.liveBranches = new Set()
         this.unmergedBranches = new Set()
-        this.protectedBranches = new Set((ops.protected ?? defaultProtectedBranches).split(',').map((b) => b.trim()))
+        this.protectedBranches = new Set((ops.protected ?? DEFAULT_PROTECTED_BRANCHES).split(',').map((b) => b.trim()))
         this.neverPushedBranches = new Set()
         this.mergedBranches = []
         this.safeToDelete = []

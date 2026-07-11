@@ -1,7 +1,9 @@
 import child_process from 'node:child_process'
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+
+let seedDirectory: string | undefined
 
 /** Execute a Git command with a deterministic commit date. */
 const execWithDate = (command: string, daysAgo: number, options: { cwd: string }): Buffer => {
@@ -25,6 +27,13 @@ export const testSetup = (): string => {
 
     const bareDir = `${tempdir + path.sep}bare`
     const workingDir = `${tempdir + path.sep}working`
+
+    if (seedDirectory) {
+        cpSync(path.join(seedDirectory, 'bare'), bareDir, { recursive: true })
+        cpSync(path.join(seedDirectory, 'working'), workingDir, { recursive: true })
+        child_process.execFileSync('git', ['remote', 'set-url', 'origin', bareDir], { cwd: workingDir })
+        return workingDir
+    }
 
     const file = `${workingDir}${path.sep}lolipop`
 
@@ -133,5 +142,6 @@ export const testSetup = (): string => {
     // checkout main branch
     child_process.execSync('git checkout main', { cwd: workingDir })
 
-    return workingDir
+    seedDirectory = tempdir
+    return testSetup()
 }

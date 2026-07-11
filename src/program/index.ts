@@ -1,12 +1,16 @@
 // Program imports
 import { exit } from 'node:process'
+import { establishArgs } from '../utils/establish-args.js'
 import { confirmDeletion, type ConfirmResult } from './confirm-deletion.js'
 import { executeDeletions } from './execute-deletions.js'
 import { selectBranches, type PreviousSelection } from './select-branches.js'
 import { checkForGitRepository } from './side-effects/check-for-git-repo.js'
+import { configureStore } from './store/store.js'
 
 export default async function program(): Promise<void> {
     try {
+        const argv = establishArgs()
+        configureStore({ remote: argv.remote, protected: argv.protected })
         checkForGitRepository()
 
         let previousSelection: PreviousSelection | undefined

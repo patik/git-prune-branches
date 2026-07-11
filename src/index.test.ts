@@ -1,4 +1,5 @@
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import stripAnsi from 'strip-ansi'
@@ -81,6 +82,22 @@ function runInteractive(
 }
 
 describe('git-prune-branches', () => {
+    describe('command-line options', () => {
+        it('should display help without requiring a Git repository', () => {
+            const result = spawnSync('node', [bin, '--help'], { encoding: 'utf8', cwd: os.tmpdir() })
+
+            expect(result.status).toBe(0)
+            expect(result.stdout).toContain('Usage: git prune-branches')
+        })
+
+        it('should reject positional arguments', () => {
+            const result = spawnSync('node', [bin, 'unexpected'], { encoding: 'utf8', cwd: os.tmpdir() })
+
+            expect(result.status).toBe(1)
+            expect(result.stdout).toContain('Usage: git prune-branches')
+        })
+    })
+
     describe('interactive grouped checkbox mode (end-to-end)', () => {
         let interactiveWorkingDir: string
 

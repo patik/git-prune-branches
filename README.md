@@ -51,6 +51,8 @@ When installed globally with `npm install -g git-prune-branches`, you can use th
 git prune-branches
 ```
 
+Run `git prune-branches --help` to display the supported options.
+
 ### Custom remote
 
 If you have configured remote alias to something different than **'origin'**, you can use `--remote` or `-r` flag to specify the name of the remote. For example, to specify remote to be `upstream`, you can use:
@@ -89,14 +91,14 @@ NODE_MAX_BUFFER=1048576 git prune-branches
 
 ## Development
 
-Note that `pnpm` is recommended for development since some scripts us `pnpx` internally.
+This project uses `pnpm` for development.
 
 ### Running
 
 Run the source code using `tsx`, e.g. to test it on another local repo
 
 ```sh
-pnpx tsx ~/code/git-prune-branches/src/index.ts
+pnpm start
 ```
 
 You can also run the app against a fake git repo in a temporary folder

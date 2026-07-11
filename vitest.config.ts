@@ -10,5 +10,14 @@ export default defineConfig({
         fileParallelism: false,
         include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts}'],
         exclude: ['src/tests/demo/**/*'],
+        coverage: {
+            provider: 'v8',
+            thresholds: {
+                statements: 90,
+                branches: 70,
+                functions: 90,
+                lines: 90,
+            },
+        },
     },
 })

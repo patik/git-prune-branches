@@ -40,4 +40,4 @@ jobs:
               env:
                   CI: true
                   TEMP_DIR: ${{ runner.temp }}
-              run: pnpm test:once
+              run: pnpm test:coverage
