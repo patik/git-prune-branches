@@ -35,6 +35,8 @@ Recommended: install the package globally with `-g` flag so that you can use it 
 git prune-branches
 ```
 
+Requires Node.js 22 or newer.
+
 ## Usage
 
 It's possible to use the package via `npx` without installing:
@@ -48,6 +50,8 @@ When installed globally with `npm install -g git-prune-branches`, you can use th
 ```bash
 git prune-branches
 ```
+
+Run `git prune-branches --help` to display the supported options.
 
 ### Custom remote
 
@@ -87,14 +91,14 @@ NODE_MAX_BUFFER=1048576 git prune-branches
 
 ## Development
 
-Note that `pnpm` is recommended for development since some scripts us `pnpx` internally.
+This project uses `pnpm` for development.
 
 ### Running
 
 Run the source code using `tsx`, e.g. to test it on another local repo
 
 ```sh
-pnpx tsx ~/code/git-prune-branches/src/index.ts
+pnpm start
 ```
 
 You can also run the app against a fake git repo in a temporary folder
@@ -120,7 +124,19 @@ Build the TypeScript source:
 pnpm build
 ```
 
+### Releasing
+
+With the changes already on `main`, push a new tag with the version number.
+
+```sh
+git tag "v$(jq -r .version package.json)" && git push origin "v$(jq -r .version package.json)"
+```
+
 ## Breaking changes
+
+### Version 3.0.0
+
+- Requires Node 22
 
 ### Version 2.0.0
 

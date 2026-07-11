@@ -1,4 +1,5 @@
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import stripAnsi from 'strip-ansi'
@@ -21,6 +22,7 @@ function normalizeEmojis(str: string): string {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const bin = path.join(__dirname, '../dist/index.js')
+const fixedTerminalSize = path.join(__dirname, 'tests/fixed-terminal-size.cjs')
 
 /**
  * Helper to run interactive CLI tests with simulated user input
@@ -31,7 +33,7 @@ function runInteractive(
     timeout = 3000,
 ): Promise<{ stdout: string; stderr: string; exitCode: number | null }> {
     return new Promise((resolve) => {
-        const child = spawn('node', [bin], {
+        const child = spawn('node', ['--require', fixedTerminalSize, bin], {
             cwd,
             env: { ...process.env, FORCE_COLOR: '0' }, // Disable colors for easier snapshot testing
         })
@@ -80,6 +82,22 @@ function runInteractive(
 }
 
 describe('git-prune-branches', () => {
+    describe('command-line options', () => {
+        it('should display help without requiring a Git repository', () => {
+            const result = spawnSync('node', [bin, '--help'], { encoding: 'utf8', cwd: os.tmpdir() })
+
+            expect(result.status).toBe(0)
+            expect(result.stdout).toContain('Usage: git prune-branches')
+        })
+
+        it('should reject positional arguments', () => {
+            const result = spawnSync('node', [bin, 'unexpected'], { encoding: 'utf8', cwd: os.tmpdir() })
+
+            expect(result.status).toBe(1)
+            expect(result.stdout).toContain('Usage: git prune-branches')
+        })
+    })
+
     describe('interactive grouped checkbox mode (end-to-end)', () => {
         let interactiveWorkingDir: string
 

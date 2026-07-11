@@ -1,9 +1,12 @@
-import { establishArgs } from '../../utils/establish-args.js'
 import BranchStore from './BranchStore.js'
 
-const argv = establishArgs()
+const store = new BranchStore()
 
-export default new BranchStore({
-    remote: argv.remote,
-    protected: argv.protected,
-})
+/** Apply command-line configuration before the store performs any Git operations. */
+export function configureStore(options: { remote: string; protected: string }): void {
+    store.remote = options.remote
+    store.protectedBranches = new Set(options.protected.split(',').map((branch) => branch.trim()))
+    store.hasRunPreprocess = false
+}
+
+export default store

@@ -1,3 +1,3 @@
-export const defaultRemote = 'origin'
+export const DEFAULT_REMOTE = 'origin'
 
-export const defaultProtectedBranches = 'main,master,develop,development'
+export const DEFAULT_PROTECTED_BRANCHES = 'main,master,develop,development'

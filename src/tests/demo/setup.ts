@@ -1,14 +1,11 @@
 import child_process from 'node:child_process'
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
+let seedDirectory: string | undefined
 
-let tempdir: string = process.env.TEMP_DIR || ''
-let workingDir: string = ''
-
-// Helper function to execute git commands with a specific date
+/** Execute a Git command with a deterministic commit date. */
 const execWithDate = (command: string, daysAgo: number, options: { cwd: string }): Buffer => {
     const date = new Date()
     date.setDate(date.getDate() - daysAgo)
@@ -23,26 +20,20 @@ const execWithDate = (command: string, daysAgo: number, options: { cwd: string }
     return child_process.execSync(command, { ...options, env })
 }
 
+/** Create an isolated Git repository containing every branch state used by integration tests. */
 export const testSetup = (): string => {
-    if (isCI) {
-        try {
-            child_process.execSync('git config --global user.email "ci@example.com"')
-            child_process.execSync('git config --global user.name "CI User"')
-        } catch (error) {
-            console.warn('Failed to configure git user:', error)
-        }
-    }
-
-    if (!tempdir) {
-        const tmp = os.tmpdir()
-        tempdir = mkdtempSync(`${tmp + path.sep}git-prune-branches-`)
-    } else {
-        // In CI, ensure the temp directory exists and create our subdirectory
-        tempdir = mkdtempSync(`${tempdir + path.sep}git-prune-branches-`)
-    }
+    const tempRoot = process.env.TEMP_DIR || os.tmpdir()
+    const tempdir = mkdtempSync(path.join(tempRoot, 'git-prune-branches-'))
 
     const bareDir = `${tempdir + path.sep}bare`
-    workingDir = `${tempdir + path.sep}working`
+    const workingDir = `${tempdir + path.sep}working`
+
+    if (seedDirectory) {
+        cpSync(path.join(seedDirectory, 'bare'), bareDir, { recursive: true })
+        cpSync(path.join(seedDirectory, 'working'), workingDir, { recursive: true })
+        child_process.execFileSync('git', ['remote', 'set-url', 'origin', bareDir], { cwd: workingDir })
+        return workingDir
+    }
 
     const file = `${workingDir}${path.sep}lolipop`
 
@@ -55,6 +46,8 @@ export const testSetup = (): string => {
 
     // clone repository
     child_process.execSync('git clone bare working', { cwd: tempdir })
+    child_process.execSync('git config user.email "test@example.com"', { cwd: workingDir })
+    child_process.execSync('git config user.name "Test User"', { cwd: workingDir })
 
     // create initial commit (28 days ago)
     writeFileSync(file, 'lolipop content')
@@ -149,5 +142,6 @@ export const testSetup = (): string => {
     // checkout main branch
     child_process.execSync('git checkout main', { cwd: workingDir })
 
-    return workingDir
+    seedDirectory = tempdir
+    return testSetup()
 }

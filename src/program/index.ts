@@ -1,15 +1,18 @@
-// Side effects
-import './side-effects/check-for-git-repo.js'
-import './side-effects/handle-control-c.js'
-
 // Program imports
 import { exit } from 'node:process'
+import { establishArgs } from '../utils/establish-args.js'
 import { confirmDeletion, type ConfirmResult } from './confirm-deletion.js'
 import { executeDeletions } from './execute-deletions.js'
 import { selectBranches, type PreviousSelection } from './select-branches.js'
+import { checkForGitRepository } from './side-effects/check-for-git-repo.js'
+import { configureStore } from './store/store.js'
 
 export default async function program(): Promise<void> {
     try {
+        const argv = establishArgs()
+        configureStore({ remote: argv.remote, protected: argv.protected })
+        checkForGitRepository()
+
         let previousSelection: PreviousSelection | undefined
         let confirmResult: ConfirmResult
 
@@ -40,15 +43,23 @@ export default async function program(): Promise<void> {
         if (typeof err === 'object' && err) {
             if ('code' in err && typeof err.code === 'number' && err.code === 128) {
                 process.stderr.write('ERROR: Not a git repository\r\n')
-            } else if ('code' in err && typeof err.code === 'number' && 'message' in err && err.code === 1984) {
+            } else if (
+                'code' in err &&
+                typeof err.code === 'number' &&
+                'message' in err &&
+                typeof err.message === 'string' &&
+                err.code === 1984
+            ) {
                 process.stderr.write(`ERROR: ${err.message} \r\n`)
-            } else if ('stack' in err) {
-                if (err instanceof Error && err.name === 'ExitPromptError') {
+            } else if (err instanceof Error) {
+                if (err.name === 'ExitPromptError') {
                     console.log('\r\nℹ️ No branches were deleted.')
                     exit(0)
                 }
 
-                process.stderr.write(`${err.stack || err}\r\n`)
+                process.stderr.write(`${err.stack ?? err.message}\r\n`)
+            } else if ('message' in err && typeof err.message === 'string') {
+                process.stderr.write(`${err.message}\r\n`)
             }
         }
 

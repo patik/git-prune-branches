@@ -3,7 +3,7 @@ import ora from 'ora'
 import stdout, { stdoutFile } from 'simple-stdout'
 import { formatTimeAgo } from '../../utils/formatTimeAgo.js'
 import split from '../../utils/split.js'
-import { defaultProtectedBranches, defaultRemote } from '../constants.js'
+import { DEFAULT_PROTECTED_BRANCHES, DEFAULT_REMOTE } from '../constants.js'
 
 class RemoteError extends Error {
     code = 1984
@@ -86,7 +86,7 @@ export default class BranchStore {
     noConnection: boolean
 
     constructor(ops: { remote?: string; protected?: string } = {}) {
-        this.remote = ops.remote ?? defaultRemote
+        this.remote = ops.remote ?? DEFAULT_REMOTE
         this.remoteBranches = []
         this.localOrphanedBranches = []
         this.staleBranches = []
@@ -95,7 +95,7 @@ export default class BranchStore {
         this.failedToDelete = []
         this.liveBranches = new Set()
         this.unmergedBranches = new Set()
-        this.protectedBranches = new Set((ops.protected ?? defaultProtectedBranches).split(',').map((b) => b.trim()))
+        this.protectedBranches = new Set((ops.protected ?? DEFAULT_PROTECTED_BRANCHES).split(',').map((b) => b.trim()))
         this.neverPushedBranches = new Set()
         this.mergedBranches = []
         this.safeToDelete = []
@@ -123,6 +123,7 @@ export default class BranchStore {
         this.safeToDelete = []
         this.requiresForce = []
         this.infoOnly = []
+        this.lastCommitTimes = new Map()
         this.noConnection = false
 
         // Gather all the information
@@ -133,6 +134,9 @@ export default class BranchStore {
         await this.getCurrentBranch()
         await this.findAllBranches()
 
+        this.findLocalOrphanedBranches()
+        this.findNeverPushedBranches()
+
         // Sift through the branches in parallel and categorize them
         await Promise.all([
             this.lookupLiveBranches(),
@@ -140,10 +144,6 @@ export default class BranchStore {
             this.lookupRemoteBranches(),
             this.lookupMergedBranches(),
             this.lookupLastCommitTimes(),
-            // eslint-disable-next-line @typescript-eslint/await-thenable
-            this.findLocalOrphanedBranches(),
-            // eslint-disable-next-line @typescript-eslint/await-thenable
-            this.findNeverPushedBranches(),
         ])
 
         // Calculate stale branches (must be done AFTER finding local orphaned and remote branches)
@@ -178,11 +178,7 @@ export default class BranchStore {
         }
 
         const remotesStr = await stdout('git remote -v')
-        const hasRemote = split(remotesStr).some((line) => {
-            const re = new RegExp(`^${this.remote}\\s`)
-
-            return re.test(line)
-        })
+        const hasRemote = split(remotesStr).some((line) => line.split(/\s+/, 1)[0] === this.remote)
 
         if (!hasRemote) {
             console.log(
@@ -208,7 +204,7 @@ export default class BranchStore {
             // reset branches
             this.liveBranches.clear()
 
-            if (err && typeof err === 'object' && 'code' in err && err.code && String(err.code) === '128') {
+            if (err && typeof err === 'object' && 'code' in err && (err.code === 128 || err.code === '128')) {
                 // error 128 means there is no connection currently to the remote
                 // skip this step then
                 this.noConnection = true
@@ -228,7 +224,7 @@ export default class BranchStore {
     findLocalOrphanedBranches(): void {
         this.allBranches.forEach((line) => {
             // upstream has format: "@{refs/remotes/origin/some-branch-name}"
-            const startIndex = line.indexOf(`@{refs/remotes/${this.remote}`)
+            const startIndex = line.indexOf(`@{refs/remotes/${this.remote}/`)
             if (startIndex === -1) {
                 return
             }
@@ -268,12 +264,10 @@ export default class BranchStore {
         const branches = split(out)
 
         // filter out non origin branches
-        const re = new RegExp('^%s\\/([^\\s]*)'.replace('%s', this.remote))
+        const remotePrefix = `${this.remote}/`
         branches.forEach((branchName) => {
-            const group = branchName.match(re)
-
-            if (group && group[1]) {
-                this.remoteBranches.push(group[1])
+            if (branchName.startsWith(remotePrefix) && !branchName.includes(' -> ')) {
+                this.remoteBranches.push(branchName.slice(remotePrefix.length))
             }
         })
     }
@@ -314,11 +308,11 @@ export default class BranchStore {
 
     async lookupLastCommitTimes(): Promise<void> {
         // Get all local branches with their last commit timestamps in one efficient command
-        const out = await stdout('git for-each-ref --format="%(refname:short)|%(committerdate:unix)" refs/heads/')
+        const out = await stdout('git for-each-ref --format="%(refname:short)%09%(committerdate:unix)" refs/heads/')
         const lines = split(out)
 
         lines.forEach((line) => {
-            const [branchName, timestamp] = line.split('|')
+            const [branchName, timestamp] = line.split('\t')
             if (branchName && timestamp) {
                 this.lastCommitTimes.set(branchName, parseInt(timestamp, 10))
             }
@@ -434,7 +428,7 @@ export default class BranchStore {
             const spinner = ora(`Removing branch ${branchName}`).start()
             try {
                 spinner.color = 'yellow'
-                execFileSync('git', ['branch', '-d', branchName])
+                execFileSync('git', ['branch', '-d', '--', branchName])
                 spinner.succeed(`Removed branch ${branchName}`)
                 success.push(branchName)
             } catch (err) {
@@ -449,7 +443,7 @@ export default class BranchStore {
             const spinner = ora(`Force removing branch ${branchName}`).start()
             try {
                 spinner.color = 'red'
-                execFileSync('git', ['branch', '-D', branchName])
+                execFileSync('git', ['branch', '-D', '--', branchName])
                 spinner.succeed(`Force removed branch ${branchName}`)
                 success.push(branchName)
             } catch (err) {
