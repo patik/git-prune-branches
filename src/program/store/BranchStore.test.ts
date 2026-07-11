@@ -351,6 +351,14 @@ describe('BranchStore', () => {
             expect(store.remoteBranches.length).toBeGreaterThan(0)
         })
 
+        it('should exclude the remote HEAD symbolic reference', async () => {
+            execSync('git remote set-head origin main')
+            const store = new BranchStore()
+            await store.lookupRemoteBranches()
+
+            expect(store.remoteBranches).not.toContain('HEAD -> origin/main')
+        })
+
         it('should reset remoteBranches before populating', async () => {
             const store = new BranchStore()
             store.remoteBranches = ['old-remote-branch']

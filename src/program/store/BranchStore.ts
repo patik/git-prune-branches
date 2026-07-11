@@ -266,7 +266,7 @@ export default class BranchStore {
         // filter out non origin branches
         const remotePrefix = `${this.remote}/`
         branches.forEach((branchName) => {
-            if (branchName.startsWith(remotePrefix)) {
+            if (branchName.startsWith(remotePrefix) && !branchName.includes(' -> ')) {
                 this.remoteBranches.push(branchName.slice(remotePrefix.length))
             }
         })
