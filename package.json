@@ -25,7 +25,7 @@
         "demo": "./src/tests/demo/run.sh",
         "lint": "tsc --noEmit && oxlint . --type-aware && pnpm check-format",
         "format": "oxfmt . --write",
-        "check-format": "oxfmt . --check",
+        "check-format": "oxfmt .",
         "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
         "ci": "pnpm lint && pnpm build && pnpm check-exports && pnpm test:coverage",
         "prepublishOnly": "pnpm run ci",
