@@ -1,1 +1,5 @@
+echo "pre-commit: auto-fixing staged files..."
+pnpm fix:staged
+
+echo "pre-commit: checking lint, formatting, and types..."
 pnpm lint
