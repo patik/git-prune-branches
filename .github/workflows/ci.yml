@@ -53,6 +53,7 @@ jobs:
               with:
                   runtime: node@${{ matrix.node-version }}
                   cache: true
+            - run: pnpm build
             - name: Run tests
               env:
                   CI: true
