@@ -1,0 +1,61 @@
+name: CI
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    lint:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+            - name: Set up pnpm and Node.js 24 LTS
+              uses: pnpm/setup@v2
+              with:
+                  runtime: node@24
+                  cache: true
+            - run: pnpm lint
+
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+            - name: Set up pnpm and Node.js 24 LTS
+              uses: pnpm/setup@v2
+              with:
+                  runtime: node@24
+                  cache: true
+            - run: pnpm build
+            - run: pnpm check-exports
+
+    test:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version:
+                    - 22
+                    - 24
+                    - 26
+        steps:
+            - uses: actions/checkout@v7
+            - name: Set up pnpm and Node.js ${{ matrix.node-version }}
+              uses: pnpm/setup@v2
+              with:
+                  runtime: node@${{ matrix.node-version }}
+                  cache: true
+            - run: pnpm build
+            - name: Run tests
+              env:
+                  CI: true
+                  TEMP_DIR: ${{ runner.temp }}
+              run: pnpm test:coverage

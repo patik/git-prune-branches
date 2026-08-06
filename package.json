@@ -25,6 +25,7 @@
         "demo": "./src/tests/demo/run.sh",
         "lint": "tsc --noEmit && oxlint . --type-aware && pnpm check-format",
         "format": "oxfmt . --write",
+        "fix:staged": "lint-staged",
         "check-format": "oxfmt . --check",
         "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
         "ci": "pnpm lint && pnpm build && pnpm check-exports && pnpm test:coverage",
@@ -64,16 +65,24 @@
     "devDependencies": {
         "@arethetypeswrong/cli": "^0.18.5",
         "@types/minimist": "^1.2.5",
-        "@types/node": "^26.1.1",
+        "@types/node": "^26.1.2",
         "@vitest/coverage-v8": "4.1.10",
         "husky": "^9.1.7",
-        "oxfmt": "0.58.0",
-        "oxlint": "^1.73.0",
-        "oxlint-tsgolint": "^0.24.0",
+        "lint-staged": "^16.4.0",
+        "oxfmt": "0.62.0",
+        "oxlint": "^1.77.0",
+        "oxlint-tsgolint": "^7.0.2001",
         "strip-ansi": "^7.2.0",
-        "tsx": "^4.23.0",
+        "tsx": "^4.23.5",
         "typescript": "^7.0.2",
         "vitest": "^4.1.10"
     },
-    "packageManager": "pnpm@11.11.0"
+    "lint-staged": {
+        "*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}": [
+            "oxlint --type-aware --fix --no-error-on-unmatched-pattern",
+            "oxfmt --write --no-error-on-unmatched-pattern"
+        ],
+        "*.{css,html,json,jsonc,md,yaml,yml}": "oxfmt --write --no-error-on-unmatched-pattern"
+    },
+    "packageManager": "pnpm@11.20.0"
 }
