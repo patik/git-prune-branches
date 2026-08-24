@@ -57,7 +57,7 @@
         "tool"
     ],
     "dependencies": {
-        "inquirer-grouped-checkbox": "^1.0.0",
+        "inquirer-grouped-checkbox": "^2.0.0",
         "minimist": "^1.2.8",
         "ora": "^9.4.1",
         "simple-stdout": "^2.2.0"
